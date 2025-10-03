@@ -1,0 +1,6 @@
+projects/final-cb-app/topics/ingestion-events
+projects/final-cb-app/topics/forecast-events
+projects/final-cb-app/topics/container-analysis-occurrences-v1
+projects/final-cb-app/topics/container-analysis-notes-v1beta1
+projects/final-cb-app/topics/container-analysis-occurrences-v1beta1
+projects/final-cb-app/topics/container-analysis-notes-v1

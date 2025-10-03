@@ -1,0 +1,16 @@
+                tableId                 Type    Labels   Time Partitioning   Clustered Fields  
+ ------------------------------------- ------- -------- ------------------- ------------------ 
+  WASDE_PALM_OIL_PRODUCTION_INDONESIA   TABLE                                                  
+  WASDE_SOYBEANS_CRUSH_US               TABLE                                                  
+  WASDE_SOYBEANS_IMPORTS_CHINA          TABLE                                                  
+  WASDE_SOYBEANS_PRODUCTION_ARGENTINA   TABLE                                                  
+  WASDE_SOYBEANS_PRODUCTION_BRAZIL      TABLE                                                  
+  WASDE_SOYBEANS_PRODUCTION_US          TABLE                                                  
+  WASDE_SOYBEAN_OIL_ENDING_STOCKS_US    TABLE                                                  
+  WASDE_SOYBEAN_OIL_EXPORTS_US          TABLE                                                  
+  WASDE_SOYBEAN_OIL_PRICE_DECATUR_IL    TABLE                                                  
+  WASDE_SOYBEAN_OIL_PRODUCTION_US       TABLE                                                  
+  daily_news_sentiment                  TABLE                                                  
+  soy_oil_features                      VIEW                                                   
+  wasde_raw                             TABLE                                                  
+  wasde_raw_p_tmp                       TABLE            DAY                                   

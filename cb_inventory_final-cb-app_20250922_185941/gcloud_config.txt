@@ -1,0 +1,7 @@
+accessibility.screen_reader:            True
+component_manager.disable_update_check: True
+compute.gce_metadata_read_timeout_sec:  30
+core.account:                           zinc@zincdigital.co
+core.disable_usage_reporting:           False
+core.project:                           final-cb-app
+metrics.environment:                    devshell

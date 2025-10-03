@@ -1,0 +1,9 @@
+NAME: forecast-service
+URL: 
+LAST_MODIFIER: zinc@zincdigital.co
+STATUS: {'address': {'url': 'https://forecast-service-theoguwnca-uc.a.run.app'}, 'conditions': [{'lastTransitionTime': '2025-09-19T22:31:03.566927Z', 'status': 'True', 'type': 'Ready'}, {'lastTransitionTime': '2025-09-19T22:31:03.260798Z', 'status': 'True', 'type': 'ConfigurationsReady'}, {'lastTransitionTime': '2025-09-19T22:31:03.530579Z', 'status': 'True', 'type': 'RoutesReady'}], 'latestCreatedRevisionName': 'forecast-service-00003-rxp', 'latestReadyRevisionName': 'forecast-service-00003-rxp', 'observedGeneration': 3, 'traffic': [{'latestRevision': True, 'percent': 100, 'revisionName': 'forecast-service-00003-rxp'}], 'url': 'https://forecast-service-theoguwnca-uc.a.run.app'}
+
+NAME: live-data-ingestion-service
+URL: 
+LAST_MODIFIER: zinc@zincdigital.co
+STATUS: {'address': {'url': 'https://live-data-ingestion-service-theoguwnca-uc.a.run.app'}, 'conditions': [{'lastTransitionTime': '2025-09-19T21:25:32.719262Z', 'status': 'True', 'type': 'Ready'}, {'lastTransitionTime': '2025-09-19T21:25:31.438810Z', 'status': 'True', 'type': 'ConfigurationsReady'}, {'lastTransitionTime': '2025-09-19T21:25:32.685630Z', 'status': 'True', 'type': 'RoutesReady'}], 'latestCreatedRevisionName': 'live-data-ingestion-service-00010-hdm', 'latestReadyRevisionName': 'live-data-ingestion-service-00010-hdm', 'observedGeneration': 10, 'traffic': [{'latestRevision': True, 'percent': 100, 'revisionName': 'live-data-ingestion-service-00010-hdm'}], 'url': 'https://live-data-ingestion-service-theoguwnca-uc.a.run.app'}

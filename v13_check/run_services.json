@@ -1,0 +1,626 @@
+[
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/description": "This Cloud Run service handles the core application logic. It queries BigQuery for analytical data, PostgreSQL for operational data, and calls Vertex AI for real-time predictions, scenario modeling, and AI-generated narratives. It processes and formats data from these sources for display on the frontend.",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "ebe5f05b-1aaa-4984-abb2-0e14fc0b506d",
+        "run.googleapis.com/urls": "[\"https://forecasting-app-backend-1065708057795.us-central1.run.app\",\"https://forecasting-app-backend-pzjsic3yna-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-10-02T01:01:45.793387Z",
+      "generation": 1,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "forecasting_app_vertex_ai_service_vertex-ai": "true",
+        "goog-adc-tf-deployment": "adc",
+        "goog-ccm": "true",
+        "goog-terraform-provisioned": "true"
+      },
+      "name": "forecasting-app-backend",
+      "namespace": "1065708057795",
+      "resourceVersion": "AAZAIoe48kU",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/1065708057795/services/forecasting-app-backend",
+      "uid": "be8ace33-7011-4782-8dbb-820b456ef987"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "10",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/container-dependencies": "{\"collector\":[\"backend-container\"]}",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/execution-environment": "gen2",
+            "run.googleapis.com/network-interfaces": "[{\"network\":\"default\",\"subnetwork\":\"default\"}]",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/vpc-access-egress": "all-traffic"
+          },
+          "labels": {
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_VIEWS",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_HOST",
+                  "value": "136.112.38.131"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_EXTERNAL_TABLES",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_CONNECTION_NAME",
+                  "value": "cbi-v14:us-central1:forecasting-app-db"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_MATERIALIZED_VIEWS",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_TABLES",
+                  "value": "[\"table-1\"]"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_ROUTINES",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_NAME",
+                  "value": "default"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_DATASET",
+                  "value": "forecasting_data_warehouse"
+                },
+                {
+                  "name": "forecasting_app_database_secret_SECRET",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "key": "1",
+                      "name": "forecasting-app-db-secret"
+                    }
+                  }
+                }
+              ],
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "name": "backend-container",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            },
+            {
+              "image": "us-docker.pkg.dev/cloud-ops-agents-artifacts/cloud-run-gmp-sidecar/cloud-run-gmp-sidecar:1.1.1",
+              "name": "collector",
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "256Mi"
+                }
+              }
+            }
+          ],
+          "serviceAccountName": "forecasting-app-backend-us--sa@cbi-v14.iam.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://forecasting-app-backend-pzjsic3yna-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2025-10-02T01:01:50.374469Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:01:49.144978Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:01:50.343067Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "forecasting-app-backend-00001-x7h",
+      "latestReadyRevisionName": "forecasting-app-backend-00001-x7h",
+      "observedGeneration": 1,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "forecasting-app-backend-00001-x7h"
+        }
+      ],
+      "url": "https://forecasting-app-backend-pzjsic3yna-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/description": "This Cloud Run service consumes messages from the Pub/Sub ingestion topic. It handles data cleaning, transformation, feature engineering, and loads processed data into BigQuery. It also manages manual CSV uploads from the raw data bucket, parsing content, determining data type, and routing to BigQuery or PostgreSQL. It may interact with Vertex AI for model training or real-time feature transformations.",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "fa92a741-3740-47f9-9b92-d82801ab3851",
+        "run.googleapis.com/urls": "[\"https://forecasting-app-data-processing-1065708057795.us-central1.run.app\",\"https://forecasting-app-data-processing-pzjsic3yna-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-10-02T01:01:45.812254Z",
+      "generation": 1,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "forecasting_app_vertex_ai_service_vertex-ai": "true",
+        "goog-adc-tf-deployment": "adc",
+        "goog-ccm": "true",
+        "goog-terraform-provisioned": "true"
+      },
+      "name": "forecasting-app-data-processing",
+      "namespace": "1065708057795",
+      "resourceVersion": "AAZAIofTrko",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/1065708057795/services/forecasting-app-data-processing",
+      "uid": "3f3ebe93-c4cf-490c-957d-caf5a1af451e"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "10",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/container-dependencies": "{\"collector\":[\"data-processor-container\"]}",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/execution-environment": "gen2",
+            "run.googleapis.com/network-interfaces": "[{\"network\":\"default\",\"subnetwork\":\"default\"}]",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/vpc-access-egress": "all-traffic"
+          },
+          "labels": {
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_VIEWS",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_HOST",
+                  "value": "136.112.38.131"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_EXTERNAL_TABLES",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_CONNECTION_NAME",
+                  "value": "cbi-v14:us-central1:forecasting-app-db"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_MATERIALIZED_VIEWS",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_TABLES",
+                  "value": "[\"table-1\"]"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_ROUTINES",
+                  "value": "[]"
+                },
+                {
+                  "name": "forecasting_app_database_postgresql_CLOUD_SQL_DATABASE_NAME",
+                  "value": "default"
+                },
+                {
+                  "name": "forecasting_app_ingestion_topic_TOPIC_ID",
+                  "value": "projects/cbi-v14/topics/forecasting-app-ingestion-topic"
+                },
+                {
+                  "name": "forecasting_app_data_warehouse_BIGQUERY_DATASET",
+                  "value": "forecasting_data_warehouse"
+                },
+                {
+                  "name": "forecasting_app_database_secret_SECRET",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "key": "1",
+                      "name": "forecasting-app-db-secret"
+                    }
+                  }
+                }
+              ],
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "name": "data-processor-container",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            },
+            {
+              "image": "us-docker.pkg.dev/cloud-ops-agents-artifacts/cloud-run-gmp-sidecar/cloud-run-gmp-sidecar:1.1.1",
+              "name": "collector",
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "256Mi"
+                }
+              }
+            }
+          ],
+          "serviceAccountName": "forecasting-app-data-proces-sa@cbi-v14.iam.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://forecasting-app-data-processing-pzjsic3yna-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2025-10-02T01:01:52.126538Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:01:50.838869Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:01:52.089737Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "forecasting-app-data-processing-00001-5k2",
+      "latestReadyRevisionName": "forecasting-app-data-processing-00001-5k2",
+      "observedGeneration": 1,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "forecasting-app-data-processing-00001-5k2"
+        }
+      ],
+      "url": "https://forecasting-app-data-processing-pzjsic3yna-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/description": "This Cloud Run service is responsible for orchestrating the collection of data from various external sources including NOAA, OpenWeather, FRED, EIA APIs, USDA WASDE reports, CFTC COT reports, social sentiment data (Twitter/Reddit), Google Trends, news articles, and various policy/regulation tables. It stores this raw, unprocessed data into the forecasting-app-raw-data-bucket.",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "61a1403c-aedd-405c-9d34-e8c997b9e521",
+        "run.googleapis.com/urls": "[\"https://forecasting-app-external-data-ingestion-1065708057795.us-central1.run.app\",\"https://forecasting-app-external-data-ingestion-pzjsic3yna-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-10-02T00:56:16.237953Z",
+      "generation": 1,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "goog-adc-tf-deployment": "adc",
+        "goog-ccm": "true",
+        "goog-terraform-provisioned": "true"
+      },
+      "name": "forecasting-app-external-data-ingestion",
+      "namespace": "1065708057795",
+      "resourceVersion": "AAZAInRYGZQ",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/1065708057795/services/forecasting-app-external-data-ingestion",
+      "uid": "527115fd-fcee-4454-9112-87608934628b"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "10",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/container-dependencies": "{\"collector\":[\"external-ingestion-container\"]}",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/execution-environment": "gen2",
+            "run.googleapis.com/network-interfaces": "[{\"network\":\"default\",\"subnetwork\":\"default\"}]",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/vpc-access-egress": "all-traffic"
+          },
+          "labels": {
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "name": "external-ingestion-container",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            },
+            {
+              "image": "us-docker.pkg.dev/cloud-ops-agents-artifacts/cloud-run-gmp-sidecar/cloud-run-gmp-sidecar:1.1.1",
+              "name": "collector",
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "256Mi"
+                }
+              }
+            }
+          ],
+          "serviceAccountName": "forecasting-app-external-da-sa@cbi-v14.iam.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://forecasting-app-external-data-ingestion-pzjsic3yna-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2025-10-02T00:56:25.260436Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T00:56:23.989333Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T00:56:25.218628Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "forecasting-app-external-data-ingestion-00001-cs7",
+      "latestReadyRevisionName": "forecasting-app-external-data-ingestion-00001-cs7",
+      "observedGeneration": 1,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "forecasting-app-external-data-ingestion-00001-cs7"
+        }
+      ],
+      "url": "https://forecasting-app-external-data-ingestion-pzjsic3yna-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "540.0.0",
+        "run.googleapis.com/description": "This Cloud Run service hosts the user interface for your forecasting web app, rendering the Command Center, Market Sentiment, Strategy Intelligence, and Geopolitical dashboard pages. It displays data and insights provided by the backend service.",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "7d66e4fd-3d5f-4f52-ac1f-97572d556fe1",
+        "run.googleapis.com/urls": "[\"https://forecasting-app-frontend-1065708057795.us-central1.run.app\",\"https://forecasting-app-frontend-pzjsic3yna-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "cbi-v14-app-name-us-c1@google-mpf-568609080192.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "zinc@zincdigital.co"
+      },
+      "creationTimestamp": "2025-10-02T01:01:56.276311Z",
+      "generation": 2,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "goog-adc-tf-deployment": "adc",
+        "goog-ccm": "true",
+        "goog-terraform-provisioned": "true"
+      },
+      "name": "forecasting-app-frontend",
+      "namespace": "1065708057795",
+      "resourceVersion": "AAZAIycYgrM",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/1065708057795/services/forecasting-app-frontend",
+      "uid": "b83e3a41-168e-48cc-9cc0-e2af605ed55d"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "10",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/client-version": "540.0.0",
+            "run.googleapis.com/container-dependencies": "{\"collector\":[\"frontend-container\"]}",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/execution-environment": "gen2",
+            "run.googleapis.com/network-interfaces": "[{\"network\":\"default\",\"subnetwork\":\"default\"}]",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/vpc-access-egress": "all-traffic"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "cynpisdotr",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "forecasting_app_backend_service_SERVICE_ENDPOINT",
+                  "value": "https://forecasting-app-backend-pzjsic3yna-uc.a.run.app"
+                }
+              ],
+              "image": "gcr.io/cbi-v14/usos-dashboard:v1",
+              "name": "frontend-container",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            },
+            {
+              "image": "us-docker.pkg.dev/cloud-ops-agents-artifacts/cloud-run-gmp-sidecar/cloud-run-gmp-sidecar:1.1.1",
+              "name": "collector",
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "256Mi"
+                }
+              }
+            }
+          ],
+          "serviceAccountName": "forecasting-app-frontend-us-sa@cbi-v14.iam.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://forecasting-app-frontend-pzjsic3yna-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2025-10-02T01:46:24.144478Z",
+          "message": "Revision 'forecasting-app-frontend-00002-blh' is not ready and cannot serve traffic. Image 'gcr.io/cbi-v14/usos-dashboard:v1' not found.",
+          "reason": "RevisionFailed",
+          "status": "False",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:46:24.142981Z",
+          "message": "Image 'gcr.io/cbi-v14/usos-dashboard:v1' not found.",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2025-10-02T01:46:24.144478Z",
+          "message": "Revision 'forecasting-app-frontend-00002-blh' is not ready and cannot serve traffic. Image 'gcr.io/cbi-v14/usos-dashboard:v1' not found.",
+          "reason": "RevisionFailed",
+          "status": "False",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "forecasting-app-frontend-00002-blh",
+      "latestReadyRevisionName": "forecasting-app-frontend-00001-9hw",
+      "observedGeneration": 2,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "forecasting-app-frontend-00001-9hw"
+        }
+      ],
+      "url": "https://forecasting-app-frontend-pzjsic3yna-uc.a.run.app"
+    }
+  }
+]

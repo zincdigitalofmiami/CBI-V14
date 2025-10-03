@@ -1,0 +1,77 @@
+[
+  {
+    "datasetReference": {
+      "datasetId": "financial_market_data",
+      "projectId": "final-cb-app"
+    },
+    "id": "final-cb-app:financial_market_data",
+    "kind": "bigquery#dataset",
+    "location": "us-central1"
+  },
+  {
+    "datasetReference": {
+      "datasetId": "gcp_lakehouse_ds",
+      "projectId": "final-cb-app"
+    },
+    "friendlyName": "My gcp_lakehouse Dataset",
+    "id": "final-cb-app:gcp_lakehouse_ds",
+    "kind": "bigquery#dataset",
+    "labels": {
+      "goog-ccm": "true",
+      "goog-solutions-console-deployment-name": "analytics-lakehouse",
+      "goog-solutions-console-solution-id": "analytics-lakehouse"
+    },
+    "location": "us-central1"
+  },
+  {
+    "datasetReference": {
+      "datasetId": "gcp_primary_curated",
+      "projectId": "final-cb-app"
+    },
+    "id": "final-cb-app:gcp_primary_curated",
+    "kind": "bigquery#dataset",
+    "labels": {
+      "goog-dataplex-lake-id": "gcp-primary-lake",
+      "goog-dataplex-project-id": "final-cb-app",
+      "goog-dataplex-zone-id": "gcp-primary-curated"
+    },
+    "location": "us-central1"
+  },
+  {
+    "datasetReference": {
+      "datasetId": "gcp_primary_raw",
+      "projectId": "final-cb-app"
+    },
+    "id": "final-cb-app:gcp_primary_raw",
+    "kind": "bigquery#dataset",
+    "labels": {
+      "goog-dataplex-lake-id": "gcp-primary-lake",
+      "goog-dataplex-project-id": "final-cb-app",
+      "goog-dataplex-zone-id": "gcp-primary-raw"
+    },
+    "location": "us-central1"
+  },
+  {
+    "datasetReference": {
+      "datasetId": "gcp_primary_staging",
+      "projectId": "final-cb-app"
+    },
+    "id": "final-cb-app:gcp_primary_staging",
+    "kind": "bigquery#dataset",
+    "labels": {
+      "goog-dataplex-lake-id": "gcp-primary-lake",
+      "goog-dataplex-project-id": "final-cb-app",
+      "goog-dataplex-zone-id": "gcp-primary-staging"
+    },
+    "location": "us-central1"
+  },
+  {
+    "datasetReference": {
+      "datasetId": "project_2025_09_19_11_47_06_9e438d0c_1623_42c8_b8ed_bf1bf004ff71",
+      "projectId": "final-cb-app"
+    },
+    "id": "final-cb-app:project_2025_09_19_11_47_06_9e438d0c_1623_42c8_b8ed_bf1bf004ff71",
+    "kind": "bigquery#dataset",
+    "location": "us-central1"
+  }
+]

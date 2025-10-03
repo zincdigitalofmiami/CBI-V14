@@ -1,0 +1,242 @@
+NAME: aiplatform.googleapis.com
+STATE: ENABLED
+
+NAME: analyticshub.googleapis.com
+STATE: ENABLED
+
+NAME: anthosconfigmanagement.googleapis.com
+STATE: ENABLED
+
+NAME: anthospolicycontroller.googleapis.com
+STATE: ENABLED
+
+NAME: appoptimize.googleapis.com
+STATE: ENABLED
+
+NAME: artifactregistry.googleapis.com
+STATE: ENABLED
+
+NAME: autoscaling.googleapis.com
+STATE: ENABLED
+
+NAME: biglake.googleapis.com
+STATE: ENABLED
+
+NAME: bigquery.googleapis.com
+STATE: ENABLED
+
+NAME: bigqueryconnection.googleapis.com
+STATE: ENABLED
+
+NAME: bigquerydatapolicy.googleapis.com
+STATE: ENABLED
+
+NAME: bigquerydatatransfer.googleapis.com
+STATE: ENABLED
+
+NAME: bigquerymigration.googleapis.com
+STATE: ENABLED
+
+NAME: bigqueryreservation.googleapis.com
+STATE: ENABLED
+
+NAME: bigquerystorage.googleapis.com
+STATE: ENABLED
+
+NAME: bigtable.googleapis.com
+STATE: ENABLED
+
+NAME: cloudaicompanion.googleapis.com
+STATE: ENABLED
+
+NAME: cloudapis.googleapis.com
+STATE: ENABLED
+
+NAME: cloudasset.googleapis.com
+STATE: ENABLED
+
+NAME: cloudbuild.googleapis.com
+STATE: ENABLED
+
+NAME: cloudfunctions.googleapis.com
+STATE: ENABLED
+
+NAME: cloudresourcemanager.googleapis.com
+STATE: ENABLED
+
+NAME: cloudscheduler.googleapis.com
+STATE: ENABLED
+
+NAME: cloudtrace.googleapis.com
+STATE: ENABLED
+
+NAME: compute.googleapis.com
+STATE: ENABLED
+
+NAME: config.googleapis.com
+STATE: ENABLED
+
+NAME: container.googleapis.com
+STATE: ENABLED
+
+NAME: containeranalysis.googleapis.com
+STATE: ENABLED
+
+NAME: containerfilesystem.googleapis.com
+STATE: ENABLED
+
+NAME: containerregistry.googleapis.com
+STATE: ENABLED
+
+NAME: datacatalog.googleapis.com
+STATE: ENABLED
+
+NAME: dataflow.googleapis.com
+STATE: ENABLED
+
+NAME: dataform.googleapis.com
+STATE: ENABLED
+
+NAME: datalineage.googleapis.com
+STATE: ENABLED
+
+NAME: dataplex.googleapis.com
+STATE: ENABLED
+
+NAME: dataproc-control.googleapis.com
+STATE: ENABLED
+
+NAME: dataproc.googleapis.com
+STATE: ENABLED
+
+NAME: dataprocrm.googleapis.com
+STATE: ENABLED
+
+NAME: datastore.googleapis.com
+STATE: ENABLED
+
+NAME: deploymentmanager.googleapis.com
+STATE: ENABLED
+
+NAME: designcenter.googleapis.com
+STATE: ENABLED
+
+NAME: discoveryengine.googleapis.com
+STATE: ENABLED
+
+NAME: dns.googleapis.com
+STATE: ENABLED
+
+NAME: drive.googleapis.com
+STATE: ENABLED
+
+NAME: firebaseinstallations.googleapis.com
+STATE: ENABLED
+
+NAME: geminicloudassist.googleapis.com
+STATE: ENABLED
+
+NAME: generativelanguage.googleapis.com
+STATE: ENABLED
+
+NAME: gkebackup.googleapis.com
+STATE: ENABLED
+
+NAME: gkeconnect.googleapis.com
+STATE: ENABLED
+
+NAME: gkehub.googleapis.com
+STATE: ENABLED
+
+NAME: iam.googleapis.com
+STATE: ENABLED
+
+NAME: iamcredentials.googleapis.com
+STATE: ENABLED
+
+NAME: krmapihosting.googleapis.com
+STATE: ENABLED
+
+NAME: logging.googleapis.com
+STATE: ENABLED
+
+NAME: maintenance.googleapis.com
+STATE: ENABLED
+
+NAME: ml.googleapis.com
+STATE: ENABLED
+
+NAME: mlkit.googleapis.com
+STATE: ENABLED
+
+NAME: monitoring.googleapis.com
+STATE: ENABLED
+
+NAME: multiclustermetering.googleapis.com
+STATE: ENABLED
+
+NAME: networkconnectivity.googleapis.com
+STATE: ENABLED
+
+NAME: notebooks.googleapis.com
+STATE: ENABLED
+
+NAME: orgpolicy.googleapis.com
+STATE: ENABLED
+
+NAME: oslogin.googleapis.com
+STATE: ENABLED
+
+NAME: pubsub.googleapis.com
+STATE: ENABLED
+
+NAME: recommender.googleapis.com
+STATE: ENABLED
+
+NAME: run.googleapis.com
+STATE: ENABLED
+
+NAME: secretmanager.googleapis.com
+STATE: ENABLED
+
+NAME: servicehealth.googleapis.com
+STATE: ENABLED
+
+NAME: servicemanagement.googleapis.com
+STATE: ENABLED
+
+NAME: serviceusage.googleapis.com
+STATE: ENABLED
+
+NAME: source.googleapis.com
+STATE: ENABLED
+
+NAME: sql-component.googleapis.com
+STATE: ENABLED
+
+NAME: storage-api.googleapis.com
+STATE: ENABLED
+
+NAME: storage-component.googleapis.com
+STATE: ENABLED
+
+NAME: storage.googleapis.com
+STATE: ENABLED
+
+NAME: storageinsights.googleapis.com
+STATE: ENABLED
+
+NAME: vision.googleapis.com
+STATE: ENABLED
+
+NAME: visionai.googleapis.com
+STATE: ENABLED
+
+NAME: vpcaccess.googleapis.com
+STATE: ENABLED
+
+NAME: workflowexecutions.googleapis.com
+STATE: ENABLED
+
+NAME: workflows.googleapis.com
+STATE: ENABLED

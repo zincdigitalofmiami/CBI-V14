@@ -1,0 +1,7 @@
+NAME: projects/final-cb-app/locations/us-central1/workflows/copy-data
+STATE: ACTIVE
+UPDATE_TIME: 2025-09-22T09:56:33.019299817Z
+
+NAME: projects/final-cb-app/locations/us-central1/workflows/project-setup
+STATE: ACTIVE
+UPDATE_TIME: 2025-09-22T09:56:33.048492145Z

@@ -1,0 +1,18 @@
+metadata:
+  annotations:
+    run.googleapis.com/build-enable-automatic-updates: 'false'
+    run.googleapis.com/build-id: a821698d-4129-41d1-8bdd-b09df8fb943a
+    run.googleapis.com/build-image-uri: us-central1-docker.pkg.dev/final-cb-app/cloud-run-source-deploy/forecast-service
+    run.googleapis.com/build-name: projects/679788621743/locations/us-central1/builds/a821698d-4129-41d1-8bdd-b09df8fb943a
+    run.googleapis.com/build-source-location: gs://run-sources-final-cb-app-us-central1/services/forecast-service/1758320930.261521-f9ac9ef157604c2d8625ee2beccddfaa.zip#1758320930382040
+    run.googleapis.com/client-name: gcloud
+    run.googleapis.com/client-version: 538.0.0
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/operation-id: 0a1c2919-c329-4c55-94a0-a2782192d173
+    run.googleapis.com/urls: '["https://forecast-service-679788621743.us-central1.run.app","https://forecast-service-theoguwnca-uc.a.run.app"]'
+    serving.knative.dev/creator: zinc@zincdigital.co
+    serving.knative.dev/lastModifier: zinc@zincdigital.co
+  name: forecast-service
+status:
+  url: https://forecast-service-theoguwnca-uc.a.run.app

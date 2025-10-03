@@ -1,0 +1,11 @@
+ID: wasde-daily-update
+SCHEDULE: 0 18 * * 1-5
+URI: https://live-data-ingestion-service-theoguwnca-uc.a.run.app/ingest/wasde
+LAST_ATTEMPT_TIME: 2025-09-19T22:00:00.507310Z
+STATE: ENABLED
+
+ID: wasde-monthly
+SCHEDULE: 30 13 10 * *
+URI: https://live-data-ingestion-service-theoguwnca-uc.a.run.app/ingest/wasde
+LAST_ATTEMPT_TIME: 
+STATE: ENABLED

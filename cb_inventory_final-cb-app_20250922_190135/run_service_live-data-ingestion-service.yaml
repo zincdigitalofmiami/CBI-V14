@@ -1,0 +1,13 @@
+metadata:
+  annotations:
+    run.googleapis.com/client-name: gcloud
+    run.googleapis.com/client-version: 538.0.0
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/operation-id: bd0a509b-9c2b-49da-936e-69f80031eb10
+    run.googleapis.com/urls: '["https://live-data-ingestion-service-679788621743.us-central1.run.app","https://live-data-ingestion-service-theoguwnca-uc.a.run.app"]'
+    serving.knative.dev/creator: zinc@zincdigital.co
+    serving.knative.dev/lastModifier: zinc@zincdigital.co
+  name: live-data-ingestion-service
+status:
+  url: https://live-data-ingestion-service-theoguwnca-uc.a.run.app

@@ -1,0 +1,16 @@
+{
+  "name": "forecasting-app-backend",
+  "image": "us-docker.pkg.dev/cloudrun/container/hello"
+}
+{
+  "name": "forecasting-app-data-processing",
+  "image": "us-docker.pkg.dev/cloudrun/container/hello"
+}
+{
+  "name": "forecasting-app-external-data-ingestion",
+  "image": "us-docker.pkg.dev/cloudrun/container/hello"
+}
+{
+  "name": "forecasting-app-frontend",
+  "image": "gcr.io/cbi-v14/usos-dashboard:v1"
+}
