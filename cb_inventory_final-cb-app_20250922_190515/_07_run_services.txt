@@ -1,9 +1,0 @@
-NAME: forecast-service
-URL: 
-LAST_TRANSITION_TIME: 
-REASON: 
-
-NAME: live-data-ingestion-service
-URL: 
-LAST_TRANSITION_TIME: 
-REASON: 
