@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Intelligent Data Ingestion Pipeline - CBI-V14
-Real data parsing, understanding, and routing for multiple data sources
+DEPRECATED - MARKED FOR DELETION IN PHASE 1
 
-NO FAKE DATA - Only processes real data files provided by user
+This file contains broken postgres references from CBI-V13 project.
+Will be replaced with proper BigQuery ingestion scripts in Phase 1.
+
+DO NOT USE THIS FILE - IT WILL FAIL
 """
 
 import os
@@ -19,15 +21,7 @@ from dataclasses import dataclass
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Set environment
-os.environ['DATABASE_URL'] = 'postgresql+psycopg2://postgres:postgres@localhost:5432/cbi_v13'
-os.environ['USE_IAM_AUTH'] = 'false'
-
-# Import from CBI-V13 project
-sys.path.insert(0, str(Path(__file__).parent.parent / 'CBI-V13'))
-
-from db.session import get_engine
-from sqlalchemy import text
+# POSTGRES REFERENCES REMOVED - FILE MARKED FOR REWRITE IN PHASE 1
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

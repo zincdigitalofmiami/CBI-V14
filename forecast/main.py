@@ -9,8 +9,8 @@ import pmdarima as pm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("forecast-worker")
  
-PROJECT = os.environ.get("PROJECT","final-cb-app")
-DATASET = os.environ.get("DATASET","financial_market_data")
+PROJECT = os.environ.get("PROJECT","cbi-v14")
+DATASET = os.environ.get("DATASET","forecasting_data_warehouse")
 SRC_TABLE = f"{PROJECT}.{DATASET}.soy_oil_features" # Use the rich features view
 DST_TABLE = f"{PROJECT}.{DATASET}.soybean_oil_forecast"
  
