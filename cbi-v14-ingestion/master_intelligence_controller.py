@@ -20,6 +20,7 @@ from multi_source_news import MultiSourceNewsIntel
 from economic_intelligence import EconomicIntelligence
 from shipping_intelligence import ShippingIntelligence
 from social_intelligence import SocialIntelligence
+from bigquery_utils import safe_load_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -301,8 +302,8 @@ class MasterIntelligenceController:
             df = pd.DataFrame([summary])
             
             job_config = bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
-            job = self.client.load_table_from_dataframe(
-                df, f"{PROJECT_ID}.{DATASET_ID}.intelligence_cycles", job_config=job_config
+            job = safe_load_to_bigquery(
+                self.client, df, f"{PROJECT_ID}.{DATASET_ID}.intelligence_cycles", job_config
             )
             job.result()
             

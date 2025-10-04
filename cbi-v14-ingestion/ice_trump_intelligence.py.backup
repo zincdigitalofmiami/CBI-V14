@@ -13,7 +13,6 @@ import json
 import time
 from datetime import datetime, timedelta
 import re
-from bigquery_utils import safe_load_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -474,7 +473,7 @@ class ICETrumpIntelligence:
                 schema=schema
             )
             
-            job = safe_load_to_bigquery(self.client, df, table_ref, job_config)
+            job = self.client.load_table_from_dataframe(df, table_ref, job_config=job_config)
             job.result()
             
             print(f"Saved {len(df)} ICE/Trump intelligence records to BigQuery")

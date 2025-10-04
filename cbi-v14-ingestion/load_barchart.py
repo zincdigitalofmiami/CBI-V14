@@ -2,6 +2,7 @@
 import pandas as pd
 from google.cloud import bigquery
 from pathlib import Path
+from bigquery_utils import safe_load_to_bigquery
 
 csv_files = list(Path("/Users/zincdigital/CBI-V14/data/csv").glob("*price-history*.csv"))
 if not csv_files:
@@ -39,7 +40,7 @@ for csv_file in csv_files:
     df['volume'] = df['volume'].fillna(0).astype('int64')
     
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_APPEND", schema=schema)
-    job = client.load_table_from_dataframe(df, "cbi-v14.forecasting_data_warehouse.commodity_prices", job_config=job_config)
+    job = safe_load_to_bigquery(client, df, "cbi-v14.forecasting_data_warehouse.commodity_prices", job_config)
     job.result()
     
     print(f"{df['symbol'].iloc[0]}: {len(df)} rows loaded")

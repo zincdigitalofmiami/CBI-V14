@@ -8,6 +8,7 @@ import pandas as pd
 from google.cloud import bigquery
 from pathlib import Path
 from datetime import datetime
+from bigquery_utils import safe_load_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -56,7 +57,7 @@ def load_to_bigquery(df):
         schema=schema,
     )
     
-    job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+    job = safe_load_to_bigquery(client, df, table_ref, job_config)
     job.result()
     
     print(f"Loaded {len(df)} volatility records (no signals)")

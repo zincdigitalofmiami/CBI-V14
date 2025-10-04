@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import time
 import sys
 import argparse
+from bigquery_utils import safe_load_to_bigquery
 
 POLYGON_API_KEY = "NviTUrYkic8_0Tk_mHj63W8luEvcTyMJ"
 PROJECT_ID = "cbi-v14"
@@ -133,7 +134,7 @@ def load_to_bigquery(df, project_id, dataset_id, table_id):
     
     try:
         print(f"  Loading {len(df)} rows to {table_ref}")
-        job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+        job = safe_load_to_bigquery(client, df, table_ref, job_config)
         job.result()  # Wait for completion
         print(f"  Success: Loaded {len(df)} rows")
         return True

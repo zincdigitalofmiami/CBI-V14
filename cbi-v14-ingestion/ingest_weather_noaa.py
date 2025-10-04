@@ -12,6 +12,7 @@ import time
 import os
 import sys
 import argparse
+from bigquery_utils import safe_load_to_bigquery
 
 NOAA_API_TOKEN = "rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi"
 PROJECT_ID = "cbi-v14"
@@ -152,7 +153,7 @@ def load_to_bigquery(df):
     
     try:
         print(f"  Loading {len(df)} rows to {table_ref}")
-        job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+        job = safe_load_to_bigquery(client, df, table_ref, job_config)
         job.result()
         print(f"  Success")
         return True

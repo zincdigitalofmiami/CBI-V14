@@ -1,3 +1,4 @@
+from bigquery_utils import safe_load_to_bigquery
 #!/usr/bin/env python3
 """
 Multi-Source News Intelligence System
@@ -278,9 +279,7 @@ class MultiSourceNewsIntel:
         
         # Load to BigQuery
         job_config = bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
-        job = self.client.load_table_from_dataframe(
-            df, f"{PROJECT_ID}.{DATASET_ID}.{NEWS_TABLE}", job_config=job_config
-        )
+        job = safe_load_to_bigquery(self.client, df, f"{PROJECT_ID}.{DATASET_ID}.{NEWS_TABLE}", job_config)
         job.result()
     
     def _ensure_news_table(self):
