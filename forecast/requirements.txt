@@ -1,8 +1,4 @@
 google-cloud-bigquery==3.*
 pandas==2.*
-numpy==2.*
-statsmodels==0.14.*
 fastapi==0.116.*
 uvicorn==0.35.*
-db-dtypes==1.*
-pmdarima==2.*
