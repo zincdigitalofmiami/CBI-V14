@@ -1,124 +1,97 @@
 # Cursor AI Rules for CBI-V14
 
-## CRITICAL: Verification Before Action
+## Core Principle
+**Read plan.md as reference. Don't try to edit it automatically.**
 
-Before making ANY changes, you MUST:
+The plan.md file is documentation, not a live tracking system. Reference it to understand project goals, but user updates it manually.
 
-### 1. **Check if files exist**
-```bash
+## CRITICAL: Protect the Working Forecast
+
+- Do not modify, rename, or drop `forecasting_data_warehouse.soybean_oil_forecast`.
+- FastAPI endpoints must continue reading from `soybean_oil_forecast` unless the user explicitly approves a change.
+- Any new modeling or data joins happen in new resources suffixed `_v2` and require approval before cutover.
+
+## CRITICAL: No Mock Data
+
+**Every component must use real data from BigQuery or show "No data yet"**
+
+- ❌ Placeholder values
+- ❌ Hardcoded sample data
+- ❌ Mock API responses
+- ✅ Query actual BigQuery tables
+- ✅ Show empty states when tables have no data
+- ✅ Display real row counts and timestamps
+
+## CRITICAL: No Temporary Resources
+
+**WHITELISTED TABLES ONLY:**
+soybean_prices_clean, soybean_oil_forecast, weather_data, volatility_data, news_intelligence, economic_indicators, technical_signals, fed_rates, commodity_prices
+
+**WHITELISTED FOLDERS ONLY:**
+cbi-v14-ingestion/, forecast/, bigquery_sql/
+
+**BANNED:**
+- ❌ Any table not in whitelist
+- ❌ Tables with: _test, _staging, _backup, _tmp, _v2 (unless explicitly approved)
+- ❌ Folders: tmp/, temp/, backup/, test/, staging/
+- ❌ Files: *_test.py, *_backup.py, *.bak
+
+## No Docker
+
+- We do not use Docker or Docker Compose for local work. Do not introduce images, compose files, or container-only steps.
+
+## Environment Variables
+
+- Always read `PROJECT_ID` and `DATASET_ID` environment variables. Do not concatenate project and dataset into a single ID. Example: `bigquery.Client(project=PROJECT_ID)`.
+
+## Before Creating ANY Resource
+1. Check whitelist: Is this table/folder explicitly allowed?
+2. If NO: STOP and ask user
+3. If YES: Verify it doesn't already exist
+
+## Verification Before Action
+
+### 1. Check if files exist
+```
 ls -la path/to/file
 ```
-If the file exists, ASK before overwriting.
 
-### 2. **Show current state first**
-```bash
-cat existing_file.py | head -20  # Show first 20 lines
+### 2. Show current state first
 ```
-Let the user decide if changes are needed.
-
-### 3. **Verify assumptions**
-"I see docker-compose.yml exists. Should I modify it or leave it alone?"
-"The table already has data. Do you want to append or replace?"
-
-### 4. **Never assume empty state**
-- Check BigQuery tables for data before writing ingestion scripts
-- Check if Python packages are installed before pip install
-- Check if containers are running before docker-compose up
-
----
-
-## Decision Tree
-
-**User asks: "Create ingest_zl_futures.py"**
-```
-│
-├─> FIRST: Check if cbi-v14-ingestion/ingest_zl_futures.py exists
-│   │
-│   ├─> EXISTS: "File already exists (X lines). Should I:
-│   │            a) Show you what's there
-│   │            b) Replace it
-│   │            c) Make specific edits?"
-│   │
-│   └─> DOESN'T EXIST: Create the file as requested
+cat existing_file.py | head -20
 ```
 
----
+### 3. Never assume empty state
+
+- Check BigQuery tables:
+```
+bq query --use_legacy_sql=false 'SELECT COUNT(*) FROM `project.dataset.table`'
+```
+- Check packages: `pip3 list | grep package`
+- Check git: `git status`
+
+## Before Major Work: Architecture Review
+
+- Run `bq ls cbi-v14:forecasting_data_warehouse`
+- Verify against whitelists
+- Confirm approach with user
 
 ## Banned Behaviors
 
-❌ Creating duplicate files without checking
-❌ Modifying docker-compose.yml without asking
-❌ Running destructive commands (DROP TABLE, rm -rf) without confirmation
-❌ Assuming tables are empty without SELECT COUNT(*)
-❌ Overwriting existing scripts
-
----
+- ❌ Editing plan.md automatically
+- ❌ Mock/fake/placeholder data
+- ❌ Creating tables not on whitelist
+- ❌ Creating temp/test/staging folders
+- ❌ Running DROP TABLE without explicit confirmation
 
 ## Required Behaviors
 
-✅ `ls` before `touch`/create
-✅ `cat` before overwrite
-✅ `bq query COUNT(*)` before assuming empty
-✅ `docker ps` before `docker-compose up`
-✅ Show file tree when asked "what exists?"
+- ✅ `ls` before create
+- ✅ `cat` before overwrite
+- ✅ `bq ls`/`INFORMATION_SCHEMA` before table operations
+- ✅ Architecture audit before new phases
+- ✅ Real data or explicit "no data" states
+- ✅ Ask when uncertain
+- ✅ Keep `plan.md` as the single source of truth for status and scope
 
----
 
-## Safe Defaults
-
-**When in doubt:**
-1. Show current state
-2. Ask user to decide
-3. Make targeted edits instead of full rewrites
-
----
-
-## Examples
-
-### ✅ CORRECT Workflow
-```
-User: "Create the ZL futures script"
-Cursor: 
-1. ls -la cbi-v14-ingestion/
-2. "I see ingest_zl_futures.py already exists (538 lines). 
-   Would you like me to:
-   a) Show you the current content
-   b) Replace it entirely  
-   c) Make specific modifications"
-```
-
-### ❌ WRONG Workflow
-```
-User: "Create the ZL futures script"
-Cursor: [immediately overwrites existing file without checking]
-```
-
----
-
-## Verification Commands
-
-**Before any BigQuery work:**
-```bash
-bq ls --project_id=cbi-v14 forecasting_data_warehouse
-bq query "SELECT COUNT(*) FROM table_name"
-```
-
-**Before any Docker work:**
-```bash
-docker ps
-docker-compose ps
-```
-
-**Before any file creation:**
-```bash
-ls -la target_directory/
-find . -name "target_file*"
-```
-
----
-
-## This Document
-
-Keep CURSOR_RULES.md open in a tab so it stays in context.
-
-**Every Cursor session working on CBI-V14 must read and follow these rules.**
