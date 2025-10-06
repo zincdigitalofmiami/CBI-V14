@@ -18,7 +18,6 @@ import threading
 from intelligence_hunter import IntelligenceHunter
 from multi_source_news import MultiSourceNewsIntel
 from economic_intelligence import EconomicIntelligence
-from shipping_intelligence import ShippingIntelligence
 from social_intelligence import SocialIntelligence
 from bigquery_utils import safe_load_to_bigquery
 
@@ -38,7 +37,6 @@ class MasterIntelligenceController:
         self.hunter = IntelligenceHunter()
         self.news_intel = MultiSourceNewsIntel()
         self.economic_intel = EconomicIntelligence()
-        self.shipping_intel = ShippingIntelligence()
         self.social_intel = SocialIntelligence()
         
         # Intelligence coordination
@@ -63,7 +61,6 @@ class MasterIntelligenceController:
             futures = {
                 'news': executor.submit(self._collect_news_intelligence),
                 'economic': executor.submit(self._collect_economic_intelligence),
-                'shipping': executor.submit(self._collect_shipping_intelligence),
                 'social': executor.submit(self._collect_social_intelligence),
                 'correlation_hunt': executor.submit(self._hunt_correlations),
                 'source_discovery': executor.submit(self._discover_new_sources)
@@ -97,12 +94,6 @@ class MasterIntelligenceController:
         econ_data.extend(self.economic_intel.collect_fed_intelligence())
         econ_data.extend(self.economic_intel.hunt_currency_intelligence())
         return econ_data
-    
-    def _collect_shipping_intelligence(self):
-        """Collect shipping and logistics intelligence"""
-        shipping_data = []
-        shipping_data.extend(self.shipping_intel.monitor_panama_canal())
-        return shipping_data
     
     def _collect_social_intelligence(self):
         """Collect social media sentiment"""

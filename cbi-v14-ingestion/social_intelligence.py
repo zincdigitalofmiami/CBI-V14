@@ -226,7 +226,7 @@ class SocialIntelligence:
 
 def main():
     """Execute social intelligence collection"""
-    intel = ShippingIntelligence()
+    intel = SocialIntelligence()
     
     print("=== SOCIAL & SHIPPING INTELLIGENCE ===")
     

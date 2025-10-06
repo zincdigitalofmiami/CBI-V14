@@ -12,7 +12,6 @@
 ✅ news_intelligence
 ✅ social_sentiment
 ✅ economic_indicators
-✅ shipping_alerts
 ✅ ice_trump_intelligence
 ✅ currency_data
 ✅ soybean_oil_prices
