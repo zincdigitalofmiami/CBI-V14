@@ -131,6 +131,7 @@ class SocialIntelligence:
                             sentiment_score = self._analyze_sentiment(title)
                             
                             if sentiment_score != 0:  # Relevant post found
+                                import uuid
                                 reddit_intel.append({
                                     'platform': 'reddit',
                                     'subreddit': reddit_source['subreddit'],
@@ -139,7 +140,12 @@ class SocialIntelligence:
                                     'comments': post_data.get('num_comments', 0),
                                     'sentiment_score': sentiment_score,
                                     'timestamp': datetime.now(),
-                                    'market_relevance': 'high' if abs(sentiment_score) > 0.5 else 'medium'
+                                    'market_relevance': 'high' if abs(sentiment_score) > 0.5 else 'medium',
+                                    # Canonical metadata
+                                    'source_name': 'Reddit',
+                                    'confidence_score': 0.65,
+                                    'ingest_timestamp_utc': datetime.utcnow(),
+                                    'provenance_uuid': str(uuid.uuid4())
                                 })
                 
                 # Rate limiting

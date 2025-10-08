@@ -126,9 +126,17 @@ def process_noaa_results(results, region, station_id):
     pivot['region'] = region
     pivot['station_id'] = station_id
     
-    # Select final columns
-    pivot = pivot[['date', 'region', 'station_id', 'precip_mm', 'temp_max', 'temp_min']]
+    # Add canonical metadata
+    pivot['source_name'] = 'NOAA_GHCND'
+    pivot['confidence_score'] = 0.95
+    pivot['ingest_timestamp_utc'] = datetime.utcnow()
+    import uuid
+    pivot['provenance_uuid'] = [str(uuid.uuid4()) for _ in range(len(pivot))]
     
+    # Select final columns
+    pivot = pivot[['date', 'region', 'station_id', 'precip_mm', 'temp_max', 'temp_min',
+                   'source_name', 'confidence_score', 'ingest_timestamp_utc', 'provenance_uuid']]
+
     return pivot
 
 def load_to_bigquery(df):

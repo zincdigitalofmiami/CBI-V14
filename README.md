@@ -164,7 +164,7 @@ CBI-V14/
 │   ├── social_intelligence.py            # Social sentiment analysis
 │   ├── shipping_intelligence.py          # Logistics monitoring
 │   ├── intelligence_hunter.py            # Neural correlation discovery
-│   ├── load_barchart.py                  # Commodity price ingestion
+│   ├── csv_data_loader.py                  # Commodity price ingestion
 │   ├── ingest_weather_noaa.py           # Weather data collection
 │   └── ingest_volatility.py             # Volatility metrics
 ├── bigquery_sql/              # SQL feature engineering

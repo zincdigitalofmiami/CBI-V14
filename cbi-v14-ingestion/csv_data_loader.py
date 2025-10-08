@@ -47,8 +47,8 @@ def normalize_df(df: pd.DataFrame, symbol: str = None) -> pd.DataFrame:
     
     # Add canonical metadata
     import uuid
-    df['source_name'] = 'Barchart'
-    df['confidence_score'] = 0.90  # High confidence for Barchart data
+    df['source_name'] = 'CSV_Import'
+    df['confidence_score'] = 0.90  # High confidence for CSV data
     df['ingest_timestamp_utc'] = pd.Timestamp.utcnow()
     df['provenance_uuid'] = str(uuid.uuid4())
     

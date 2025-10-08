@@ -12,6 +12,10 @@
 3. **NO NEW TABLES** without explicit permission
 4. **BUDGET CONSCIOUS** - Keep costs <$1/month, max $275-300/month total
 5. **EXISTING SCHEMA ONLY** - Route to existing tables, add columns (don't drop/rename)
+6. **PRODUCTION MINDSET** - Always be thorough, complete and accurate for production mindset every time
+7. **DEEP CONTENT REVIEW** - When reviewing any site or URL, always read a minimum of 1000 words of content
+8. **CANONICAL METADATA MANDATORY** - All new base tables MUST include: `source_name STRING`, `confidence_score FLOAT64`, `ingest_timestamp_utc TIMESTAMP`, `provenance_uuid STRING`. All ingestion code MUST populate these fields.
+9. **FULL REVIEW SCOPE** - When asked for a "full review," audit ALL of: (1) pipeline freshness (check last_update dates), (2) missing data sources (legislation, lobbying, biofuels, harvest rates, MPOB, freight), (3) broken/stale pipelines, (4) schema compliance, (5) end-to-end data flow validation, (6) gaps vs institutional benchmarks, (7) cost optimization, (8) dashboard/model readiness. Report what's working, what's stale, what's missing, and prioritized remediation plan.
 
 ---
 

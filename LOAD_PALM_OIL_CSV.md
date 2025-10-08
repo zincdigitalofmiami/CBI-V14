@@ -1,13 +1,13 @@
 # How to Load Your 2-Year Palm Oil CSV Data
 
 **Updated:** October 7, 2025  
-**Tool:** `cbi-v14-ingestion/load_barchart.py` (already exists and updated)
+**Tool:** `cbi-v14-ingestion/csv_data_loader.py` (already exists and updated)
 
 ---
 
 ## ✅ **LOADER IS READY**
 
-I've updated `load_barchart.py` to handle palm oil data:
+I've updated `csv_data_loader.py` to handle palm oil data:
 - Added FCPO routing to `palm_oil_prices` table
 - Added canonical metadata (source_name, confidence_score, provenance_uuid)
 
@@ -43,7 +43,7 @@ Time,Open,High,Low,Last,Volume
 
 ```bash
 cd /Users/zincdigital/CBI-V14
-python3 cbi-v14-ingestion/load_barchart.py --dry-run
+python3 cbi-v14-ingestion/csv_data_loader.py --dry-run
 ```
 
 **Expected output:**
@@ -54,7 +54,7 @@ MAP: FCPO_price-history.csv → symbol=FC → table=cbi-v14.forecasting_data_war
 ### **Step 4: Load the Data**
 
 ```bash
-python3 cbi-v14-ingestion/load_barchart.py --load --only-symbols=FC
+python3 cbi-v14-ingestion/csv_data_loader.py --load --only-symbols=FC
 ```
 
 **This will:**
@@ -145,8 +145,8 @@ Once your 2-year palm oil data is loaded (~500-730 rows):
 **Then run:**
 ```bash
 cd /Users/zincdigital/CBI-V14
-python3 cbi-v14-ingestion/load_barchart.py --dry-run  # Preview
-python3 cbi-v14-ingestion/load_barchart.py --load --only-symbols=FC  # Load
+python3 cbi-v14-ingestion/csv_data_loader.py --dry-run  # Preview
+python3 cbi-v14-ingestion/csv_data_loader.py --load --only-symbols=FC  # Load
 ```
 
 ---
