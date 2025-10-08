@@ -10,7 +10,7 @@ from google.cloud import bigquery
 import yfinance as yf
 from datetime import datetime, timedelta
 import json
-from bigquery_utils import safe_load_to_bigquery, intelligence_collector, quick_save_to_bigquery
+from bigquery_utils import safe_load_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -61,38 +61,6 @@ class EconomicIntelligence:
                 {'name': 'MarketWatch_Calendar', 'endpoint': 'https://www.marketwatch.com/economy-politics/calendar', 'priority': 3}
             ]
         }
-    
-    @intelligence_collector('economic_indicators')
-    def collect_economic_intelligence(self):
-        """
-        Comprehensive economic intelligence collection with automatic BigQuery loading
-        Combines Fed data and correlation analysis
-        """
-        fed_data = self.collect_fed_intelligence()
-        correlations = self.hunt_economic_correlations()
-        
-        # Convert fed_data to DataFrame format
-        economic_records = []
-        for data_source in fed_data:
-            if hasattr(data_source, 'to_dict'):
-                # Convert DataFrame to records
-                records = data_source.reset_index().to_dict('records')
-                for record in records:
-                    record['data_source'] = 'fed_intelligence'
-                    record['collection_timestamp'] = datetime.now()
-                    economic_records.append(record)
-        
-        # Add correlation discoveries
-        for symbol, corr_data in correlations.items():
-            economic_records.append({
-                'symbol': symbol,
-                'correlation': corr_data['correlation'],
-                'hunt_value': corr_data['hunt_value'],
-                'data_source': 'correlation_discovery',
-                'collection_timestamp': datetime.now()
-            })
-        
-        return pd.DataFrame(economic_records) if economic_records else pd.DataFrame()
     
     def collect_fed_intelligence(self):
         """Comprehensive Fed data collection with multiple sources"""
@@ -188,11 +156,10 @@ class EconomicIntelligence:
         return discovered_correlations
 
 def main():
-    """Execute economic intelligence collection (surgical fix approach)"""
+    """Execute economic intelligence collection"""
     intel = EconomicIntelligence()
     
     print("=== ECONOMIC INTELLIGENCE COLLECTION ===")
-    print("Using surgical fix with simple data collection")
     
     # Collect Fed data from multiple sources
     fed_data = intel.collect_fed_intelligence()
@@ -205,23 +172,6 @@ def main():
     # Display hunt results
     for symbol, data in correlations.items():
         print(f"{symbol}: {data['correlation']:.3f} correlation - {data['hunt_value']} priority")
-    
-    # SURGICAL FIX: Use quick_save_to_bigquery for simple data
-    if correlations:
-        correlation_records = []
-        for symbol, data in correlations.items():
-            correlation_records.append({
-                'symbol': symbol,
-                'correlation': data['correlation'],
-                'hunt_value': data['hunt_value'],
-                'data_source': 'economic_correlation_discovery',
-                'timestamp': datetime.now()
-            })
-        
-        quick_save_to_bigquery(correlation_records, 'economic_indicators')
-        print(f"✅ Saved {len(correlation_records)} correlation discoveries to BigQuery")
-    
-    print("✅ Economic intelligence collection completed")
 
 if __name__ == "__main__":
     main()

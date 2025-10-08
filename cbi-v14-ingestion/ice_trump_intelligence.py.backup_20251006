@@ -13,7 +13,7 @@ import json
 import time
 from datetime import datetime, timedelta
 import re
-from bigquery_utils import safe_load_to_bigquery, intelligence_collector, quick_save_to_bigquery
+from bigquery_utils import safe_load_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -119,19 +119,6 @@ class ICETrumpIntelligence:
             }
         }
     
-    @intelligence_collector('ice_trump_intelligence')
-    def collect_ice_trump_intelligence(self):
-        """
-        Comprehensive ICE and Trump intelligence collection with automatic BigQuery loading
-        Combines ICE enforcement and Trump policy monitoring
-        """
-        ice_data = self.monitor_ice_enforcement()
-        trump_data = self.monitor_trump_agricultural_effects()
-        
-        # Combine both datasets
-        combined_data = ice_data + trump_data
-        return pd.DataFrame(combined_data) if combined_data else pd.DataFrame()
-    
     def monitor_ice_enforcement(self):
         """
         Monitor ICE enforcement actions affecting agricultural labor
@@ -216,8 +203,9 @@ class ICETrumpIntelligence:
                                     'source': source['name'],
                                     'category': source_category,
                                     'text': article.get_text()[:500],
-                                    'agricultural_impact': self._assess_policy_impact(text),
-                                    'soybean_relevance': self._assess_commodity_relevance(text),
+                                    'policy_impact': self._assess_policy_impact(text),
+                                    'commodity_relevance': self._assess_commodity_relevance(text),
+                                    'market_direction': self._predict_market_impact(text),
                                     'timestamp': datetime.now(),
                                     'priority': source['priority']
                                 })
@@ -396,8 +384,8 @@ class ICETrumpIntelligence:
                 daily_trump_impact = trump_df.groupby(
                     trump_df['timestamp'].dt.date
                 ).agg({
-                    'agricultural_impact': 'mean',
-                    'soybean_relevance': 'mean'
+                    'policy_impact': 'mean',
+                    'commodity_relevance': 'mean'
                 }).reset_index()
                 
                 if len(daily_trump_impact) > 3:
@@ -405,7 +393,7 @@ class ICETrumpIntelligence:
                                     on='date', how='inner')
                     
                     if len(merged) > 2:
-                        corr = merged['agricultural_impact'].corr(merged['zl_price'])
+                        corr = merged['policy_impact'].corr(merged['zl_price'])
                         correlations['trump_policy_price'] = {
                             'correlation': corr,
                             'data_points': len(merged),
@@ -495,11 +483,11 @@ class ICETrumpIntelligence:
             print(f"ICE/Trump intelligence save failed: {e}")
 
 def main():
-    """Execute ICE and Trump agricultural intelligence monitoring (surgical fix approach)"""
+    """Execute ICE and Trump agricultural intelligence monitoring"""
     ice_trump = ICETrumpIntelligence()
     
     print("=== ICE & TRUMP AGRICULTURAL INTELLIGENCE ===")
-    print("Using surgical fix with existing save function")
+    print("Monitoring immigration enforcement and political policy impacts")
     print("=" * 60)
     
     # Single monitoring cycle
@@ -509,12 +497,6 @@ def main():
     print(f"ICE enforcement intelligence: {len(ice_data)} items")
     print(f"Trump policy intelligence: {len(trump_data)} items")
     
-    # SURGICAL FIX: Call the existing save function
-    combined_data = ice_data + trump_data
-    if combined_data:
-        ice_trump._save_ice_trump_intel(combined_data)
-        print(f"✅ Saved {len(combined_data)} records to BigQuery using existing save function")
-    
     # Hunt for correlations
     correlations = ice_trump.hunt_ice_trump_correlations()
     
@@ -523,8 +505,6 @@ def main():
         for correlation_type, data in correlations.items():
             print(f"  {correlation_type}: {data['correlation']:.3f} correlation")
             print(f"    {data['hypothesis']}")
-    
-    print("✅ ICE & Trump intelligence collection completed")
     
     # Uncomment to start continuous monitoring
     # ice_trump.continuous_ice_trump_monitoring()

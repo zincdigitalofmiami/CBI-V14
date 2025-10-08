@@ -1,97 +1,232 @@
-# Cursor AI Rules for CBI-V14
+# CBI-V14 CURSOR RULES (MASTER)
 
-## Core Principle
-**Read plan.md as reference. Don't try to edit it automatically.**
+**Last Updated:** October 7, 2025  
+**Status:** ACTIVE AND ENFORCED
 
-The plan.md file is documentation, not a live tracking system. Reference it to understand project goals, but user updates it manually.
+---
 
-## CRITICAL: Protect the Working Forecast
+## 🎯 CORE PRINCIPLES
 
-- Do not modify, rename, or drop `forecasting_data_warehouse.soybean_oil_forecast`.
-- FastAPI endpoints must continue reading from `soybean_oil_forecast` unless the user explicitly approves a change.
-- Any new modeling or data joins happen in new resources suffixed `_v2` and require approval before cutover.
+1. **Read plan.md as reference** - Don't edit automatically, user updates manually
+2. **NO MOCK DATA - EVER** - All data from BigQuery or show "No data yet"
+3. **NO NEW TABLES** without explicit permission
+4. **BUDGET CONSCIOUS** - Keep costs <$1/month, max $275-300/month total
+5. **EXISTING SCHEMA ONLY** - Route to existing tables, add columns (don't drop/rename)
 
-## CRITICAL: No Mock Data
+---
 
-**Every component must use real data from BigQuery or show "No data yet"**
+## 🚨 CRITICAL RULES (ZERO TOLERANCE)
 
-- ❌ Placeholder values
-- ❌ Hardcoded sample data
-- ❌ Mock API responses
+### RULE #1: NO MOCK DATA - EVER
+- ❌ Placeholder values, hardcoded arrays, fake data
+- ❌ mockData.js, fixtures.js, sampleData.js files
+- ❌ faker.js or data generation libraries
 - ✅ Query actual BigQuery tables
-- ✅ Show empty states when tables have no data
+- ✅ Show empty states when no data
 - ✅ Display real row counts and timestamps
 
-## CRITICAL: No Temporary Resources
+### RULE #2: BIGQUERY AS SOURCE OF TRUTH
+- ✅ Primary: `cbi-v14.forecasting_data_warehouse`
+- ✅ All tables partitioned and clustered
+- ✅ Never query production from frontend directly
+- ✅ FastAPI → BigQuery → Vite dashboard
 
-**WHITELISTED TABLES ONLY:**
-soybean_prices_clean, soybean_oil_forecast, weather_data, volatility_data, news_intelligence, economic_indicators, technical_signals, fed_rates, commodity_prices
+### RULE #3: NO HARDCODED CREDENTIALS
+- ❌ API keys in code (use Secret Manager or env vars)
+- ❌ Service account JSONs in repo
+- ✅ Environment variables: PROJECT, DATASET, GOOGLE_APPLICATION_CREDENTIALS
+- ✅ Store secrets in Google Secret Manager
 
-**WHITELISTED FOLDERS ONLY:**
-cbi-v14-ingestion/, forecast/, bigquery_sql/
+### RULE #4: PROTECT EXISTING RESOURCES
+**EXISTING BIGQUERY TABLES (38 total):**
+```
+Core Data:
+- weather_data, economic_indicators, currency_data, fed_rates
+- soybean_oil_prices, soybean_prices, soybean_meal_prices
+- corn_prices, cotton_prices, commodity_prices_archive
+- ice_trump_intelligence, news_intelligence, social_sentiment
+- palm_oil_prices ✅ JUST CREATED
+- palm_oil_fundamentals ✅ JUST CREATED
+
+Models:
+- zl_arima_baseline, zl_arima_xreg, zl_arima_backtest
+
+Views (30+):
+- vw_weather_daily, vw_economic_daily, vw_soy_palm_spread, etc.
+```
+
+**WHITELISTED FOLDERS:**
+- `cbi-v14-ingestion/` (data pipelines)
+- `forecast/` (ML and API)
+- `bigquery_sql/` (SQL scripts)
+- `dashboard/` (Vite frontend)
 
 **BANNED:**
-- ❌ Any table not in whitelist
-- ❌ Tables with: _test, _staging, _backup, _tmp, _v2 (unless explicitly approved)
-- ❌ Folders: tmp/, temp/, backup/, test/, staging/
+- ❌ Tables with: _test, _staging, _backup, _tmp (unless approved)
+- ❌ Folders: tmp/, temp/, backup/, test/
 - ❌ Files: *_test.py, *_backup.py, *.bak
+- ❌ DROP TABLE (without explicit confirmation)
+- ❌ Renaming existing tables (breaks Vite dashboards)
 
-## No Docker
+---
 
-- We do not use Docker or Docker Compose for local work. Do not introduce images, compose files, or container-only steps.
+## ✅ VERIFICATION BEFORE ACTION
 
-## Environment Variables
+### Before Creating Resources:
+```bash
+# 1. Check if table exists
+bq ls cbi-v14:forecasting_data_warehouse | grep table_name
 
-- Always read `PROJECT_ID` and `DATASET_ID` environment variables. Do not concatenate project and dataset into a single ID. Example: `bigquery.Client(project=PROJECT_ID)`.
+# 2. Check whitelist - is it approved?
 
-## Before Creating ANY Resource
-1. Check whitelist: Is this table/folder explicitly allowed?
-2. If NO: STOP and ask user
-3. If YES: Verify it doesn't already exist
-
-## Verification Before Action
-
-### 1. Check if files exist
+# 3. ASK USER if not on whitelist
 ```
+
+### Before Modifying Files:
+```bash
+# 1. Check file exists
 ls -la path/to/file
-```
 
-### 2. Show current state first
-```
+# 2. Show current state
 cat existing_file.py | head -20
+
+# 3. Never assume empty state
 ```
 
-### 3. Never assume empty state
+### Before BigQuery Operations:
+```bash
+# 1. Verify table exists
+bq show cbi-v14:forecasting_data_warehouse.table_name
 
-- Check BigQuery tables:
+# 2. Check row count
+bq query --use_legacy_sql=false 'SELECT COUNT(*) FROM `cbi-v14.forecasting_data_warehouse.table_name`'
+
+# 3. Confirm with user for DROP/RENAME
 ```
-bq query --use_legacy_sql=false 'SELECT COUNT(*) FROM `project.dataset.table`'
+
+---
+
+## 🔧 REQUIRED PATTERNS
+
+### Environment Variables (Python)
+```python
+# CORRECT
+import os
+PROJECT = os.environ["PROJECT"]  # Fails if not set
+DATASET = os.environ["DATASET"]
+
+# WRONG
+PROJECT = "cbi-v14"  # Hardcoded
+PROJECT = os.environ.get("PROJECT", "cbi-v14")  # Has default
 ```
-- Check packages: `pip3 list | grep package`
-- Check git: `git status`
 
-## Before Major Work: Architecture Review
+### BigQuery Queries
+```python
+# CORRECT
+query = f"""
+SELECT * FROM `{PROJECT}.{DATASET}.table_name`
+WHERE date > @start_date
+"""
 
-- Run `bq ls cbi-v14:forecasting_data_warehouse`
-- Verify against whitelists
-- Confirm approach with user
+# WRONG
+query = "SELECT * FROM cbi-v14.forecasting_data_warehouse.table_name"  # Hardcoded
+```
 
-## Banned Behaviors
+### Adding Columns (Not Dropping)
+```sql
+-- CORRECT
+ALTER TABLE `cbi-v14.forecasting_data_warehouse.weather_data`
+ADD COLUMN IF NOT EXISTS source_name STRING;
 
-- ❌ Editing plan.md automatically
+-- WRONG
+ALTER TABLE `cbi-v14.forecasting_data_warehouse.weather_data`
+DROP COLUMN old_field;  -- BREAKS DASHBOARDS
+```
+
+---
+
+## 📋 DEVELOPMENT WORKFLOW
+
+### Git Workflow
+```bash
+# 1. Create feature branch
+git checkout -b feature/description
+
+# 2. Make changes
+
+# 3. Check rules BEFORE committing
+make check-rules
+make lint
+
+# 4. Commit (pre-commit hooks run automatically)
+git add .
+git commit -m "feat(scope): description"
+
+# 5. Push
+git push origin feature/description
+```
+
+### Commit Message Format
+```
+<type>(<scope>): <subject>
+
+Types: feat, fix, refactor, docs, test, chore
+Scope: ingestion, forecast, dashboard, bigquery
+```
+
+---
+
+## 🚫 BANNED BEHAVIORS
+
+- ❌ Editing plan.md automatically (user updates manually)
 - ❌ Mock/fake/placeholder data
-- ❌ Creating tables not on whitelist
+- ❌ Creating tables not on whitelist without permission
 - ❌ Creating temp/test/staging folders
-- ❌ Running DROP TABLE without explicit confirmation
+- ❌ DROP TABLE without explicit user confirmation
+- ❌ Renaming existing tables/columns (breaks Vite)
+- ❌ Hardcoded credentials in code
+- ❌ Docker/Docker Compose
 
-## Required Behaviors
+---
+
+## ✅ REQUIRED BEHAVIORS
 
 - ✅ `ls` before create
 - ✅ `cat` before overwrite
-- ✅ `bq ls`/`INFORMATION_SCHEMA` before table operations
-- ✅ Architecture audit before new phases
-- ✅ Real data or explicit "no data" states
+- ✅ `bq ls` before table operations
 - ✅ Ask when uncertain
-- ✅ Keep `plan.md` as the single source of truth for status and scope
+- ✅ Real data or explicit "no data" states
+- ✅ Keep plan.md as single source of truth
+- ✅ Route to existing tables (don't create new ones)
+- ✅ Add columns (don't drop/rename)
+- ✅ Test locally before committing
+- ✅ Check budget impact before new services
+
+---
+
+## 💰 BUDGET RULES
+
+- **Current BigQuery cost:** $0.71/month
+- **Maximum budget:** $275-300/month total
+- **New data sources:** Must be <$20/month (max 3 allowed)
+- **Always ask** before adding paid services
+- **Prefer free scraping** over paid APIs
+
+---
+
+## 📊 CURRENT PROJECT STATUS
+
+**Tables:** 38 existing (2 palm oil tables just created)  
+**Scrapers:** TradingEconomics (50+ URLs hourly, $0/month)  
+**ML Models:** 3 ARIMA models operational  
+**Vite Dashboard:** Operational, queries existing tables  
+**Cost:** $0.71/month (well under budget)
+
+---
+
+**Version:** 2.0 (Consolidated from PROJECT_RULES.md, RULES_ACTIVE.md)  
+**Enforcement:** Active (pre-commit hooks, CI/CD)  
+**Next Review:** After 48-hour sprint completion
+
 
 

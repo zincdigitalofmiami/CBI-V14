@@ -50,3 +50,4 @@ LEFT JOIN weather_pivot w ON p.date = w.date
 CROSS JOIN volatility_avg v
 WHERE p.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 730 DAY)
 ORDER BY p.date;
+

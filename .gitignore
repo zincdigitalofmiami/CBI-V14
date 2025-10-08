@@ -53,3 +53,9 @@ service-account-*.json
 *.db
 *.sqlite
 *.log
+
+# Cache files (too large for GitHub)
+.cache/
+cache/
+*.zip
+*.pkl

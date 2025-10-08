@@ -20,9 +20,12 @@ ROUTING = {
     'CT': 'cotton_prices',        # Cotton
     'CC': 'cocoa_prices',         # Cocoa
     'ZN': 'treasury_prices',      # 10Y Treasury Note
+    'FC': 'palm_oil_prices',      # Palm Oil (FCPO - Bursa Malaysia)
+    'FCPO': 'palm_oil_prices',    # Palm Oil alternate naming
+    'PALM': 'palm_oil_prices',    # Palm Oil generic
 }
 
-def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
+def normalize_df(df: pd.DataFrame, symbol: str = None) -> pd.DataFrame:
     # Remove trailing lines like "Downloaded from..."
     if 'Time' in df.columns:
         df = df[~df['Time'].astype(str).str.contains('Downloaded', na=False)]
@@ -40,8 +43,22 @@ def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=rename_map)
     df['time'] = pd.to_datetime(df['time'], errors='coerce')
     df = df.dropna(subset=['time', 'close'])
-    df['volume'] = pd.to_numeric(df.get('volume', 0)).fillna(0).astype('int64')
-    return df[['time', 'open', 'high', 'low', 'close', 'volume']]
+    df['volume'] = pd.to_numeric(df.get('volume', 0), errors='coerce').fillna(0).astype('int64')
+    
+    # Add canonical metadata
+    import uuid
+    df['source_name'] = 'Barchart'
+    df['confidence_score'] = 0.90  # High confidence for Barchart data
+    df['ingest_timestamp_utc'] = pd.Timestamp.utcnow()
+    df['provenance_uuid'] = str(uuid.uuid4())
+    
+    # Select columns based on what exists in target table
+    base_cols = ['time', 'open', 'high', 'low', 'close', 'volume']
+    meta_cols = ['source_name', 'confidence_score', 'ingest_timestamp_utc', 'provenance_uuid']
+    
+    # Only include columns that exist
+    available_cols = [c for c in base_cols if c in df.columns]
+    return df[available_cols + meta_cols]
 
 def derive_symbol_and_table(contract: str):
     contract = contract.upper()

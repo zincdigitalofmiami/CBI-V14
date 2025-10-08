@@ -237,3 +237,4 @@ class IntelligenceNetwork:
 This creates an **information advantage moat** - the more data we collect, the better our correlations, the better our source discovery, the more superior our intelligence becomes.
 
 **Should I start building the multi-source ingestion engine and neural network correlation hunter?**
+

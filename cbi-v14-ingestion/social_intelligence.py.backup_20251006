@@ -12,7 +12,6 @@ import json
 import time
 from datetime import datetime
 import re
-from bigquery_utils import intelligence_collector, quick_save_to_bigquery
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
@@ -93,15 +92,6 @@ class SocialIntelligence:
                 'soil moisture', 'temperature stress', 'growing season'
             ]
         }
-    
-    @intelligence_collector('social_sentiment')
-    def collect_social_intelligence(self):
-        """
-        Comprehensive social intelligence collection with automatic BigQuery loading
-        Monitor Reddit agricultural communities for sentiment
-        Often provides early signals from actual farmers
-        """
-        return self.monitor_reddit_agriculture()
     
     def monitor_reddit_agriculture(self):
         """
@@ -235,15 +225,14 @@ class SocialIntelligence:
         return {}
 
 def main():
-    """Execute social intelligence collection with modern decorator pattern"""
+    """Execute social intelligence collection"""
     intel = SocialIntelligence()
     
-    print("=== SOCIAL INTELLIGENCE COLLECTION ===")
-    print("Using modern decorator pattern with automatic BigQuery loading")
+    print("=== SOCIAL & SHIPPING INTELLIGENCE ===")
     
-    # Collect social intelligence with automatic BigQuery loading
-    social_data = intel.collect_social_intelligence()
-    print(f"Social intelligence collected: {len(social_data)} records")
+    # Monitor Reddit farmer sentiment
+    reddit_intel = intel.monitor_reddit_agriculture()
+    print(f"Reddit agricultural sentiment: {len(reddit_intel)} relevant posts")
     
     # Analyze sentiment correlations
     correlations = intel.hunt_social_correlations()
@@ -252,8 +241,6 @@ def main():
         print(f"Sentiment correlation discovered: {correlations['sentiment_price_correlation']:.3f}")
         if correlations['hunt_value'] == 'HIGH':
             print("HIGH VALUE: Social sentiment provides predictive signal")
-    
-    print("✅ Social intelligence collection completed with automatic BigQuery loading")
 
 if __name__ == "__main__":
     main()
