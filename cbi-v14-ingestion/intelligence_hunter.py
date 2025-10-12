@@ -47,7 +47,7 @@ class IntelligenceHunter:
             argentina_precip,
             us_precip,
             volume
-        FROM `{PROJECT_ID}.{DATASET_ID}.soy_oil_features`
+        FROM `{PROJECT_ID}.curated.vw_soybean_oil_features_daily`
         WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
         ORDER BY date
         """
@@ -241,7 +241,7 @@ class IntelligenceHunter:
                 'name': 'EIA_Biofuels',
                 'url': 'https://www.eia.gov/biofuels/biodiesel/production/',
                 'type': 'energy_demand',
-                'correlation_hypothesis': 'biodiesel_demand_drives_soy_oil_price'
+                'correlation_hypothesis': 'biodiesel_demand_drives_soybean_oil_price'
             },
             
             # Shipping intelligence
@@ -364,4 +364,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

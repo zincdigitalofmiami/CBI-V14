@@ -107,3 +107,8 @@ if __name__ == "__main__":
     fred = FREDEconomicDeployment()
     fred.deploy_all_economic_data()
 
+
+
+
+
+

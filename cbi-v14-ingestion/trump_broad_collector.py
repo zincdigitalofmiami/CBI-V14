@@ -299,3 +299,8 @@ if __name__ == '__main__':
         logger.info("📄 Analysis saved to /tmp/trump_broad_analysis.json")
     else:
         logger.warning("⚠️ No market-relevant posts found in broad collection")
+
+
+
+
+

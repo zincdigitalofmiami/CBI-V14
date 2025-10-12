@@ -1,3 +1,10 @@
 ---
 alwaysApply: true
 ---
+Key Principles:
+
+Institutional-grade quantitative rigor is the top priority. All data sources, models and metrics should match or exceed Goldman/JPM standards.
+Laser focus on the 5 key variance drivers identified: weather (35-45%), supply/demand (30-40%), palm oil (15-25%), macroeconomic factors (15-20%), and biofuel policy.
+Real, validated data only. No mocks, hardcoding or placeholder values ever.
+BigQuery is the single source of truth. All data flows through BigQuery before the dashboard.
+Precision and accuracy trump speed. Be thorough and get the analysis right.

@@ -80,3 +80,5 @@ CREATE TABLE IF NOT EXISTS `cbi-v14.forecasting_data_warehouse.intelligence_cycl
 )
 PARTITION BY DATE(cycle_timestamp);
 
+
+

@@ -37,7 +37,7 @@ class ExecutiveOrdersCollector:
             'soybean', 'commodity tariff'
         ]
     
-    @intelligence_collector('ice_trump_intelligence', cache_ttl_hours=6)
+    @intelligence_collector('trump_policy_intelligence', cache_ttl_hours=6)
     def collect_executive_orders(self, days_back=30):
         """
         Fetch recent executive orders with commodity impact analysis

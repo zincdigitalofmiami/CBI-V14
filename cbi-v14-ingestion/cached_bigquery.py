@@ -291,3 +291,8 @@ def get_cached_bigquery_client():
     """Get the global cached BigQuery client instance"""
     return cached_bq_client
 
+
+
+
+
+

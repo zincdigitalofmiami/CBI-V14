@@ -4,6 +4,7 @@ Clean BigQuery ML implementation - no local ML libraries
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
 import pandas as pd
@@ -133,7 +134,7 @@ async def get_price_history(symbol: str = "ZL", days: int = 365):
         symbol,
         close,
         volume
-    FROM `{PROJECT}.{DATASET}.soybean_prices`
+    FROM `{PROJECT}.{DATASET}.soybean_oil_prices`
     WHERE symbol = '{symbol}'
         AND DATE(time) >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
     ORDER BY time
@@ -156,25 +157,107 @@ async def get_feature_data(days: int = 90):
     """Get recent feature data for analysis"""
     query = f"""
     SELECT
-        date,
-        value,
-        sma_5,
-        sma_20,
-        argentina_precip,
-        us_precip
-    FROM `{PROJECT}.{DATASET}.soy_oil_features`
-    WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
-    ORDER BY date DESC
+        feature_date as date,
+        zl_price as value,
+        zl_open,
+        zl_high,
+        zl_low,
+        zl_volume,
+        zl_return_1d,
+        zl_return_7d,
+        zl_volatility_30d
+    FROM `{PROJECT}.models.vw_master_feature_set_v1`
+    WHERE feature_date >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
+    ORDER BY feature_date DESC
     """
-    
+
     try:
         df = client.query(query).to_dataframe()
-        
+
         return {
             "days": days,
             "rows": len(df),
             "features": df.to_dict('records')
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/data/training-snapshot")
+async def get_training_snapshot(limit: int = 60):
+    """Expose bounded neural training snapshot for the dashboard."""
+    query = f"""
+    SELECT
+        timestamp,
+        target_value,
+        sma_7d,
+        sma_30d,
+        zl_volatility_30d,
+        trend_direction
+    FROM `{PROJECT}.models.zl_timesfm_training_v1`
+    ORDER BY timestamp
+    LIMIT {limit}
+    """
+
+    try:
+        df = client.query(query).to_dataframe()
+        return {
+            "rows": len(df),
+            "limit": limit,
+            "data": df.to_dict("records")
+        }
+    except Exception as e:
+        log.exception("Failed to fetch training snapshot")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/forecast/baseline")
+async def get_baseline_forecast():
+    """Get baseline ARIMA forecast with historical data and confidence bands"""
+    try:
+        # Get historical data (last 90 days)
+        historical_query = f"""
+        SELECT 
+            feature_date as date,
+            zl_price as close,
+            'historical' as type
+        FROM `{PROJECT}.models.zl_price_training_base`
+        WHERE feature_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+        ORDER BY feature_date
+        """
+        
+        # Get forecast data
+        forecast_query = f"""
+        SELECT 
+            forecast_timestamp as date,
+            forecast_value as close,
+            prediction_interval_lower_bound as lower_bound,
+            prediction_interval_upper_bound as upper_bound,
+            'forecast' as type
+        FROM `{PROJECT}.models.zl_forecast_baseline_v1`
+        ORDER BY forecast_timestamp
+        """
+        
+        historical_df = client.query(historical_query).to_dataframe()
+        forecast_df = client.query(forecast_query).to_dataframe()
+        
+        # Get latest quote
+        quote_query = f"""
+        SELECT close, is_latest
+        FROM `{PROJECT}.curated.vw_soybean_oil_quote`
+        WHERE is_latest = true
+        LIMIT 1
+        """
+        quote_df = client.query(quote_query).to_dataframe()
+        
+        return {
+            "model": "ARIMA_PLUS_Baseline_v1",
+            "generated_at": datetime.utcnow().isoformat(),
+            "latest_price": float(quote_df.iloc[0]['close']) if not quote_df.empty else None,
+            "historical": historical_df.to_dict('records'),
+            "forecast": forecast_df.to_dict('records'),
+            "total_points": len(historical_df) + len(forecast_df)
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

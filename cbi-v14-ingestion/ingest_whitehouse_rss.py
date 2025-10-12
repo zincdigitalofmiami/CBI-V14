@@ -62,7 +62,7 @@ class WhiteHouseRSSCollector:
             ]
         }
     
-    @intelligence_collector('ice_trump_intelligence', cache_ttl_hours=2)
+    @intelligence_collector('trump_policy_intelligence', cache_ttl_hours=2)
     def collect_whitehouse_announcements(self, hours_back=24):
         """
         Collect White House announcements from RSS feeds
@@ -310,4 +310,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
 

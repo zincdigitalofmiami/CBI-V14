@@ -134,10 +134,10 @@ class EconomicIntelligence:
         
         # Get current price and economic data
         query = f"""
-        SELECT 
+        SELECT
             date,
-            value as zl_price
-        FROM `{PROJECT_ID}.{DATASET_ID}.soy_oil_features`
+            close_price as zl_price
+        FROM `{PROJECT_ID}.curated.vw_soybean_oil_features_daily`
         WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
         """
         price_df = self.client.query(query).to_dataframe()

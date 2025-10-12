@@ -286,7 +286,7 @@ class TrumpTruthSocialMonitor:
                 # Get VIX at time of post
                 vix_at_time = self.get_vix_at_time(timestamp)
                 
-                # Create intelligence record (match ice_trump_intelligence schema exactly)
+                # Create intelligence record (match trump_policy_intelligence schema exactly)
                 record = {
                     'source': 'truth_social_api',
                     'category': 'trump_social_media',
@@ -315,14 +315,14 @@ class TrumpTruthSocialMonitor:
     
     def save_to_trump_intelligence(self, trump_data):
         """
-        Save Trump social media analysis to existing ice_trump_intelligence table
+        Save Trump social media analysis to staging.trump_policy_intelligence table
         """
         if not trump_data:
             return False
         
         try:
             df = pd.DataFrame(trump_data)
-            table_ref = 'cbi-v14.forecasting_data_warehouse.ice_trump_intelligence'
+            table_ref = 'cbi-v14.staging.trump_policy_intelligence'
             
             job_config = bigquery.LoadJobConfig(
                 write_disposition="WRITE_APPEND",

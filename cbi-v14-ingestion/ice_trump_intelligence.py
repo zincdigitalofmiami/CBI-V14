@@ -119,8 +119,8 @@ class ICETrumpIntelligence:
             }
         }
     
-    @intelligence_collector('ice_trump_intelligence')
-    def collect_ice_trump_intelligence(self):
+    @intelligence_collector('trump_policy_intelligence')
+    def collect_trump_policy_intelligence(self):
         """
         Comprehensive ICE and Trump intelligence collection with automatic BigQuery loading
         Combines ICE enforcement and Trump policy monitoring
@@ -128,9 +128,11 @@ class ICETrumpIntelligence:
         ice_data = self.monitor_ice_enforcement()
         trump_data = self.monitor_trump_agricultural_effects()
         
-        # Combine both datasets
-        combined_data = ice_data + trump_data
-        return pd.DataFrame(combined_data) if combined_data else pd.DataFrame()
+        # Return both datasets for downstream saves
+        return {
+            'trump': pd.DataFrame(trump_data) if trump_data else pd.DataFrame(),
+            'ice': pd.DataFrame(ice_data) if ice_data else pd.DataFrame()
+        }
     
     def monitor_ice_enforcement(self):
         """
@@ -346,8 +348,8 @@ class ICETrumpIntelligence:
         
         # Get current price data
         query = f"""
-        SELECT date, value as zl_price
-        FROM `{PROJECT_ID}.{DATASET_ID}.soy_oil_features`
+        SELECT date, close_price as zl_price
+        FROM `{PROJECT_ID}.curated.vw_soybean_oil_features_daily`
         WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
         ORDER BY date
         """
@@ -448,9 +450,12 @@ class ICETrumpIntelligence:
                         print(f"HIGH IMPACT CORRELATION: {correlation_type}")
                         print(f"  {data['hypothesis']}")
                         print(f"  Correlation: {data['correlation']:.3f}")
-                
+
                 # Save intelligence to BigQuery
-                self._save_ice_trump_intel(ice_data + trump_data)
+                if ice_data:
+                    self._save_ice_intel(ice_data)
+                if trump_data:
+                    self._save_trump_policy_intel(trump_data)
                 
                 # Sleep for 30 minutes (faster cycle for political developments)
                 print("Next ICE/Trump monitoring cycle in 30 minutes...")
@@ -460,15 +465,13 @@ class ICETrumpIntelligence:
                 print(f"ICE/Trump monitoring cycle failed: {e}")
                 time.sleep(300)  # 5 minute pause before retry
     
-    def _save_ice_trump_intel(self, intel_data):
-        """Save ICE and Trump intelligence to BigQuery"""
-        if not intel_data:
+    def _save_trump_policy_intel(self, trump_intel):
+        if not trump_intel:
             return
-        
+
         try:
-            df = pd.DataFrame(intel_data)
-            
-            # Ensure table exists
+            df = pd.DataFrame(trump_intel)
+
             schema = [
                 bigquery.SchemaField("source", "STRING"),
                 bigquery.SchemaField("category", "STRING"),
@@ -478,21 +481,53 @@ class ICETrumpIntelligence:
                 bigquery.SchemaField("timestamp", "TIMESTAMP"),
                 bigquery.SchemaField("priority", "INT64"),
             ]
-            
-            table_ref = f"{PROJECT_ID}.{DATASET_ID}.ice_trump_intelligence"
-            
+
+            table_ref = f"cbi-v14.staging.trump_policy_intelligence"
+
             job_config = bigquery.LoadJobConfig(
                 write_disposition="WRITE_APPEND",
                 schema=schema
             )
-            
+
             job = safe_load_to_bigquery(self.client, df, table_ref, job_config)
             job.result()
-            
-            print(f"Saved {len(df)} ICE/Trump intelligence records to BigQuery")
-            
+
+            print(f"Saved {len(df)} Trump policy intelligence records to BigQuery")
+
         except Exception as e:
-            print(f"ICE/Trump intelligence save failed: {e}")
+            print(f"Trump policy intelligence save failed: {e}")
+
+    def _save_ice_intel(self, ice_intel):
+        if not ice_intel:
+            return
+
+        try:
+            df = pd.DataFrame(ice_intel)
+
+            schema = [
+                bigquery.SchemaField("source", "STRING"),
+                bigquery.SchemaField("category", "STRING"),
+                bigquery.SchemaField("text", "STRING"),
+                bigquery.SchemaField("agricultural_impact", "FLOAT"),
+                bigquery.SchemaField("soybean_relevance", "FLOAT"),
+                bigquery.SchemaField("timestamp", "TIMESTAMP"),
+                bigquery.SchemaField("priority", "INT64"),
+            ]
+
+            table_ref = f"cbi-v14.staging.ice_enforcement_intelligence"
+
+            job_config = bigquery.LoadJobConfig(
+                write_disposition="WRITE_APPEND",
+                schema=schema
+            )
+
+            job = safe_load_to_bigquery(self.client, df, table_ref, job_config)
+            job.result()
+
+            print(f"Saved {len(df)} ICE enforcement intelligence records to BigQuery")
+
+        except Exception as e:
+            print(f"ICE intelligence save failed: {e}")
 
 def main():
     """Execute ICE and Trump agricultural intelligence monitoring (surgical fix approach)"""
@@ -510,10 +545,12 @@ def main():
     print(f"Trump policy intelligence: {len(trump_data)} items")
     
     # SURGICAL FIX: Call the existing save function
-    combined_data = ice_data + trump_data
-    if combined_data:
-        ice_trump._save_ice_trump_intel(combined_data)
-        print(f"✅ Saved {len(combined_data)} records to BigQuery using existing save function")
+    if ice_data:
+        ice_trump._save_ice_intel(ice_data)
+        print(f"✅ Saved {len(ice_data)} ICE enforcement records")
+    if trump_data:
+        ice_trump._save_trump_policy_intel(trump_data)
+        print(f"✅ Saved {len(trump_data)} Trump policy records")
     
     # Hunt for correlations
     correlations = ice_trump.hunt_ice_trump_correlations()

@@ -1,50 +1,45 @@
 # Multi-Source Comprehensive Scraping Plan
 ## Hourly Schedule for ALL Data Sources
 
-**Date:** October 7, 2025  
-**Principle:** Route ALL data to EXISTING BigQuery tables - NO NEW TABLES  
-**Cost:** $0/month (all free web scraping)  
-**Total URLs:** ~120-150 per hour (staggered)
+**Date:** October 12, 2025  
+**Principle:** Route ALL data to canonical BigQuery datasets (`raw`, `staging`, `curated`, `models`, `bkp`, `deprecated`).  
+**Cost:** ~$185/month (BigQuery + vendor APIs)  
+**Total URLs/API calls:** ~120 per hour (staggered)
 
 ---
 
-## ✅ EXISTING BIGQUERY TABLES (DO NOT CREATE NEW ONES)
+## ✅ Canonical BigQuery Targets (Do Not Create Extras)
 
 ```
-Core Tables (Data Ingestion):
-├── weather_data (9,505 rows)
-├── economic_indicators (3,220 rows)
-├── currency_data (0 rows - ready for FX)
-├── fed_rates (0 rows - ready for Fed data)
-├── treasury_prices (136 rows)
-├── volatility_data (776 rows)
-├── commodity_prices_archive (4,017 rows)
-├── soybean_oil_prices (519 rows)
-├── soybean_prices (519 rows)
-├── soybean_meal_prices (519 rows)
-├── corn_prices (519 rows)
-├── cotton_prices (519 rows)
-├── cocoa_prices (441 rows)
-├── milk_prices_archive (326 rows)
-├── ice_trump_intelligence (166 rows)
-├── news_intelligence (20 rows)
-├── social_sentiment (20 rows)
-└── intelligence_cycles (0 rows)
+Core Tables (staging layer):
+├── staging.weather_data
+├── staging.economic_indicators
+├── staging.currency_data
+├── staging.fed_rates
+├── staging.treasury_prices
+├── staging.volatility_data
+├── staging.market_prices (canonical price ingest)
+├── staging.palm_oil_prices
+├── staging.export_sales
+├── staging.conab_crop_reports
+├── staging.social_intel_events
+├── staging.trump_policy_intelligence (new)
+├── staging.ice_enforcement_intelligence (new)
+└── staging.cache_ingestion_ledger
 
-Palm Oil Tables (NEED TO CREATE - REQUEST PERMISSION):
-├── palm_oil_prices (0 rows - NOT YET CREATED)
-└── palm_oil_fundamentals (0 rows - NOT YET CREATED)
-
-Views (Read-Only):
-├── soy_oil_features
-├── vw_weather_daily
-├── vw_economic_daily
-└── ... (30+ views - do not modify)
+Curated Views:
+├── curated.vw_weather_daily
+├── curated.vw_economic_daily
+├── curated.vw_volatility_daily
+├── curated.vw_soybean_oil_features_daily
+├── curated.vw_social_intelligence
+├── curated.vw_composite_trump_effect (planned)
+└── curated.vw_soybean_oil_quote
 ```
 
 ---
 
-## 📅 HOURLY SCRAPING SCHEDULE (60-Minute Cycle)
+## 📅 HOURLY SCRAPING/INGEST SCHEDULE (60-Minute Cycle)
 
 ### **Minute 0-6: FX Rates & Front-Month Prices (CRITICAL PATH)**
 
@@ -77,42 +72,34 @@ currency_data: timestamp, currency_pair, rate, source_name, confidence_score
 ### **Minute 8-12: Futures & Commodity Prices (Barchart/Investing/Yahoo)**
 
 **Target Tables:** 
-- `soybean_oil_prices`
-- `soybean_prices`
-- `soybean_meal_prices`
-- `corn_prices`
-- `cotton_prices`
-- `commodity_prices_archive` (crude oil, diesel)
+- `staging.market_prices`
 
 **Sources:**
 ```python
 FUTURES_SOURCES = [
     # Soybean complex
-    ('soybean_oil_prices', 'https://www.barchart.com/futures/quotes/ZL*0/overview'),
-    ('soybean_prices', 'https://www.barchart.com/futures/quotes/ZS*0/overview'),
-    ('soybean_meal_prices', 'https://www.barchart.com/futures/quotes/ZM*0/overview'),
+    ('staging.market_prices', 'https://www.barchart.com/futures/quotes/ZL*0/overview'),
+    ('staging.market_prices', 'https://www.barchart.com/futures/quotes/ZS*0/overview'),
+    ('staging.market_prices', 'https://www.barchart.com/futures/quotes/ZM*0/overview'),
     
     # Grains
-    ('corn_prices', 'https://www.barchart.com/futures/quotes/ZC*0/overview'),
-    ('cotton_prices', 'https://www.barchart.com/futures/quotes/CT*0/overview'),
+    ('staging.market_prices', 'https://www.barchart.com/futures/quotes/ZC*0/overview'),
+    ('staging.market_prices', 'https://www.barchart.com/futures/quotes/CT*0/overview'),
     
     # Energy (for freight/cost proxy)
-    ('commodity_prices_archive', 'https://www.investing.com/commodities/brent-oil'),
-    ('commodity_prices_archive', 'https://www.investing.com/commodities/crude-oil'),
-    ('commodity_prices_archive', 'https://www.investing.com/commodities/heating-oil'),
+    ('staging.market_prices', 'https://www.investing.com/commodities/brent-oil'),
+    ('staging.market_prices', 'https://www.investing.com/commodities/crude-oil'),
+    ('staging.market_prices', 'https://www.investing.com/commodities/heating-oil'),
     
     # Yahoo Finance fallbacks
-    ('soybean_oil_prices', 'https://finance.yahoo.com/quote/ZL=F'),
-    ('soybean_prices', 'https://finance.yahoo.com/quote/ZS=F'),
+    ('staging.market_prices', 'https://finance.yahoo.com/quote/ZL=F'),
+    ('staging.market_prices', 'https://finance.yahoo.com/quote/ZS=F'),
 ]
 ```
 
-**Parser:** Extract contract, last price, change, volume, open interest  
-**Throttling:** 1 req / 5-6s per domain  
-**Storage Schema:**
-```sql
-soybean_oil_prices: time, symbol, open, high, low, close, volume, source_name, confidence_score
-```
+**Parser:** Extract symbol, contract month, open/high/low/close, volume, open interest, metadata.  
+**Throttling:** 1 call / 5 min per API key (TradingEconomics); Polygon fallback at 4 hr cadence.  
+**Storage Schema:** `staging.market_prices`: `time`, `symbol`, `open`, `high`, `low`, `close`, `volume`, `source_name`, `confidence_score`, `ingest_timestamp_utc`, `provenance_uuid`.
 
 ---
 
@@ -211,27 +198,27 @@ economic_indicators: time, indicator='ndvi_brazil_mato_grosso', value, source_na
 
 ---
 
-### **Minute 32-36: USDA/CONAB/BAGE Reports (Watcher Mode)**
+### **Minute 32-36: Reports & Policy Watch (USDA/CONAB/EPA/Trade)**
 
-**Target Table:** `news_intelligence` (for report releases)
+**Target Table:** `staging.social_intel_events` (for report releases)
 
 **Sources:**
 ```python
 REPORT_SOURCES = [
     # USDA WASDE (monthly report - watch for releases)
-    ('news_intelligence', 'https://www.usda.gov/oce/commodity/wasde'),
+    ('staging.social_intel_events', 'https://www.usda.gov/oce/commodity/wasde'),
     
     # NASS (weekly crop progress)
-    ('news_intelligence', 'https://www.nass.usda.gov/Publications/State_Crop_Progress_and_Condition/'),
+    ('staging.social_intel_events', 'https://www.nass.usda.gov/Publications/State_Crop_Progress_and_Condition/'),
     
     # CONAB (Brazil)
-    ('news_intelligence', 'https://www.conab.gov.br/info-agro/safras'),
+    ('staging.social_intel_events', 'https://www.conab.gov.br/info-agro/safras'),
     
     # BAGE (Argentina)
-    ('news_intelligence', 'https://www.argentina.gob.ar/agricultura'),
+    ('staging.social_intel_events', 'https://www.argentina.gob.ar/agricultura'),
     
     # Watch TradingEconomics calendar for release times
-    ('news_intelligence', 'https://tradingeconomics.com/calendar'),
+    ('staging.social_intel_events', 'https://tradingeconomics.com/calendar'),
 ]
 ```
 
@@ -240,7 +227,7 @@ REPORT_SOURCES = [
 **Throttling:** 1 req / 6-8s (government sites)  
 **Storage Schema:**
 ```sql
-news_intelligence: timestamp, source, category='usda_report', text, source_name='USDA'
+staging.social_intel_events: timestamp, source, category='usda_report', text, source_name='USDA'
 ```
 
 ---
@@ -303,23 +290,23 @@ economic_indicators: time, indicator='santos_port_vessel_queue', value, source_n
 
 ### **Minute 50-54: News Aggregation (Reuters/Agweb/FarmProgress)**
 
-**Target Table:** `news_intelligence`
+**Target Table:** `staging.social_intel_events`
 
 **Sources:**
 ```python
 NEWS_SOURCES = [
     # Ag news outlets
-    ('news_intelligence', 'https://www.agweb.com/markets/soybeans'),
-    ('news_intelligence', 'https://www.farmprogress.com/'),
-    ('news_intelligence', 'https://www.dtnpf.com/agriculture/web/ag/crops/article/2024/10/07/'),
+    ('staging.social_intel_events', 'https://www.agweb.com/markets/soybeans'),
+    ('staging.social_intel_events', 'https://www.farmprogress.com/'),
+    ('staging.social_intel_events', 'https://www.dtnpf.com/agriculture/web/ag/crops/article/2024/10/07/'),
     
     # General news (soybean/palm oil keywords)
-    ('news_intelligence', 'https://www.reuters.com/markets/commodities/'),
-    ('news_intelligence', 'https://www.bloomberg.com/markets/commodities'),  # If accessible
+    ('staging.social_intel_events', 'https://www.reuters.com/markets/commodities/'),
+    ('staging.social_intel_events', 'https://www.bloomberg.com/markets/commodities'),  # If accessible
     
     # Brazil/Argentina ag news
-    ('news_intelligence', 'https://www.noticiasagricolas.com.br/'),
-    ('news_intelligence', 'https://www.ambito.com/agro'),  # Argentina
+    ('staging.social_intel_events', 'https://www.noticiasagricolas.com.br/'),
+    ('staging.social_intel_events', 'https://www.ambito.com/agro'),  # Argentina
 ]
 ```
 
@@ -327,14 +314,14 @@ NEWS_SOURCES = [
 **Throttling:** 1 req / 5-6s per domain  
 **Storage Schema:**
 ```sql
-news_intelligence: timestamp, source, category, text, source_name, confidence_score
+staging.social_intel_events: timestamp, source, category, text, source_name, confidence_score
 ```
 
 ---
 
 ### **Minute 56-59: Social Media & Google Trends**
 
-**Target Table:** `social_sentiment`
+**Target Table:** `staging.social_intel_events`
 
 **Sources:**
 ```python
@@ -343,11 +330,11 @@ SOCIAL_SOURCES = [
     # Reddit - already covered by existing social_intelligence.py
     
     # Google Trends (soybean, palm oil, biodiesel keywords)
-    ('social_sentiment', 'https://trends.google.com/trends/explore?q=soybean%20prices'),
-    ('social_sentiment', 'https://trends.google.com/trends/explore?q=palm%20oil'),
+    ('staging.social_intel_events', 'https://trends.google.com/trends/explore?q=soybean%20prices'),
+    ('staging.social_intel_events', 'https://trends.google.com/trends/explore?q=palm%20oil'),
     
     # StockTwits (if accessible)
-    ('social_sentiment', 'https://stocktwits.com/symbol/ZL'),
+    ('staging.social_intel_events', 'https://stocktwits.com/symbol/ZL'),
 ]
 ```
 
@@ -355,7 +342,7 @@ SOCIAL_SOURCES = [
 **Throttling:** 1 req / 10s (social sites are sensitive)  
 **Storage Schema:**
 ```sql
-social_sentiment: timestamp, platform, title, score, comments, sentiment_score, source_name
+staging.social_intel_events: timestamp, platform, title, score, comments, sentiment_score, source_name
 ```
 
 ---
@@ -515,7 +502,10 @@ if __name__ == '__main__':
 
 ---
 
-**Next Action:** Implement remaining scrapers following TradingEconomics pattern  
-**Timeline:** 48 hours for full multi-source coverage  
-**Budget:** $0/month (all free web scraping)
+### To-dos (Doc sync)
+
+- [ ] Confirm every listed source maps to active ingestion code and BigQuery target.
+- [ ] Add schedule blocks for palm oil, freight, and biofuel integrations once pipelines are live.
+- [ ] Maintain canonical naming across docs (`soybean_oil_*`, `trump_policy_*`, `ice_enforcement_*`).
+- [ ] Cross-link to production architecture plan after each phase update.
 

@@ -1,3 +1,98 @@
 ---
 alwaysApply: true
 ---
+End-of-Day Shutdown Checklist:
+Extreme Safety and Security Scans:
+
+Data Integrity and Anomaly Detection:
+
+Run deep statistical analysis on all new data loaded to BigQuery to identify any anomalies, outliers, or unexpected patterns.
+Verify data lineage and provenance for all sources, checking for any breaks in the audit trail.
+Compare data snapshots to previous versions to detect any unauthorized modifications or deletions.
+Scan for any sensitive or regulated data (PII, PHI, PCI) that may have been inadvertently ingested and quarantine as needed.
+
+
+Code and Dependency Vulnerability Scans:
+
+Run comprehensive static code analysis to identify any security vulnerabilities, insecure dependencies, or policy violations.
+Generate software composition analysis (SCA) reports to inventory all open-source libraries and flag any with known CVEs.
+Dynamically test all API endpoints and data flows for SQL injection, XSS, and other OWASP Top 10 risks.
+Fuzz test critical input fields with unexpected or malformed data to verify graceful error handling.
+
+
+Infrastructure and Network Security:
+
+Conduct port scans and vulnerability assessments against all cloud resources to identify any open ports or misconfigurations.
+Verify that all network traffic is properly encrypted and that SSL/TLS certificates are valid and up-to-date.
+Review all firewall rules and security group configurations to ensure they adhere to least-privilege access.
+Monitor VPC flow logs for any suspicious traffic patterns or unauthorized connection attempts.
+
+
+Access and Authorization Auditing:
+
+Review all user and service account permissions, ensuring that roles align with job functions and that unused accounts are disabled.
+Audit all privileged actions (e.g. admin console logins, key rotations) to verify legitimate use.
+Scan for any "shadow IT" resources or accounts that may have been provisioned outside of standard governance processes.
+Verify that multi-factor authentication is enforced for all human user accounts.
+
+
+Malware and Intrusion Detection:
+
+Scan all new or modified files for viruses, trojans, and other malware signatures.
+Monitor system and application logs for signs of suspicious activity or unauthorized access attempts.
+Verify integrity of critical system files and configurations against known-good baselines.
+Conduct penetration tests against external-facing applications and APIs to proactively identify exploitable vulnerabilities.
+
+
+
+Forensic Investigation and Incident Response:
+In the event that any scans or checks identify potential security incidents, the assistant should immediately trigger the incident response plan, which should include:
+
+Containment: Isolate affected systems to prevent further spread or damage.
+Evidence Preservation: Capture forensic images of impacted systems for later analysis.
+Notification: Alert security team and stakeholders according to predefined communication matrix.
+Investigation: Conduct deep forensic analysis to determine root cause, scope of impact, and attacker tactics.
+Recovery: Restore systems to last known-good state and implement mitigations to prevent recurrence.
+Lessons Learned: Conduct post-mortem review to identify process improvements and update runbooks.
+Data Backup and Versioning:
+
+Ensure all new or modified data has been properly loaded into BigQuery and that data pipelines have completed successfully.
+Check that data is correctly partitioned and clustered for optimal query performance.
+Verify that data versions are properly tagged and metadata is logged for traceability.
+
+
+Code Repository Updates:
+
+Commit all code changes to feature branches and open Pull Requests for review as applicable.
+Ensure branch names and commit messages follow agreed conventions and accurately describe the changes.
+Verify that unit tests pass and code coverage remains above the defined threshold.
+Check that documentation (READMEs, code comments, etc.) has been updated to match code changes.
+
+
+Environment Cleanup and Resource Management:
+
+Shutdown or pause any non-production cloud resources to minimize costs (e.g. dev/test instances).
+Delete any temporary files, caches, or intermediate data products that are no longer needed.
+Check for any sensitive data (API keys, credentials, PII) that may have been inadvertently logged or cached and scrub as needed.
+Review cloud billing dashboard for any unexpected spikes or anomalies in usage costs.
+
+
+Security and Access Control:
+
+Ensure any new cloud resources are properly tagged and included in the appropriate security groups.
+Rotate any access keys or session tokens that are near expiration or no longer needed.
+Verify that user access roles and permissions are still appropriate and adhere to least-privilege principles.
+
+
+Task Management and Handoff:
+
+Update task trackers or project boards with the latest status, blockers, and next steps.
+Draft handoff notes for any in-progress work, including key decisions, open questions, and suggested next actions.
+Tag or assign any new issues or bugs discovered during the day's work.
+
+
+Stakeholder Communication:
+
+Summarize key accomplishments, insights or challenges from the day's work in a concise update for stakeholders.
+Highlight any decisions or inputs needed and call out upcoming milestones or deadlines.
+Proactively address any potential risks or concerns and propose mitigations.

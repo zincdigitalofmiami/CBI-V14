@@ -150,3 +150,5 @@ git push origin main
 **Safety:** All changes reversible via snapshots  
 **Next Session:** Monitor automated collection, build missing loaders
 
+
+
