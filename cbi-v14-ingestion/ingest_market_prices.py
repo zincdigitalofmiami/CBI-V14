@@ -106,10 +106,6 @@ MARKET_MANIFEST = {
         "te": {"category": "markets", "slug": "volatility-s-p-500"},
         "polygon": "VIX"
     },
-    "VLOX": {
-        "te": {"category": "markets", "slug": "cme-soybean-oil-volatility"},
-        "polygon": None
-    },
     # FX
     "USD/BRL": {
         "te": {"category": "currency", "slug": "usd-brazil-real"},
@@ -302,7 +298,7 @@ def main():
     parser.add_argument('--days', type=int, default=5)
     args = parser.parse_args()
 
-    symbols = list(PRIMARY_SYMBOLS.keys())
+    symbols = list(MARKET_MANIFEST.keys())
     if args.backfill:
         backfill(symbols, years=args.years)
     elif args.update:

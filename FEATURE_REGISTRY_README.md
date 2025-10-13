@@ -326,3 +326,4 @@ This is **how institutional trading desks operate** - they don't train blind mod
 
 
 
+

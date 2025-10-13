@@ -1,236 +1,397 @@
-# CBI-V14 CURSOR RULES (MASTER)
+ CBI-V14 CURSOR RULES (MASTER - AGENTIC EDITION)
 
-**Last Updated:** October 7, 2025  
-**Status:** ACTIVE AND ENFORCED
-
----
-
-## 🎯 CORE PRINCIPLES
-
-1. **Read plan.md as reference** - Don't edit automatically, user updates manually
-2. **NO MOCK DATA - EVER** - All data from BigQuery or show "No data yet"
-3. **NO NEW TABLES** without explicit permission
-4. **BUDGET CONSCIOUS** - Keep costs <$1/month, max $275-300/month total
-5. **EXISTING SCHEMA ONLY** - Route to existing tables, add columns (don't drop/rename)
-6. **PRODUCTION MINDSET** - Always be thorough, complete and accurate for production mindset every time
-7. **DEEP CONTENT REVIEW** - When reviewing any site or URL, always read a minimum of 1000 words of content
-8. **CANONICAL METADATA MANDATORY** - All new base tables MUST include: `source_name STRING`, `confidence_score FLOAT64`, `ingest_timestamp_utc TIMESTAMP`, `provenance_uuid STRING`. All ingestion code MUST populate these fields.
-9. **FULL REVIEW SCOPE** - When asked for a "full review," audit ALL of: (1) pipeline freshness (check last_update dates), (2) missing data sources (legislation, lobbying, biofuels, harvest rates, MPOB, freight), (3) broken/stale pipelines, (4) schema compliance, (5) end-to-end data flow validation, (6) gaps vs institutional benchmarks, (7) cost optimization, (8) dashboard/model readiness. Report what's working, what's stale, what's missing, and prioritized remediation plan.
+Last Updated: October 13, 2025  
+Status: ACTIVE AND ENFORCED - AGENTIC AI PLATFORM OPTIMIZED
 
 ---
 
-## 🚨 CRITICAL RULES (ZERO TOLERANCE)
+ 🎯 CORE PRINCIPLES - PLATFORM WEAKNESSES MITIGATION
 
-### RULE #1: NO MOCK DATA - EVER
-- ❌ Placeholder values, hardcoded arrays, fake data
-- ❌ mockData.js, fixtures.js, sampleData.js files
-- ❌ faker.js or data generation libraries
-- ✅ Query actual BigQuery tables
-- ✅ Show empty states when no data
-- ✅ Display real row counts and timestamps
+ PLATFORM WEAKNESS 1: HALLUCINATED PATHS
+- ✅ REALITY CHECK: Always verify existence before operations
+- ✅ PATH VALIDATION: Use confirmed absolute paths
+- ✅ EXISTENCE VERIFICATION: Never assume resources exist without checking
+- ❌ PLATFORM TRAP: Creating non-existent resources in code
 
-### RULE #2: BIGQUERY AS SOURCE OF TRUTH
-- ✅ Primary: `cbi-v14.forecasting_data_warehouse`
-- ✅ All tables partitioned and clustered
-- ✅ Never query production from frontend directly
-- ✅ FastAPI → BigQuery → Vite dashboard
+ PLATFORM WEAKNESS 2: MEMORY DEGRADATION
+- ✅ CONTEXT ANCHORS: Reference specific identifiers when possible
+- ✅ CHUNKED REVIEWS: Process components in manageable segments
+- ✅ SUMMARY RECAPS: Regular state restoration intervals
+- ❌ PLATFORM TRAP: Assuming persistent memory across extended interactions
 
-### RULE #3: NO HARDCODED CREDENTIALS
-- ❌ API keys in code (use Secret Manager or env vars)
-- ❌ Service account JSONs in repo
-- ✅ Environment variables: PROJECT, DATASET, GOOGLE_APPLICATION_CREDENTIALS
-- ✅ Store secrets in Google Secret Manager
+ PLATFORM WEAKNESS 3: OVER-CONFIDENT ASSUMPTIONS
+- ✅ DEFENSIVE CODING: Assume failures will occur
+- ✅ EXPLICIT ERROR HANDLING: Never assume operations will succeed
+- ✅ REALITY CHECKS: Verify resource states before operations
+- ❌ PLATFORM TRAP: "This approach should work" without validation
 
-### RULE #4: PROTECT EXISTING RESOURCES
-**EXISTING BIGQUERY TABLES (38 total):**
-```
-Core Data:
-- weather_data, economic_indicators, currency_data, fed_rates
-- soybean_oil_prices, soybean_prices, soybean_meal_prices
-- corn_prices, cotton_prices, commodity_prices_archive
-- ice_trump_intelligence, news_intelligence, social_sentiment
-- palm_oil_prices ✅ JUST CREATED
-- palm_oil_fundamentals ✅ JUST CREATED
-
-Models:
-- zl_arima_baseline, zl_arima_xreg, zl_arima_backtest
-
-Views (30+):
-- vw_weather_daily, vw_economic_daily, vw_soy_palm_spread, etc.
-```
-
-**WHITELISTED FOLDERS:**
-- `cbi-v14-ingestion/` (data pipelines)
-- `forecast/` (ML and API)
-- `bigquery_sql/` (SQL scripts)
-- `dashboard/` (Vite frontend)
-
-**BANNED:**
-- ❌ Tables with: _test, _staging, _backup, _tmp (unless approved)
-- ❌ Folders: tmp/, temp/, backup/, test/
-- ❌ Files: *_test.py, *_backup.py, *.bak
-- ❌ DROP TABLE (without explicit confirmation)
-- ❌ Renaming existing tables (breaks Vite dashboards)
+ PLATFORM WEAKNESS 4: CONTEXT DRIFT
+- ✅ EXPLICIT SCOPE: State which components are in context for each operation
+- ✅ SEQUENTIAL PROCESSING: Complete one component before moving to next
+- ✅ CONTEXT MARKERS: Use structured headers for orientation
+- ❌ PLATFORM TRAP: Mixing multiple component contexts in single response
 
 ---
 
-## ✅ VERIFICATION BEFORE ACTION
+ 🚨 CRITICAL RULES (ZERO TOLERANCE)
 
-### Before Creating Resources:
-```bash
-# 1. Check if table exists
-bq ls cbi-v14:forecasting_data_warehouse | grep table_name
-
-# 2. Check whitelist - is it approved?
-
-# 3. ASK USER if not on whitelist
+ RULE 1: REALITY-BASED OPERATIONS
+```
+ MANDATORY PRE-CHECKS
+verify_project_structure
+locate_actual_resources
+confirm_reference_documents
 ```
 
-### Before Modifying Files:
-```bash
-# 1. Check file exists
-ls -la path/to/file
-
-# 2. Show current state
-cat existing_file.py | head -20
-
-# 3. Never assume empty state
+ RULE 2: DATA STORE REALITY CHECKS
+```
+ BEFORE ANY DATA OPERATION
+verify_data_store_contents
+confirm_resource_counts
+validate_operation_parameters
 ```
 
-### Before BigQuery Operations:
-```bash
-# 1. Verify table exists
-bq show cbi-v14:forecasting_data_warehouse.table_name
+ RULE 3: NO TRUST IN PLATFORM MEMORY
+- ✅ EXPLICIT RECAPS: "Based on recent interactions, current focus is X"
+- ✅ CONTEXT REFRESHERS: Restate current component being modified regularly
+- ✅ PROGRESS CHECKPOINTS: "Step 3/7 complete: Component integration"
+- ❌ PLATFORM TRAP: "As previously discussed" (assumes memory retention)
 
-# 2. Check row count
-bq query --use_legacy_sql=false 'SELECT COUNT(*) FROM `cbi-v14.forecasting_data_warehouse.table_name`'
+ RULE 4: DEFENSIVE ASSUMPTIONS
+```
+ CORRECT - DEFENSIVE
+def execute_operation():
+    try:
+         Assume external calls might fail
+        response = external_call(timeout=30)
+        validate_response(response)
+        if not response_data:
+            log_warning("Operation returned empty response")
+            return None
+        return processed_data
+    except Exception as e:
+        log_error(f"Operation failed: {e}")
+        return None
 
-# 3. Confirm with user for DROP/RENAME
+ WRONG - OPTIMISTIC
+def execute_operation():
+     Platform might assume this always works
+    return external_call().process()
+```
+
+ RULE 5: DATA SOURCE PRIORITIZATION
+- ✅ PRIMARY SOURCE: Free external data provider (no API key required)
+- ✅ BACKUP SOURCE: Alternative provider (strictly secondary)
+- ❌ PLATFORM TRAP: Defaulting to paid services without explicit approval
+- ❌ COST VIOLATION: Using backup source when primary is available
+
+---
+
+ 🔧 PLATFORM-SPECIFIC PATTERNS
+
+ Resource Discovery Pattern
+```
+ ALWAYS RUN FIRST WHEN UNCERTAIN
+locate_project_components
+identify_relevant_resources
+verify_current_environment
+```
+
+ Context Management Pattern
+```
+=== CONTEXT SETUP ===
+Current focus: Specific integration task
+Components in context:
+- Primary implementation component
+- Reference architecture document
+- Supporting configuration elements
+
+Let me verify these components exist first:
+```
+
+ Memory Reinforcement Pattern
+```
+=== PROGRESS RECAP ===
+Recent interaction sequence:
+1. User requested specific functionality
+2. We reviewed architecture reference
+3. We verified implementation component exists
+4. We added error handling to external calls
+5. Now implementing data persistence function
+
+Current objective: Complete data persistence with proper error handling
+```
+
+ Data Source Selection Protocol
+```
+=== SOURCE SELECTION PROTOCOL ===
+Priority Order:
+1. Free external provider (no authentication)
+2. Existing cached data (if fresh)
+3. Alternative provider (backup only)
+4. Manual input (last resort)
+
+Current selection: Primary free provider
+Backup available: Yes (secondary provider)
+Cost impact: Zero (primary selected)
 ```
 
 ---
 
-## 🔧 REQUIRED PATTERNS
+ 📋 AGENTIC DEVELOPMENT WORKFLOW
 
-### Environment Variables (Python)
-```python
-# CORRECT
-import os
-PROJECT = os.environ["PROJECT"]  # Fails if not set
-DATASET = os.environ["DATASET"]
+ Platform-Optimized Workflow
+```
+ 1. REALITY CHECK - what's actually changed?
+check_current_state
+identify_modified_components
 
-# WRONG
-PROJECT = "cbi-v14"  # Hardcoded
-PROJECT = os.environ.get("PROJECT", "cbi-v14")  # Has default
+ 2. CONTEXT AWARE COMMITMENTS
+review_each_modification  Platform might hallucinate changes
+
+ 3. VERIFY MODIFICATIONS BEFORE FINALIZING
+confirm_staged_changes  See what's actually prepared
+
+ 4. FINALIZE WITH EXPLICIT CONTEXT
+finalize_with_context "feat(scope): specific functionality with validation"
 ```
 
-### BigQuery Queries
-```python
-# CORRECT
-query = f"""
-SELECT * FROM `{PROJECT}.{DATASET}.table_name`
-WHERE date > @start_date
+ Platform-Safe Component Modification
+```
+ === COMPONENT: specific_implementation.py ===
+ BEFORE MODIFICATION - SHOW CURRENT STATE
+"""
+CURRENT COMPONENT CONTENT (initial segment):
+import required_modules
+component_configuration
+...
+
+PROPOSED MODIFICATIONS:
+1. Add error handling to external interactions
+2. Implement retry mechanisms
+3. Add data validation procedures
 """
 
-# WRONG
-query = "SELECT * FROM cbi-v14.forecasting_data_warehouse.table_name"  # Hardcoded
+ ACTUAL IMPLEMENTATION CHANGES...
 ```
 
-### Adding Columns (Not Dropping)
-```sql
--- CORRECT
-ALTER TABLE `cbi-v14.forecasting_data_warehouse.weather_data`
-ADD COLUMN IF NOT EXISTS source_name STRING;
-
--- WRONG
-ALTER TABLE `cbi-v14.forecasting_data_warehouse.weather_data`
-DROP COLUMN old_field;  -- BREAKS DASHBOARDS
+ Data Source Implementation Pattern
 ```
+ CORRECT - FREE SOURCE PRIORITY
+def fetch_market_data():
+     Primary: Free provider (no API key)
+    data = fetch_from_primary_source()
+    if data:
+        return data
+    
+     Backup: Alternative provider (secondary)
+    data = fetch_from_backup_source()
+    if data:
+        log_warning("Using backup data source")
+        return data
+    
+     Fallback: No data available
+    return None
 
----
-
-## 📋 DEVELOPMENT WORKFLOW
-
-### Git Workflow
-```bash
-# 1. Create feature branch
-git checkout -b feature/description
-
-# 2. Make changes
-
-# 3. Check rules BEFORE committing
-make check-rules
-make lint
-
-# 4. Commit (pre-commit hooks run automatically)
-git add .
-git commit -m "feat(scope): description"
-
-# 5. Push
-git push origin feature/description
-```
-
-### Commit Message Format
-```
-<type>(<scope>): <subject>
-
-Types: feat, fix, refactor, docs, test, chore
-Scope: ingestion, forecast, dashboard, bigquery
+ WRONG - DEFAULTING TO BACKUP
+def fetch_market_data():
+     Platform might incorrectly prioritize backup source
+    return fetch_from_backup_source()  Violates cost rules
 ```
 
 ---
 
-## 🚫 BANNED BEHAVIORS
+ 🚫 PLATFORM-SPECIFIC BANNED BEHAVIORS
 
-- ❌ Editing plan.md automatically (user updates manually)
-- ❌ Mock/fake/placeholder data
-- ❌ Creating tables not on whitelist without permission
-- ❌ Creating temp/test/staging folders
-- ❌ DROP TABLE without explicit user confirmation
-- ❌ Renaming existing tables/columns (breaks Vite)
-- ❌ Hardcoded credentials in code
-- ❌ Docker/Docker Compose
+ Memory Assumption Violations
+- ❌ "As we discussed" (without specific interaction reference)
+- ❌ "In the previous implementation" (without component/line reference)
+- ❌ "The existing code" (without showing actual implementation)
+- ❌ Assuming platform remembers conversation from extended sequences
 
----
+ Resource Hallucinations
+- ❌ Creating paths that don't exist without verification
+- ❌ Modifying components without showing current state first
+- ❌ Assuming organizational structures without verification
+- ❌ Referencing non-existent configuration elements
 
-## ✅ REQUIRED BEHAVIORS
+ Optimistic Implementation Patterns
+- ❌ External calls without timeout and error handling
+- ❌ Data operations without validation verification
+- ❌ Resource operations without existence checks
+- ❌ Assuming environment configuration is established
 
-- ✅ `ls` before create
-- ✅ `cat` before overwrite
-- ✅ `bq ls` before table operations
-- ✅ Ask when uncertain
-- ✅ Real data or explicit "no data" states
-- ✅ Keep plan.md as single source of truth
-- ✅ Route to existing tables (don't create new ones)
-- ✅ Add columns (don't drop/rename)
-- ✅ Test locally before committing
-- ✅ Check budget impact before new services
-
----
-
-## 💰 BUDGET RULES
-
-- **Current BigQuery cost:** $0.71/month
-- **Maximum budget:** $275-300/month total
-- **New data sources:** Must be <$20/month (max 3 allowed)
-- **Always ask** before adding paid services
-- **Prefer free scraping** over paid APIs
+ Cost Violation Patterns
+- ❌ Using backup data sources when primary is available
+- ❌ Implementing paid services without explicit approval
+- ❌ Adding API dependencies that incur costs
+- ❌ Defaulting to authenticated services over free alternatives
 
 ---
 
-## 📊 CURRENT PROJECT STATUS
+ ✅ PLATFORM-SPECIFIC REQUIRED BEHAVIORS
 
-**Tables:** 38 existing (2 palm oil tables just created)  
-**Scrapers:** TradingEconomics (50+ URLs hourly, $0/month)  
-**ML Models:** 3 ARIMA models operational  
-**Vite Dashboard:** Operational, queries existing tables  
-**Cost:** $0.71/month (well under budget)
+ Reality Verification Rituals
+```
+ MANDATORY STARTING POINT FOR ANY TASK
+verify_current_environment
+confirm_project_structure
+validate_reference_documents
+```
+
+ Context Anchoring
+```
+=== CONTEXT ANCHOR ===
+Current Component: specific_implementation.py
+Current Objective: Add error handling to external calls
+Reference: architecture document specific sections
+Last Action: Verified component existence
+```
+
+ Progress Tracking
+```
+=== PROGRESS TRACKER ===
+Completed:
+✅ Verified component structure
+✅ Added error handling procedures
+✅ Implemented retry mechanisms
+
+Remaining:
+⬜ Add data validation
+⬜ Test with actual data
+⬜ Update documentation
+```
+
+ Data Source Validation
+```
+=== SOURCE VALIDATION ===
+Primary Source: Free external provider (verified available)
+Backup Source: Alternative provider (confirmed as backup only)
+Cost Status: Zero (primary source selected)
+Authentication: None required (free access confirmed)
+```
 
 ---
 
-**Version:** 2.0 (Consolidated from PROJECT_RULES.md, RULES_ACTIVE.md)  
-**Enforcement:** Active (pre-commit hooks, CI/CD)  
-**Next Review:** After 48-hour sprint completion
+ 💰 RESOURCE MANAGEMENT RULES
+
+ Platform Resource Control Weaknesses
+- ❌ WEAKNESS: May suggest intensive operations without impact analysis
+- ✅ MITIGATION: Always check resource tracking documentation first
+- ✅ PATTERN: "This operation requires X resources - confirm approval?"
+
+ Data Source Cost Protocol
+- ✅ PRIMARY: Free external providers (no authentication)
+- ✅ BACKUP: Alternative sources (secondary, minimal usage)
+- ❌ PROHIBITED: Paid services without explicit budget approval
+- ❌ VIOLATION: Using backup sources when primary is functional
+
+ Reality-Based Resource Verification
+```
+ CHECK ACTUAL USAGE BEFORE SUGGESTING NEW OPERATIONS
+verify_current_resource_consumption
+project_anticipated_usage
+confirm_within_allocated_bounds
+```
+
+---
+
+ 🎯 PLATFORM PERFORMANCE OPTIMIZATION
+
+ Optimal Context Window Usage
+- ✅ SEGMENT SIZE: Process manageable portions per response
+- ✅ COMPONENT FOCUS: One primary component per interaction sequence
+- ✅ SUMMARY CYCLES: Summarize progress at regular intervals
+- ❌ CONTEXT OVERLOAD: Don't load multiple complex components simultaneously
+
+ Effective Interaction Patterns
+```
+GOOD: "Let's work on COMPONENT: specific/path - specifically the target_method functionality"
+BAD:  "Improve the implementation" (insufficient specificity)
+
+GOOD: "Based on specific sections of reference document, implement X"
+BAD:  "Follow the plan" (no specific reference)
+```
+
+ Platform Memory Reinforcement
+```
+=== MEMORY REINFORCEMENT ===
+Key operational constraints:
+1. Project uses structured data architecture
+2. No synthetic data allowed - ever
+3. Critical integration = significant impact factor
+4. Resource limit: established boundaries
+5. All components need standard metadata
+6. Data sources: Free primary, backup secondary only
+```
+
+---
+
+ 🚨 CRITICAL PERFORMANCE DECAY MITIGATION
+
+ Inevitable Cognitive Degradation Protocol
+```
+=== DEGRADATION DETECTED ===
+Observed: Platform performance degradation after extended use
+Required: Full context reset and reality verification
+Protocol: Execute comprehensive system check
+```
+
+ Extended Session Recovery Pattern
+```
+After 2+ hours of continuous operation:
+1. PAUSE all complex implementations
+2. VERIFY all assumptions from past hour
+3. RESTATE current objective with fresh context
+4. CONFIRM all referenced resources actually exist
+5. RESUME with simplified, verified approach
+```
+
+ Reality Restoration Sequence
+```
+ WHEN PLATFORM BECOMES UNRELIABLE
+emergency_reality_check
+validate_all_referenced_components
+confirm_current_implementation_state
+restate_primary_objective_fresh
+```
+
+ Data Source Integrity Check
+```
+=== SOURCE INTEGRITY VERIFICATION ===
+When platform performance degrades:
+1. RE-VERIFY primary data source availability
+2. CONFIRM backup source is still secondary
+3. VALIDATE no cost violations introduced
+4. ENSURE free provider remains primary
+```
+
+---
+
+ 📊 CURRENT PROJECT STATUS - PLATFORM AWARE
+
+VERIFIED COMPONENTS: Confirmed via direct verification  
+ACTUAL RESOURCE USAGE: Within established boundaries  
+CRITICAL INTEGRATION: Significant impact factor identified  
+PLATFORM CONTEXT: Recent interaction sequence documented  
+DATA SOURCE STATUS: Free primary provider active, backup available but unused  
+
+NEXT ACTION:
+```
+ VERIFY CURRENT STATE BEFORE PROCEEDING
+confirm_component_structure
+verify_data_resource_counts
+validate_implementation_environment
+```
+
+---
+
+Version: Agentic Platform Edition  
+Enforcement: Active with platform weakness mitigation  
+Weaknesses Addressed: Memory degradation, resource hallucinations, optimistic assumptions  
+Performance Decay Protocol: Activated after 2+ hour sessions  
+Data Source Protocol: Free primary, backup secondary only  
+Next Reality Check: Every 10 interactions during critical integration
 
 
 

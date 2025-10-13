@@ -32,27 +32,32 @@
 - **Curated/models layer**: façade views live for economics, weather, volatility, soybean oil features/quote, and social intelligence (still Reddit until ScrapeCreators migration). Models dataset holds `vw_master_feature_set_v1`, `zl_price_training_base`, `zl_forecast_baseline_v1`, `zl_forecast_arima_plus_v1`, `zl_timesfm_training_v1` — schemas clean, need validation sweep.
 - **Immediate audit follow-ups**: run project-level `INFORMATION_SCHEMA` inventory once regional syntax sorted; enforce partitioning on commodity tables; validate weather loaders + `market_prices` refresh after TradingEconomics/Polygon ingest; re-audit social/ICE pipelines post-ScrapeCreators migration.
 
-## Phase 4 — Market Data Rebuild (Pending)
+## Phase 4 — Market Data Rebuild (In Progress)
 - Draft ingestion spec: TradingEconomics (primary) + Polygon (fallback), ≥5 min spacing between calls, 4 hr steady-state refresh window.
 - Back up and replace price tables (`soybean_oil_prices`, `soybean_prices`, `soybean_meal_prices`, `corn_prices`, `cotton_prices`, FX tables).
 - Version new ingestion code (connection config, API retries, lineage logging).
 - Load clean data and validate against CME/Reuters before swap.
+- ✅ Created 7 new partitioned tables: wheat_prices, crude_oil_prices, natural_gas_prices, canola_oil_prices, sunflower_oil_prices, gold_prices, usd_index_prices (all with DAY partitioning on date field, clustered by symbol+date).
+- ✅ Fixed ingest_market_prices.py manifest bug (PRIMARY_SYMBOLS → MARKET_MANIFEST) and removed VLOX entry.
 
-## Phase 5 — Volatility Suite Rebuild (Pending)
-- Back up `volatility_data` and remove placeholder rows.
-- Ingest:
-  - VIX (CBOE API + FRED fallback) → `vw_vix_daily`.
-  - Soybean CVOL (CME) → `vw_cvol_soybean_daily`.
-  - Realized volatility (price-derived) → `vw_zl_realized_volatility_daily`.
-- Align metadata and scoring across volatility views.
 
-## Phase 6 — Fundamentals & Demand Drivers (Pending)
-- Stand up ingestion for:
-  - USDA/FAS export sales (China purchases).
+## Phase 5 — Volatility Suite Rebuild (In Progress)
+- ✅ Created dedicated `vix_daily` table (partitioned, separate from lumped `volatility_data`).
+- ⏳ Back up `volatility_data` and remove placeholder rows.
+- ⏳ Ingest VIX from CBOE API + FRED fallback.
+- ⏳ Build realized ZL volatility from price series.
+- ⏳ Create curated `vw_volatility_suite_daily` consolidating VIX + realized vol.
+- ⏳ Align metadata and scoring across volatility views.
+
+## Phase 6 — Fundamentals & Demand Drivers (In Progress)
+- ✅ Created biofuels/trade infrastructure in `staging`: `biofuel_policy`, `biofuel_production`, `usda_export_sales`, `trade_policy_events` (all partitioned with canonical metadata).
+- ✅ Created regional weather composites: `weather_brazil_daily`, `weather_argentina_daily`, `weather_us_midwest_daily` (partitioned, production-weighted schema).
+- ⏳ Stand up ingestion for:
+  - USDA/FAS export sales (China purchases) → `staging.usda_export_sales`.
   - CONAB/ABIOVE/BCR crop updates.
-  - EPA RFS/EIA biodiesel data.
+  - EPA RFS/EIA biodiesel data → `staging.biofuel_policy` + `staging.biofuel_production`.
   - TradingEconomics macro series.
-- Create staging tables with canonical metadata and expose curated views.
+- ⏳ Expose curated views for biofuels/trade intelligence.
 
 ### Weather & Biofuel Data Collection Priorities
 - **Variables to capture in every agronomic feed:** precipitation (mm), temperature max (°C), temperature min (°C), soil moisture (where source supports it), calculated growing degree days.
