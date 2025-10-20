@@ -37,9 +37,9 @@ class MarketSignalEngine:
         self.client = bigquery.Client(project=project_id)
         self.project_id = project_id
         
-        # Crisis thresholds from Signal Scoring Manual
+        # Crisis thresholds - SOYBEAN-SPECIFIC CALIBRATION
         self.crisis_thresholds = {
-            'vix_stress': 1.5,           # VIX > 30
+            'vix_stress': 2.0,            # VIX > 28 for soybean markets
             'harvest_pace': 0.8,          # Supply concerns
             'china_relations': 0.8,       # Trade tension
             'tariff_threat': 0.8,         # Policy risk
@@ -61,20 +61,40 @@ class MarketSignalEngine:
     
     def calculate_vix_stress(self) -> Dict:
         """
-        VIX Stress (Market Volatility)
-        Formula: vix_current / 20.0 (capped at 3.0)
+        VIX Stress (Market Volatility) - SOYBEAN-SPECIFIC CALIBRATION
+        Non-linear formula calibrated for soybean oil futures market response
         """
         query = f"""
         SELECT 
             last_price as vix_current,
-            last_price / 20.0 as vix_stress,
+            -- Soybean-specific non-linear VIX calibration
+            CASE
+                -- Lower threshold for normal (17 instead of 20)
+                WHEN last_price <= 17 THEN last_price / 17.0
+                
+                -- Medium impact zone - agricultural markets show moderate sensitivity
+                WHEN last_price > 17 AND last_price <= 25 THEN 
+                    1.0 + ((last_price - 17) / 8.0) * 0.6
+                
+                -- High impact zone - more significant effect on agricultural markets
+                WHEN last_price > 25 AND last_price <= 35 THEN
+                    1.6 + ((last_price - 25) / 10.0) * 0.9
+                
+                -- Extreme impact zone - full crisis effect
+                WHEN last_price > 35 THEN
+                    2.5 + ((last_price - 35) / 25.0) * 0.5
+            END as vix_soybean_stress_ratio,
+            
             CASE 
-                WHEN last_price / 20.0 > 2.0 THEN 'EXTREME_VOLATILITY'
-                WHEN last_price / 20.0 > 1.5 THEN 'HIGH_VOLATILITY'
-                WHEN last_price / 20.0 > 1.0 THEN 'ELEVATED_VOLATILITY'
-                WHEN last_price / 20.0 > 0.5 THEN 'NORMAL_VOLATILITY'
-                ELSE 'LOW_VOLATILITY'
-            END as volatility_regime
+                WHEN last_price <= 14 THEN 'VERY_LOW_VOLATILITY'
+                WHEN last_price <= 17 THEN 'NORMAL_VOLATILITY'
+                WHEN last_price <= 21 THEN 'SLIGHTLY_ELEVATED'
+                WHEN last_price <= 25 THEN 'ELEVATED_VOLATILITY'
+                WHEN last_price <= 30 THEN 'HIGH_VOLATILITY'
+                WHEN last_price <= 35 THEN 'VERY_HIGH_VOLATILITY'
+                WHEN last_price <= 50 THEN 'EXTREME_VOLATILITY'
+                ELSE 'CATASTROPHIC_VOLATILITY'
+            END as soybean_volatility_regime
         FROM `{self.project_id}.forecasting_data_warehouse.volatility_data`
         WHERE symbol = 'VIX' AND data_date IS NOT NULL
         ORDER BY data_date DESC
@@ -86,13 +106,13 @@ class MarketSignalEngine:
             if result.empty:
                 raise ValueError("NO VIX DATA AVAILABLE - CANNOT CALCULATE VIX STRESS")
             
-            vix_stress = min(result['vix_stress'].iloc[0], 3.0)  # Cap at 3.0
+            vix_stress = min(result['vix_soybean_stress_ratio'].iloc[0], 3.0)  # Cap at 3.0
             
             return {
                 'score': vix_stress,
                 'vix_current': result['vix_current'].iloc[0],
-                'regime': result['volatility_regime'].iloc[0],
-                'crisis_flag': vix_stress > self.crisis_thresholds['vix_stress']
+                'regime': result['soybean_volatility_regime'].iloc[0],
+                'crisis_flag': vix_stress > 2.0  # Soybean-specific threshold (VIX ~30)
             }
         except Exception as e:
             logger.error(f"Error calculating VIX stress: {e}")
@@ -307,7 +327,7 @@ class MarketSignalEngine:
                     ELSE 0.3
                 END) as em_stress
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
         )
         SELECT 
             COALESCE(ABS(p.tweet_correlation), 0.3) as tweet_correlation,
@@ -522,8 +542,8 @@ class MarketSignalEngine:
         Determine Market Regime Classification based on Big 7 signals
         Priority order from Signal Scoring Manual
         """
-        # Single factor crisis regimes (highest priority)
-        if signals['vix_stress']['score'] > 1.5:
+        # Single factor crisis regimes (highest priority) - SOYBEAN CALIBRATED
+        if signals['vix_stress']['score'] > 2.0:  # VIX > 28 for soybean markets
             return "VIX_CRISIS_REGIME"
         elif signals['harvest_pace']['score'] < 0.8:
             return "SUPPLY_CRISIS_REGIME"
@@ -546,17 +566,17 @@ class MarketSignalEngine:
         bsc = signals['biofuel_cascade']['score']
         hci = signals['hidden_correlation']['score']
         
-        if vix > 1.25 and china > 0.6:  # VIX > 25
+        if vix > 1.35 and china > 0.6:  # VIX > 22 for soybean markets
             return "GEOPOLITICAL_STRESS_REGIME"
         elif harvest < 0.9 and china > 0.6:
             return "SUPPLY_GEOPOLITICAL_REGIME"
-        elif vix > 1.25 and tariff > 0.6:
+        elif vix > 1.35 and tariff > 0.6:  # VIX > 22 for soybean markets
             return "TRUMP_VOLATILITY_REGIME"
         elif bsc > 0.6 and hci > 0.6:
             return "BIOFUEL_CORRELATION_REGIME"
         
-        # Normal regime
-        if vix < 1.0 and harvest > 0.95 and china < 0.4 and tariff < 0.3:
+        # Normal regime - soybean calibrated (VIX < 19)
+        if vix < 1.12 and harvest > 0.95 and china < 0.4 and tariff < 0.3:  # VIX < 19
             return "FUNDAMENTALS_REGIME"
         
         # Default
@@ -601,18 +621,19 @@ class MarketSignalEngine:
         
         # Get REAL current ZL price from database
         price_query = f"""
-        SELECT close_price as current_price
+        SELECT close as current_zl_price
         FROM `{self.project_id}.forecasting_data_warehouse.soybean_oil_prices`
-        WHERE date = (SELECT MAX(date) FROM `{self.project_id}.forecasting_data_warehouse.soybean_oil_prices`)
+        ORDER BY time DESC
+        LIMIT 1
         """
         try:
             price_result = self.client.query(price_query).to_dataframe()
-            if not price_result.empty:
-                base_price = price_result['current_price'].iloc[0]
-            else:
-                base_price = 51.05  # Fallback only if no data
-        except:
-            base_price = 51.05  # Fallback only on error
+            if price_result.empty:
+                raise ValueError("NO ZL PRICE DATA AVAILABLE - CANNOT GENERATE FORECAST")
+            base_price = price_result['current_zl_price'].iloc[0]
+        except Exception as e:
+            logger.error(f"Failed to get ZL price: {e}")
+            raise ValueError(f"CANNOT GET ZL PRICE: {e}")
         
         # Calculate price forecasts based on composite signal and regime
         regime_multipliers = {
@@ -729,7 +750,7 @@ if __name__ == "__main__":
     print(f"🔥 PRIMARY DRIVER: {forecast['primary_driver']}")
     
     print(f"\n📈 PRICE FORECASTS (ZL Soybean Oil):")
-    base = 51.05
+    base = forecast['price_forecasts']['1_week'] / (1 + 0.003)  # Reverse calculate base from 1-week
     for horizon, price in forecast['price_forecasts'].items():
         change = ((price / base) - 1) * 100
         print(f"  {horizon}: ${price:.2f} ({change:+.1f}%)")
