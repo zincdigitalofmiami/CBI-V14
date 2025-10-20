@@ -258,7 +258,7 @@ class TrumpTruthSocialMonitor:
     
     def process_posts_to_intelligence(self, posts):
         """
-        Process Trump posts into ice_trump_intelligence schema
+        Process Trump posts into trump_policy_intelligence schema
         """
         if not posts:
             return []

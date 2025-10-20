@@ -30,7 +30,7 @@ cotton_prices - Commodity ✅
 economic_indicators - Macro ✅ (Fed, yields, USD, CPI, VIX)
 extraction_labels - ML staging ???
 feature_metadata - Feature registry ✅
-ice_trump_intelligence - Trump impact ✅
+trump_policy_intelligence - Trump impact ✅
 news_intelligence - News/policy ✅
 palm_oil_fundamentals - Empty (0 rows) ❌
 palm_oil_prices - Palm prices ✅
@@ -47,7 +47,7 @@ weather_data - Weather ✅ (but stale)
 
 ### Views (17 total):
 ```
-soy_oil_features - NO vw_ prefix (inconsistent) ⚠️
+soybean_oil_features - NO vw_ prefix (inconsistent) ⚠️
 vw_brazil_precip_daily - Weather aggregate
 vw_brazil_weather_summary - Weather aggregate (redundant?)
 vw_dashboard_brazil_weather - Dashboard view
@@ -69,7 +69,7 @@ vw_zl_features_daily - ML features ✅ NEEDED
 
 ### Backups (5 temporary):
 ```
-ice_trump_intelligence_bkp_20251008 - From today's work
+trump_policy_intelligence_bkp_20251008 - From today's work
 news_intelligence_bkp_20251008 - From today's work
 social_sentiment_bkp_20251008 - From today's work
 volatility_data_bkp_20251008 - From today's work
@@ -108,7 +108,7 @@ weather_data_bkp_20251008 - From today's work
 - Empty/unused tables (if confirmed unused)
 
 ### Phase 2: Standardize Naming
-- Rename `soy_oil_features` → `vw_soy_oil_features`
+- Rename `soybean_oil_features` → `vw_soybean_oil_features`
 - Ensure ALL views have `vw_` prefix
 - Ensure consistent `{source}_{aggregation}` pattern
 

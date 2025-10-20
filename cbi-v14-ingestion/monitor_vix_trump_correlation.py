@@ -98,7 +98,7 @@ class VIXTrumpCorrelationMonitor:
                 text,
                 agricultural_impact,
                 soybean_relevance
-            FROM `cbi-v14.forecasting_data_warehouse.ice_trump_intelligence`
+            FROM `cbi-v14.staging.trump_policy_intelligence`
             WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_hours} HOUR)
                 AND agricultural_impact > 0.3
             ORDER BY timestamp DESC

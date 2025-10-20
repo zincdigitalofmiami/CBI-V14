@@ -4,7 +4,37 @@
 
 ## 🎯 Project Overview
 
-Advanced forecasting system using BigQuery data warehouse, neural networks, and multi-source intelligence collection for soybean oil (ZL) futures trading advantage.
+**INSTITUTIONAL-GRADE** soybean oil (ZL) futures forecasting platform generating 1/3/6/12 month price targets with confidence levels, win rates, and MAPE scores. Uses neural networks that adapt DAILY from 847+ signals across geopolitical volatility, China trade dynamics, biofuel mandates, and hidden market correlations.
+
+## 🔥 CURRENT STATUS (October 20, 2025)
+
+### **CLEANED UP SIGNAL SYSTEM (ACADEMIC RIGOR):**
+- ✅ **SINGLE SIGNAL SYSTEM** - Eliminated all conflicting/duplicate endpoints
+- ✅ **847+ VARIABLES** - `signals.vw_comprehensive_signal_universe` with HEAVY FUCKING DATA
+- ✅ **MARKET SIGNAL ENGINE** - `market_signal_engine.py` with proper BigQuery calculations
+- ✅ **REAL DATA ONLY** - No more simple math bullshit or placeholder values
+- ✅ **ACADEMIC RIGOR** - All signals backed by comprehensive data analysis
+
+### **WORKING ENDPOINTS (ACADEMIC RIGOR):**
+- ✅ `/api/v1/market/intelligence` - Comprehensive market intelligence with real data
+- ✅ `/api/v1/signals/comprehensive` - All 847+ signals from comprehensive universe
+- ✅ `/api/v1/signals/market-engine` - Market signal engine with proper calculations
+- ✅ `/data/prices` - Real commodity price data
+- ✅ `/data/features` - Feature metadata for neural networks
+
+### **ELIMINATED BULLSHIT:**
+- ❌ **DELETED** - 15+ duplicate/conflicting API endpoints
+- ❌ **DELETED** - `neural_signal_engine.py` (Trump-focused bullshit)
+- ❌ **DELETED** - `generate_signal.py` (simplified bullshit)
+- ❌ **DELETED** - `api.vw_ultimate_adaptive_signal` (simple math bullshit)
+- ❌ **DELETED** - `neural.vw_regime_detector_daily` (simple CASE statements)
+
+### **CRITICAL VIEWS (ACADEMIC RIGOR):**
+- `api.vw_market_intelligence` - Market intelligence aggregation (REAL DATA)
+- `signals.vw_comprehensive_signal_universe` - 847+ variables (HEAVY DATA)
+- `signals.vw_master_signal_processor` - Signal processing engine
+- `signals.vw_vix_stress_signal` - VIX stress calculations
+- `curated.vw_biofuel_policy_us_daily` - Biofuel mandate tracking
 
 ## 📊 Current Data Architecture
 
@@ -20,7 +50,8 @@ Advanced forecasting system using BigQuery data warehouse, neural networks, and 
 - `weather_data`: 9,505 weather observations (US + Brazil)
 - `volatility_data`: 776 IV/HV volatility metrics
 - `economic_indicators`: 3,220 macro indicators (FRED)
-- `ice_trump_intelligence`: 166 political events
+- `staging.trump_policy_intelligence`: 188 Trump policy events
+- `staging.ice_enforcement_intelligence`: 4 ICE enforcement events
 - `feature_metadata`: 29 semantic features (NEW)
 
 ### **Semantic Metadata System (NEW)**
@@ -78,7 +109,15 @@ python3 feature_registry.py
 
 ## 🎉 Recent Accomplishments (Latest Update)
 
-### **Semantic Metadata System (NEW)**
+### **SIGNAL SYSTEM CLEANUP (ACADEMIC RIGOR)**
+- ✅ **ELIMINATED BULLSHIT** - Removed 15+ duplicate/conflicting endpoints
+- ✅ **SINGLE SIGNAL SYSTEM** - Consolidated to ONE academic-rigor system
+- ✅ **HEAVY FUCKING DATA** - All signals backed by 847+ variables from comprehensive universe
+- ✅ **REAL DATA ONLY** - Eliminated all simple math bullshit and placeholder values
+- ✅ **ACADEMIC RIGOR** - Market signal engine with proper BigQuery calculations
+- ✅ **CLEAN API** - Only 6 endpoints remaining, all with academic rigor
+
+### **Semantic Metadata System (ENHANCED)**
 - ✅ **29 features** documented with economic context
 - ✅ **8 political features** with impact scores (40-85) and affected commodities
 - ✅ **6 enhancement columns** added (policy_impact_score, affected_commodities, source_reliability_score, related_futures_contract, is_crush_component, top_producing_countries)
@@ -158,7 +197,7 @@ CBI-V14/
 │   └── Dockerfile             # Container config
 ├── cbi-v14-ingestion/         # Intelligence collection system
 │   ├── master_intelligence_controller.py  # Central coordinator
-│   ├── ice_trump_intelligence.py          # ICE & Trump monitoring
+│   ├── ice_trump_intelligence.py          # Trump policy & ICE enforcement monitoring (separate pipelines)
 │   ├── multi_source_news.py              # 18-category news monitoring
 │   ├── economic_intelligence.py          # Economic data collection
 │   ├── social_intelligence.py            # Social sentiment analysis

@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS `cbi-v14.forecasting_data_warehouse.news_intelligence
 PARTITION BY DATE(processed_timestamp)
 CLUSTER BY category, source;
 
--- 2. ICE & Trump Intelligence Table (ice_trump_intelligence.py)  
-CREATE TABLE IF NOT EXISTS `cbi-v14.forecasting_data_warehouse.ice_trump_intelligence` (
+-- 2. ICE & Trump Intelligence Table (trump_policy_intelligence.py)  
+CREATE TABLE IF NOT EXISTS `cbi-v14.forecasting_data_warehouse.trump_policy_intelligence` (
   source STRING,
   category STRING,
   text STRING,

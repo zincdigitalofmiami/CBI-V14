@@ -26,7 +26,7 @@ TRADINGECONOMICS_CLIENT = os.environ.get("TRADINGECONOMICS_CLIENT")
 TRADINGECONOMICS_API_KEY = os.environ.get("TRADINGECONOMICS_API_KEY")
 POLYGON_API_KEY = os.environ.get("POLYGON_API_KEY")
 
-TRADINGECONOMICS_BASE = "https://api.tradingeconomics.com"
+TRADINGECONOMICS_BASE = "https://tradingeconomics.com"
 POLYGON_BASE = "https://api.polygon.io"
 
 # TradingEconomics category/slug references collected from

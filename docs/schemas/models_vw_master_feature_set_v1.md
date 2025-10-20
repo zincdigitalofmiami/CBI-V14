@@ -69,7 +69,7 @@ LEFT JOIN `cbi-v14.forecasting_data_warehouse.weather_data` weather_br
     ON DATE(price.time) = weather_br.date AND weather_br.region = 'Brazil'
 LEFT JOIN `cbi-v14.forecasting_data_warehouse.economic_indicators` econ 
     ON DATE(price.time) = econ.date
-LEFT JOIN `cbi-v14.forecasting_data_warehouse.ice_trump_intelligence` trump 
+LEFT JOIN `cbi-v14.forecasting_data_warehouse.trump_policy_intelligence` trump 
     ON DATE(price.time) = DATE(trump.timestamp)
 WHERE price.symbol = 'ZL'
 ORDER BY feature_date DESC
