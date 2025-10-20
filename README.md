@@ -36,6 +36,13 @@
 - `signals.vw_vix_stress_signal` - VIX stress calculations
 - `curated.vw_biofuel_policy_us_daily` - Biofuel mandate tracking
 
+### **📊 SIGNAL SCORING DOCUMENTATION:**
+- **[SIGNAL SCORING MANUAL](docs/operations/SIGNAL_SCORING_MANUAL.md)** - Complete scoring formulas for all signals
+- **Big 7 Primary Signals** - VIX, Harvest, China, Tariff, GVI, BSC, HCI
+- **Crisis Thresholds** - 0.8 triggers for regime changes
+- **Neural Network Weights** - Tier 1 (2.5x), Tier 2 (1.5x), Tier 3 (1.0x)
+- **16 News Categories** - Sentiment integration framework
+
 ## 📊 Current Data Architecture
 
 ### **Factor-Specific Tables (Production Ready)**
