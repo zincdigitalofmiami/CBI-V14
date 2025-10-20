@@ -187,30 +187,63 @@ cd cbi-v14-ingestion
 python3 run_ingestion.py
 ```
 
-## 📁 Project Structure
+## 📁 Project Structure (CLEANED UP - Oct 20, 2025)
 
 ```
 CBI-V14/
-├── forecast/                    # FastAPI forecasting service
-│   ├── main.py                 # SARIMAX forecast API
-│   ├── requirements.txt        # Python dependencies  
-│   └── Dockerfile             # Container config
-├── cbi-v14-ingestion/         # Intelligence collection system
-│   ├── master_intelligence_controller.py  # Central coordinator
-│   ├── ice_trump_intelligence.py          # Trump policy & ICE enforcement monitoring (separate pipelines)
-│   ├── multi_source_news.py              # 18-category news monitoring
-│   ├── economic_intelligence.py          # Economic data collection
-│   ├── social_intelligence.py            # Social sentiment analysis
-│   ├── shipping_intelligence.py          # Logistics monitoring
-│   ├── intelligence_hunter.py            # Neural correlation discovery
-│   ├── csv_data_loader.py                  # Commodity price ingestion
-│   ├── ingest_weather_noaa.py           # Weather data collection
-│   └── ingest_volatility.py             # Volatility metrics
-├── bigquery_sql/              # SQL feature engineering
-├── data/csv/                  # Raw data files (Barchart exports)
-├── scripts/                   # Rule enforcement scripts
-└── docs/                     # Documentation and architecture
+├── forecast/                           # FastAPI forecasting service
+│   ├── main.py                        # Clean API with academic rigor (6 endpoints)
+│   ├── market_signal_engine.py        # Market signal engine with proper calculations
+│   └── requirements.txt               # Python dependencies
+├── cbi-v14-ingestion/                 # Intelligence collection system (CLEANED)
+│   ├── master_intelligence_controller.py    # Central coordinator
+│   ├── economic_intelligence.py             # Economic data collection
+│   ├── social_intelligence.py              # Social sentiment analysis
+│   ├── multi_source_news.py                # 18-category news monitoring
+│   ├── ingest_weather_noaa.py             # Weather data collection
+│   ├── ingest_volatility.py               # Volatility metrics
+│   ├── ingest_cftc_positioning_REAL.py    # CFTC data (real data)
+│   ├── ingest_social_intelligence_comprehensive.py  # Social intelligence
+│   ├── feature_registry.py               # Semantic metadata access
+│   ├── bigquery_utils.py                 # Data ingestion utilities
+│   └── run_ingestion.py                  # Main collection orchestrator
+├── bigquery_sql/                       # SQL feature engineering
+│   ├── signals/                        # Signal processing views
+│   └── curated_facade/                 # Curated data views
+├── dashboard/                          # React/Vite dashboard
+│   ├── src/pages/                      # Dashboard pages
+│   └── package.json                    # Frontend dependencies
+├── scripts/                            # Organized scripts
+│   ├── audits/                         # Audit scripts
+│   ├── ci/                            # CI/CD scripts
+│   └── scrapers/                      # Data scraping scripts
+├── docs/                              # Documentation (CLEANED)
+│   ├── plans/                         # Project plans
+│   ├── audits/                        # Audit reports
+│   ├── operations/                    # Operations documentation
+│   ├── research/                      # Research documents
+│   └── rules/                         # Development rules
+├── data/                              # Data files (CLEANED)
+│   ├── twitter/                       # Social intelligence data
+│   ├── facebook/                      # Social intelligence data
+│   ├── linkedin/                      # Social intelligence data
+│   ├── youtube/                       # Social intelligence data
+│   ├── reddit/                        # Social intelligence data
+│   ├── tiktok/                        # Social intelligence data
+│   └── truth_social/                  # Social intelligence data
+└── PROJECT_STRUCTURE.md              # Complete project structure
 ```
+
+### **DELETED BULLSHIT:**
+- ❌ `cache/` - 100+ outdated API responses
+- ❌ `archive/` - Old audit files
+- ❌ `data/uploads/` - Old CSV uploads
+- ❌ `data/snapshots/` - Old snapshots
+- ❌ `cbi-v14-ingestion/trump_*` - Trump-focused bullshit
+- ❌ `cbi-v14-ingestion/ice_trump_intelligence.py` - Trump bullshit
+- ❌ `cbi-v14-ingestion/monitor_vix_trump_correlation.py` - Trump bullshit
+- ❌ `cbi-v14-ingestion/*_FIXED.py` - Fixed versions
+- ❌ `cbi-v14-ingestion/secrets.json` - Should be in Secret Manager
 
 ## 🔒 Core Rules
 
