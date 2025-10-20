@@ -66,18 +66,18 @@ class MarketSignalEngine:
         """
         query = f"""
         SELECT 
-            close as vix_current,
-            close / 20.0 as vix_stress,
+            last_price as vix_current,
+            last_price / 20.0 as vix_stress,
             CASE 
-                WHEN close / 20.0 > 2.0 THEN 'EXTREME_VOLATILITY'
-                WHEN close / 20.0 > 1.5 THEN 'HIGH_VOLATILITY'
-                WHEN close / 20.0 > 1.0 THEN 'ELEVATED_VOLATILITY'
-                WHEN close / 20.0 > 0.5 THEN 'NORMAL_VOLATILITY'
+                WHEN last_price / 20.0 > 2.0 THEN 'EXTREME_VOLATILITY'
+                WHEN last_price / 20.0 > 1.5 THEN 'HIGH_VOLATILITY'
+                WHEN last_price / 20.0 > 1.0 THEN 'ELEVATED_VOLATILITY'
+                WHEN last_price / 20.0 > 0.5 THEN 'NORMAL_VOLATILITY'
                 ELSE 'LOW_VOLATILITY'
             END as volatility_regime
-        FROM `{self.project_id}.forecasting_data_warehouse.vix_daily`
-        WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-        ORDER BY date DESC
+        FROM `{self.project_id}.forecasting_data_warehouse.volatility_data`
+        WHERE symbol = 'VIX' AND data_date IS NOT NULL
+        ORDER BY data_date DESC
         LIMIT 1
         """
         
@@ -188,7 +188,7 @@ class MarketSignalEngine:
                 END) / NULLIF(COUNT(*), 0) as argentina_mentions_ratio
                 
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE TIMESTAMP(created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
               AND LOWER(content) LIKE '%china%'
         )
         SELECT 
@@ -204,7 +204,7 @@ class MarketSignalEngine:
         try:
             result = self.client.query(query).to_dataframe()
             if result.empty:
-                return {'score': 0.5, 'tension': 0.5, 'us_share': 0.3, 'crisis_flag': False}
+                raise ValueError("NO CHINA RELATIONS DATA AVAILABLE")
             
             china_score = min(result['china_relations_score'].iloc[0], 1.0)  # Cap at 1.0
             
@@ -216,7 +216,7 @@ class MarketSignalEngine:
             }
         except Exception as e:
             logger.error(f"Error calculating China relations: {e}")
-            return {'score': 0.5, 'tension': 0.5, 'us_share': 0.3, 'crisis_flag': False}
+            raise ValueError(f"CANNOT CALCULATE CHINA RELATIONS: {e}")
     
     def calculate_tariff_threat(self) -> Dict:
         """
@@ -240,7 +240,7 @@ class MarketSignalEngine:
                 END) as tariff_intensity
                 
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE TIMESTAMP(created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
         )
         SELECT 
             tariff_mentions_7d,
@@ -253,7 +253,7 @@ class MarketSignalEngine:
         try:
             result = self.client.query(query).to_dataframe()
             if result.empty:
-                return {'score': 0.3, 'mentions': 0, 'intensity': 0.3, 'crisis_flag': False}
+                raise ValueError("NO TARIFF THREAT DATA AVAILABLE")
             
             tariff_score = result['tariff_threat_score'].iloc[0]
             
@@ -265,7 +265,7 @@ class MarketSignalEngine:
             }
         except Exception as e:
             logger.error(f"Error calculating tariff threat: {e}")
-            return {'score': 0.3, 'mentions': 0, 'intensity': 0.3, 'crisis_flag': False}
+            raise ValueError(f"CANNOT CALCULATE TARIFF THREAT: {e}")
     
     def calculate_geopolitical_volatility(self) -> Dict:
         """
@@ -289,7 +289,7 @@ class MarketSignalEngine:
                     THEN 1 ELSE 0 END
                 ) as tweet_correlation
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE TIMESTAMP(created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
         ),
         logistics_stress AS (
             SELECT 
@@ -307,7 +307,7 @@ class MarketSignalEngine:
                     ELSE 0.3
                 END) as em_stress
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
         )
         SELECT 
             COALESCE(ABS(p.tweet_correlation), 0.3) as tweet_correlation,
@@ -340,7 +340,7 @@ class MarketSignalEngine:
             }
         except Exception as e:
             logger.error(f"Error calculating GVI: {e}")
-            return {'score': 0.5, 'crisis_flag': False}
+            raise ValueError(f"CANNOT CALCULATE GVI: {e}")
     
     def calculate_biofuel_cascade(self) -> Dict:
         """
@@ -378,7 +378,7 @@ class MarketSignalEngine:
                 END) / 50.0 as eu_signal
                 
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE TIMESTAMP(created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
         )
         SELECT 
             LEAST(rfs_signal, 1.0) * 0.3 as rfs_component,
@@ -427,7 +427,7 @@ class MarketSignalEngine:
                 s.close as zl_price,  -- soybean uses 'close'
                 c.close_price as crude_price,  -- crude uses 'close_price'
                 d.close_price as dxy_price,  -- usd uses 'close_price'
-                p.close_price as palm_price  -- palm uses 'close_price'
+                p.close as palm_price  -- palm uses 'close'
             FROM `{self.project_id}.forecasting_data_warehouse.soybean_oil_prices` s
             LEFT JOIN `{self.project_id}.forecasting_data_warehouse.crude_oil_prices` c
               ON DATE(s.time) = c.date  -- soybean time -> crude date
@@ -454,7 +454,7 @@ class MarketSignalEngine:
                     THEN 1 ELSE 0 END
                 ) as vix_trump_corr
             FROM `{self.project_id}.staging.comprehensive_social_intelligence`
-            WHERE TIMESTAMP(created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
+            WHERE PARSE_TIMESTAMP('%a %b %d %H:%M:%S %z %Y', created_at) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
         )
         SELECT 
             COALESCE(c.zl_crude_corr, 0) * 0.25 + 
