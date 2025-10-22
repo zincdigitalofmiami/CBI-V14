@@ -1,0 +1,61 @@
+.DS_Store
+*.DS_Store
+.DS_Store?
+gopath/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv*/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets
+*.pem
+*.key
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# GCP
+service-account-*.json
+*-key.json
+
+# Archived mock data
+*.ARCHIVED_MOCK_DATA*
+
+# Additional patterns
+*.db
+*.sqlite
+*.log
+
+# Cache files (too large for GitHub)
+.cache/
+cache/
+*.zip
+*.pkl
