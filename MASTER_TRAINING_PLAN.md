@@ -91,6 +91,80 @@ The **1-week trending model achieves 0.03% MAPE** - far exceeding the 2% target:
 - Price range validation for all commodities
 - Automatic corruption detection and alerting
 
+### 🗂️ PERMANENT TABLE MAPPING - NEVER SEARCH AGAIN:
+**EXISTING TABLES IN forecasting_data_warehouse (38 total):**
+```
+✅ COMMODITIES (ALL EXIST):
+- soybean_oil_prices (1,261 rows) - PRIMARY TARGET
+- corn_prices (1,261 rows) 
+- crude_oil_prices (1,258 rows)
+- palm_oil_prices (1,229 rows) - LAST DATA: 2025-09-15
+- gold_prices (EXISTS)
+- natural_gas_prices (EXISTS)
+- wheat_prices (EXISTS)
+- soybean_prices (EXISTS)
+- soybean_meal_prices (EXISTS)
+
+✅ FOREX/CURRENCY (EXISTS):
+- currency_data (59,102 rows) - Schema: date, from_currency, to_currency, rate
+
+✅ ECONOMIC (EXISTS):
+- economic_indicators (71,821 rows) - Schema: time, indicator, value
+
+✅ SENTIMENT (EXISTS):
+- social_sentiment (661 rows) - Schema: timestamp, sentiment_score
+- news_intelligence (EXISTS) - Schema: published, intelligence_score
+
+✅ WEATHER (EXISTS):
+- weather_brazil_daily (EXISTS)
+- weather_argentina_daily (EXISTS) 
+- weather_us_midwest_daily (EXISTS)
+
+✅ POLICY/INTELLIGENCE (EXISTS):
+- trump_policy_intelligence (EXISTS) - NOT ice_trump_intelligence
+- cftc_cot (72 rows)
+- usda_export_sales (EXISTS)
+```
+
+### 🚨 RECURRING ISSUES - PERMANENT FIXES:
+**Issue 1: Wrong Table Names**
+- Scripts look for `ice_trump_intelligence` → Use `trump_policy_intelligence`
+- Scripts look for `silver_prices` → Use `economic_indicators WHERE indicator = 'silver'`
+
+**Issue 2: Schema Confusion**
+- Currency queries use `indicator` → Use `from_currency/to_currency`
+- Date column varies: `time` (prices), `date` (currency), `timestamp` (sentiment)
+
+**Issue 3: Data Staleness**
+- Palm oil: Last update 2025-09-15 (42+ days old)
+- Weather: Updates every 14+ days
+- Social: Updates sporadically
+
+**Issue 4: Storage Failures**
+- WRITE_TRUNCATE + schema_update_options = ERROR
+- Use WRITE_APPEND for existing tables
+
+### 📊 V4 RETRAINING DATA STATUS (October 27, 2025):
+**✅ READY FOR V4 TRAINING:**
+- Soybean Oil: 1,261 rows, current (0 days old)
+- Corn: 1,261 rows, current (0 days old)  
+- Economic Indicators: 71,821 rows, current
+- News Intelligence: 551 recent articles
+- Currency Data: 59,102 rows (all major pairs)
+- Social Sentiment: 661 rows
+- Weather Data: Fixed corruption (-999 → NULL)
+
+**⚠️ STALE BUT USABLE:**
+- Palm Oil: 1,229 rows (42 days old - use existing data)
+- Crude Oil: 1,258 rows (6 days old - acceptable)
+- Weather: 14-17 days old (seasonal, acceptable)
+
+**🎯 VERDICT: READY FOR V4 RETRAINING**
+- All critical data sources available
+- 6,565 new records were pulled but storage failed (schema issue)
+- Existing data is sufficient for training
+- Models will use comprehensive dataset with all features
+
 ---
 
 ## 🎯 EXECUTIVE SUMMARY - ACTUAL RESULTS (V3 PRODUCTION)

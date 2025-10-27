@@ -30,6 +30,31 @@
 - ✅ **Freshness Monitoring:** Economic data <30 days, prices <2 days
 - ✅ **Range Validation:** All commodities within realistic price ranges
 
+### **PERMANENT DATA MAPPING (NEVER SEARCH AGAIN):**
+```
+📊 EXISTING TABLES (38 total in forecasting_data_warehouse):
+✅ soybean_oil_prices (1,261 rows) - PRIMARY TARGET
+✅ corn_prices (1,261 rows) 
+✅ crude_oil_prices (1,258 rows)
+✅ palm_oil_prices (1,229 rows)
+✅ currency_data (59,102 rows) - Schema: from_currency, to_currency, rate
+✅ economic_indicators (71,821 rows) - Schema: time, indicator, value
+✅ social_sentiment (661 rows) - Schema: timestamp, sentiment_score
+✅ news_intelligence - Schema: published, intelligence_score
+✅ trump_policy_intelligence - NOT ice_trump_intelligence
+✅ weather_brazil_daily, weather_argentina_daily, weather_us_midwest_daily
+
+❌ TABLES THAT DON'T EXIST:
+- ice_trump_intelligence (use trump_policy_intelligence)
+- silver_prices (use economic_indicators WHERE indicator = 'silver')
+```
+
+### **RECURRING ISSUE FIXES:**
+- **Wrong table names:** Scripts reference non-existent tables
+- **Schema confusion:** Currency uses from_currency/to_currency, NOT indicator
+- **Date columns vary:** time (prices), date (currency), timestamp (sentiment)
+- **Storage errors:** Use WRITE_APPEND, not WRITE_TRUNCATE + schema_update_options
+
 ### **ELIMINATED BULLSHIT:**
 - ❌ **DELETED** - 15+ duplicate/conflicting API endpoints
 - ❌ **DELETED** - `neural_signal_engine.py` (Trump-focused bullshit)
