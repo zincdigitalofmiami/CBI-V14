@@ -1,0 +1,2 @@
+source_table,total_rows,total_features,date_range,real_features,removed_fake,removed_sparse
+models.training_complete_enhanced,1263,136,2020-10-21 to 2025-10-13,136,45,37
