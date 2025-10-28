@@ -80,17 +80,17 @@ weather_query = """
 CREATE OR REPLACE TABLE `cbi-v14.models.weather_features_precomputed` AS
 SELECT 
     date,
-    AVG(CASE WHEN region = 'Brazil' THEN temperature_c END) as weather_brazil_temp,
-    AVG(CASE WHEN region = 'Brazil' THEN precipitation_mm END) as weather_brazil_precip,
-    AVG(CASE WHEN region = 'Argentina' THEN temperature_c END) as weather_argentina_temp,
-    AVG(CASE WHEN region = 'Argentina' THEN precipitation_mm END) as weather_argentina_precip,
-    AVG(CASE WHEN region = 'US' THEN temperature_c END) as weather_us_temp,
-    AVG(CASE WHEN region = 'US' THEN precipitation_mm END) as weather_us_precip,
+    AVG(CASE WHEN region = 'Brazil' THEN temp_max END) as weather_brazil_temp,
+    AVG(CASE WHEN region = 'Brazil' THEN precip_mm END) as weather_brazil_precip,
+    AVG(CASE WHEN region = 'Argentina' THEN temp_max END) as weather_argentina_temp,
+    AVG(CASE WHEN region = 'Argentina' THEN precip_mm END) as weather_argentina_precip,
+    AVG(CASE WHEN region = 'US' THEN temp_max END) as weather_us_temp,
+    AVG(CASE WHEN region = 'US' THEN precip_mm END) as weather_us_precip,
     
     -- Pre-computed moving averages
-    AVG(AVG(CASE WHEN region = 'Brazil' THEN precipitation_mm END)) 
+    AVG(AVG(CASE WHEN region = 'Brazil' THEN precip_mm END)) 
         OVER (ORDER BY date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) as brazil_precip_30d_ma,
-    AVG(AVG(CASE WHEN region = 'Brazil' THEN temperature_c END)) 
+    AVG(AVG(CASE WHEN region = 'Brazil' THEN temp_max END)) 
         OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) as brazil_temp_7d_ma
         
 FROM `cbi-v14.forecasting_data_warehouse.weather_data`
@@ -113,21 +113,29 @@ print("\n3. Creating sentiment_features_precomputed...")
 
 sentiment_query = """
 CREATE OR REPLACE TABLE `cbi-v14.models.sentiment_features_precomputed` AS
+WITH daily_sentiment AS (
+    SELECT 
+        DATE(timestamp) as date,
+        AVG(sentiment_score) as avg_sentiment,
+        STDDEV(sentiment_score) as sentiment_volatility,
+        COUNT(*) as sentiment_volume
+    FROM `cbi-v14.forecasting_data_warehouse.social_sentiment`
+    WHERE DATE(timestamp) >= '2018-01-01'
+    GROUP BY DATE(timestamp)
+)
 SELECT 
-    DATE(date) as date,
-    AVG(sentiment_score) as avg_sentiment,
-    STDDEV(sentiment_score) as sentiment_volatility,
-    COUNT(*) as sentiment_volume,
+    date,
+    avg_sentiment,
+    sentiment_volatility,
+    sentiment_volume,
     
-    -- Pre-computed moving average
-    AVG(AVG(sentiment_score)) OVER (
-        ORDER BY DATE(date) 
+    -- Moving average of daily sentiment
+    AVG(avg_sentiment) OVER (
+        ORDER BY date 
         ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
     ) as avg_sentiment_30d_ma
     
-FROM `cbi-v14.forecasting_data_warehouse.social_sentiment`
-WHERE date >= '2018-01-01'
-GROUP BY DATE(date)
+FROM daily_sentiment
 ORDER BY date
 """
 
@@ -143,6 +151,9 @@ print("INTERMEDIATE TABLES CREATED")
 print("=" * 80)
 print("\nNext: Create final training table by joining all sources")
 print(f"Completed: {datetime.now().strftime('%H:%M:%S')}")
+
+
+
 
 
 

@@ -115,8 +115,7 @@ def store_commodity_data(data_records):
             table_id = f'cbi-v14.forecasting_data_warehouse.{table_name}'
             
             job_config = bigquery.LoadJobConfig(
-                write_disposition='WRITE_TRUNCATE',  # Replace existing data
-                schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+                write_disposition='WRITE_APPEND'  # Append to existing data, no schema conflicts
             )
             
             try:

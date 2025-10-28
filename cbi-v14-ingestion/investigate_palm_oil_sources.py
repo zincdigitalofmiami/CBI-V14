@@ -307,3 +307,7 @@ if __name__ == "__main__":
     # Exit code based on findings
     viable_sources = len([s for s in results['sources_tested'] if s.get('data_available') or s.get('viable_symbols')])
     exit(0 if viable_sources > 0 else 1)
+
+
+
+

@@ -98,3 +98,7 @@ echo "  - All operations logged for accountability"
 echo ""
 echo "▶️  To manually run the enhanced pipeline:"
 echo "    cd $INGESTION_DIR && python3 enhanced_data_pipeline.py"
+
+
+
+

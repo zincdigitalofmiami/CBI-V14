@@ -1,0 +1,117 @@
+================================================================================
+COMPLETE BASELINE MODEL TRAINING
+Using ALL available data - BIG 8 signals + fundamentals + everything
+================================================================================
+Started: 2025-10-27 15:39:16
+
+================================================================================
+STEP 1: Creating Fresh Training Dataset (2020-2025, ALL DATA)
+================================================================================
+Creating training dataset from existing super_enriched template...
+This includes:
+  - ALL price data (soybean oil, corn, palm, crude, etc.)
+  - BIG 8 signals (VIX stress, harvest, China, tariffs, geopolitical, biofuel cascade, hidden corr, ethanol)
+  - Correlations (7d, 30d, 90d, 180d, 365d)
+  - FX data (USD/CNY, USD/BRL, USD/ARS, DXY)
+  - Economic indicators (Fed funds, CPI, GDP, unemployment)
+  - Weather data (Brazil, Argentina, US Midwest)
+  - Fundamentals (CFTC positioning, crush margins)
+  - Sentiment (social, news, Trump policy)
+
+✅ Training Dataset Created:
+   Total Rows: 1,251
+   Unique Dates: 1,251
+   Date Range: 2020-10-21 to 2025-10-13
+   Span: 1818 days (5.0 years)
+   ✅ NO DUPLICATES - One row per date
+
+================================================================================
+STEP 2: Training 4 Baseline Boosted Tree Models
+================================================================================
+
+Training 1w model...
+  Target: target_1w
+  Model: Boosted Tree Regressor (default hyperparameters)
+
+  Submitting training job for zl_baseline_complete_1w...
+  ❌ Error training zl_baseline_complete_1w: 400 Failed to calculate mean since the entries in corresponding column 'econ_gdp_growth' are all NULLs.
+
+Location: us-central1
+Job ID: deabaf4a-9dc9-4ac3-9d61-c7cf3d605528
+
+
+Training 1m model...
+  Target: target_1m
+  Model: Boosted Tree Regressor (default hyperparameters)
+
+  Submitting training job for zl_baseline_complete_1m...
+  ❌ Error training zl_baseline_complete_1m: 400 Failed to calculate mean since the entries in corresponding column 'econ_gdp_growth' are all NULLs.
+
+Location: us-central1
+Job ID: fab4f655-a7f7-41d9-8317-f70dfd223eef
+
+
+Training 3m model...
+  Target: target_3m
+  Model: Boosted Tree Regressor (default hyperparameters)
+
+  Submitting training job for zl_baseline_complete_3m...
+  ❌ Error training zl_baseline_complete_3m: 400 Failed to calculate mean since the entries in corresponding column 'econ_gdp_growth' are all NULLs.
+
+Location: us-central1
+Job ID: 8b106c0f-e5c7-4c76-b27a-66b0bb370960
+
+
+Training 6m model...
+  Target: target_6m
+  Model: Boosted Tree Regressor (default hyperparameters)
+
+  Submitting training job for zl_baseline_complete_6m...
+  ❌ Error training zl_baseline_complete_6m: 400 Failed to calculate mean since the entries in corresponding column 'econ_gdp_growth' are all NULLs.
+
+Location: us-central1
+Job ID: 091adf7b-111a-4b03-a985-ab3995da67e1
+
+
+================================================================================
+STEP 3: Waiting for Training to Complete and Evaluating Models
+================================================================================
+
+Note: Training runs asynchronously. Checking completion status...
+
+================================================================================
+STEP 4: Feature Importance (1-Week Model)
+================================================================================
+
+⏳ Feature importance not available yet (model may still be training)
+
+================================================================================
+TRAINING COMPLETE - SUMMARY
+================================================================================
+
+Models Trained: 0
+
+Models Failed: 4
+  ❌ zl_baseline_complete_1w
+  ❌ zl_baseline_complete_1m
+  ❌ zl_baseline_complete_3m
+  ❌ zl_baseline_complete_6m
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Wait ~5-10 minutes for all training to complete
+2. Re-run this script to see final evaluation metrics
+3. Compare to previous best models
+4. If baseline looks good, proceed to Phase 2 (ensemble)
+
+To check status later, run:
+  bq ls -m cbi-v14:models_v4 | grep baseline_complete
+
+To evaluate a specific model:
+  bq query --use_legacy_sql=false "SELECT * FROM ML.EVALUATE(MODEL \`cbi-v14.models_v4.zl_baseline_complete_1w\`)"
+
+================================================================================
+Completed: 2025-10-27 15:40:05
+================================================================================
