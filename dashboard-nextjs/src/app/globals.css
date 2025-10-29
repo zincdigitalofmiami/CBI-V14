@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Loading shimmer effect for real model data loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.loading-shimmer {
+  @apply bg-background-tertiary;
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 468px 104px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* TradingView-inspired global styles */
+:root {
+  --foreground-rgb: 209, 212, 220;
+  --background-start-rgb: 13, 20, 33;
+  --background-end-rgb: 19, 23, 34;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  min-height: 100vh;
+}
+
+/* Custom scrollbar for TradingView look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #131722;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2E39;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #363A45;
+}
+
+/* Chart container styles */
+.chart-container {
+  background: #131722;
+  border: 1px solid #2A2E39;
+  border-radius: 8px;
+}
+
+/* Trading number formatting */
+.price-up {
+  color: #26a69a;
+}
+
+.price-down {
+  color: #ef5350;
+}
+
+.price-neutral {
+  color: #868993;
+}
+
+/* Animation utilities */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, #131722 25%, #1E222D 37%, #131722 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* TradingView widget overrides */
+.tradingview-widget-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tradingview-widget-copyright {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Utility classes */
+.text-gradient {
+  background: linear-gradient(135deg, #D1D4DC 0%, #868993 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-effect {
+  background: rgba(19, 23, 34, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 46, 57, 0.5);
+}

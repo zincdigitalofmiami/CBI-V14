@@ -250,3 +250,4 @@ ADD COLUMN auto_acquire_enabled BOOL;
 
 
 
+

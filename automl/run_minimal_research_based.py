@@ -34,17 +34,23 @@ project_id = "cbi-v14"
 region = "us-central1"
 aiplatform.init(project=project_id, location=region)
 
-# Configuration based on research
+# Configuration based on research - UPDATED FOR FILTERED VIEWS
 HORIZONS = {
-    '1m': 'target_1m', 
-    '3m': 'target_3m',
-    '6m': 'target_6m'
+    '1m': {
+        'target_column': 'target_1m',
+        'bq_source': f"bq://{project_id}.models_v4.training_dataset_1m_filtered"
+    },
+    '3m': {
+        'target_column': 'target_3m',
+        'bq_source': f"bq://{project_id}.models_v4.training_dataset_3m_filtered"
+    },
+    '6m': {
+        'target_column': 'target_6m',
+        'bq_source': f"bq://{project_id}.models_v4.training_dataset_6m_filtered"
+    }
 }
 
-# Use BigQuery source directly (proven to work in pilot)
-BQ_SOURCE = f"bq://{project_id}.models_v4.training_dataset_super_enriched"
-
-def train_horizon_model(horizon_name, target_column, budget_milli_node_hours=1333):
+def train_horizon_model(horizon_name, horizon_config, budget_milli_node_hours=1333):
     """
     Train Vertex AI AutoML model using 2025 research-based parameters
     
@@ -52,8 +58,13 @@ def train_horizon_model(horizon_name, target_column, budget_milli_node_hours=133
     - optimization_prediction_type REQUIRED in constructor
     - column_transformations in constructor (if needed)
     - Minimal run() parameters for compatibility
+    - UPDATED: Uses filtered views to avoid NULL target values
     """
     
+    # Extract configuration
+    target_column = horizon_config['target_column']
+    bq_source = horizon_config['bq_source']
+
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     dataset_name = f"cbi_v14_{horizon_name}_{timestamp}"
     job_display_name = f"cbi_v14_automl_{horizon_name}_{timestamp}"
@@ -63,15 +74,16 @@ def train_horizon_model(horizon_name, target_column, budget_milli_node_hours=133
     logger.info(f"🚀 LAUNCHING {horizon_name.upper()} HORIZON TRAINING")
     logger.info(f"{'=' * 80}")
     logger.info(f"Target: {target_column}")
+    logger.info(f"BigQuery Source: {bq_source}")
     logger.info(f"Budget: {budget_milli_node_hours} milli-node-hours (~${budget_milli_node_hours/50:.0f})")
     logger.info(f"Dataset: {dataset_name}")
     
     try:
-        # Step 1: Create dataset from BigQuery (this worked in pilot)
-        logger.info("Creating Vertex AI dataset from BigQuery...")
+        # Step 1: Create dataset from BigQuery (using filtered view - NULL-free)
+        logger.info("Creating Vertex AI dataset from filtered BigQuery view...")
         dataset = aiplatform.TabularDataset.create(
             display_name=dataset_name,
-            bq_source=BQ_SOURCE
+            bq_source=bq_source
         )
         logger.info(f"✅ Dataset created: {dataset.resource_name}")
         
@@ -116,6 +128,7 @@ def train_horizon_model(horizon_name, target_column, budget_milli_node_hours=133
             "job": job,
             "horizon": horizon_name,
             "target": target_column,
+            "bq_source": bq_source,
             "budget": budget_milli_node_hours
         }
         
@@ -139,6 +152,7 @@ def main():
     logger.info("Budget: 4,000 milli-node-hours (~$80)")
     logger.info("Horizons: 1M, 3M, 6M (1W already completed)")
     logger.info("Features: 209 including Big 8 + China + Argentina + Industrial")
+    logger.info("UPDATED: Using NULL-free filtered views for training")
     logger.info("🔥" * 60)
     
     # Check SDK version for debugging
@@ -153,12 +167,12 @@ def main():
     # Launch models sequentially (not parallel) for easier debugging
     logger.info(f"\n🚀 LAUNCHING MODELS SEQUENTIALLY...")
     
-    for horizon_name, target_col in HORIZONS.items():
+    for horizon_name, horizon_config in HORIZONS.items():
         logger.info(f"\n{'='*60}")
         logger.info(f"PROCESSING {horizon_name.upper()} HORIZON")
         logger.info(f"{'='*60}")
         
-        result = train_horizon_model(horizon_name, target_col, 1333)
+        result = train_horizon_model(horizon_name, horizon_config, 1333)
         results[horizon_name] = result
         
         if result["status"] == "SUCCESS":

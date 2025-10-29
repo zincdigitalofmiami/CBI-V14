@@ -42,23 +42,7 @@ app.add_middleware(
 PROJECT = "cbi-v14"
 client = bigquery.Client(project=PROJECT)
 
-# Import model predictions routers
-try:
-    from model_predictions import router as model_router
-    app.include_router(model_router, tags=["Model Predictions"])
-    logger.info("Model predictions router loaded successfully")
-except ImportError as e:
-    logger.warning(f"Could not load model predictions router: {e}")
-
-# Import V3 model predictions router
-try:
-    from v3_model_predictions import router as v3_router
-    app.include_router(v3_router, tags=["V3 Models"])
-    logger.info("V3 model predictions router loaded successfully")
-except ImportError as e:
-    logger.warning(f"Could not load V3 model predictions router: {e}")
-
-# Import V4 model predictions router (enhanced models)
+# Import ONLY V4 model predictions router (all others DELETED to avoid confusion)
 try:
     from v4_model_predictions import router as v4_router
     app.include_router(v4_router, tags=["V4 Enhanced Models"])

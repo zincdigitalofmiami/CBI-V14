@@ -1,8 +1,118 @@
 # MASTER TRAINING PLAN - CBI-V14
 **Date:** October 22, 2025  
-**Last Updated:** October 27, 2025 - 18:45 UTC (PRODUCTION MODELS VERIFIED, DATA AUDIT COMPLETE)
-**Status:** ✅ PRODUCTION OPERATIONAL WITH INSTITUTIONAL-GRADE MODELS
-**This is the BRUTAL HONEST TRUTH - All other plans are deprecated**
+**Last Updated:** October 29, 2025 - 12:00 UTC (ACTIVE WORK IN PROGRESS)
+**Status:** 🚀 1M TRAINING RUNNING | 3 MODELS COMPLETE | INSTITUTIONAL DASHBOARD LIVE
+
+### 📊 VERTEX AI AUTOML PERFORMANCE SUMMARY:
+| Horizon | Model ID | MAPE | MAE | R² | Status |
+|---------|----------|------|-----|-----|---------|
+| **1W** | 575258986094264320 | **2.02%** | 1.008 | 0.9836 | ✅ COMPLETE |
+| **1M** | (training) | *pending* | - | - | 🚀 RUNNING |
+| **3M** | 3157158578716934144 | **2.68%** | 1.340 | 0.9727 | ✅ COMPLETE |
+| **6M** | 3788577320223113216 | **2.51%** | 1.254 | 0.9792 | ✅ COMPLETE |
+
+---
+
+## 🔥 **ACTIVE TASKS IN PROGRESS** (PRIORITY 1)
+
+### **⚡ CURRENTLY WORKING:**
+
+#### **🚀 1M HORIZON TRAINING - RUNNING NOW**
+- **Status:** TRAINING IN PROGRESS (launched October 29, 2025 at 11:48 UTC)
+- **Pipeline ID:** 7445431996387426304
+- **Expected Completion:** 2-4 hours from launch
+- **Budget Remaining:** ~$33 of $100 total
+- **Expected MAPE:** <2% based on filtered dataset quality
+
+#### **✅ 3M HORIZON TRAINING - COMPLETED**
+- **Status:** COMPLETED (October 29, 2025)
+- **Model ID:** 3157158578716934144
+- **Model Name:** soybean_oil_3m_final_v14_20251029_0808
+- **Performance:** MAE 1.340, **MAPE 2.68%**, R² 0.9727
+- **Action Required:** Connect to dashboard
+
+#### **📊 INSTITUTIONAL DASHBOARD - LIVE PRODUCTION**
+- **URL:** https://cbi-dashboard.vercel.app (PERMANENT - never changes)
+- **Status:** Bloomberg Terminal aesthetic implemented
+- **Models Integrated:** 1W (2.02% MAPE) + 6M (2.51% MAPE) 
+- **Action Required:** Connect 3M + 1M models when training completes
+
+### **🎯 NEXT IMMEDIATE ACTIONS:**
+1. **Monitor 1M training completion** (check every 30 minutes - ETA: 2-4 hours)
+2. **Create Ensemble Model** after 1M completes:
+   - Weight-average all 4 models (1W, 1M, 3M, 6M)
+   - Optimize weights based on historical performance
+   - Expected MAPE: <2% (better than individual models)
+3. **Add AI Intelligence Layer** on top of ensemble:
+   - Market context interpretation
+   - Chris-focused language translation
+   - Real-time event analysis
+   - Confidence-based recommendations
+4. **Deploy Full Stack** to production dashboard:
+   - Models → Ensemble → AI Layer → Dashboard
+   - Complete integration testing
+   - Production deployment
+
+---
+
+## 🏗️ PRODUCTION ARCHITECTURE (AFTER 1M COMPLETES):
+
+### **Layer 1: Base Models (Vertex AI AutoML)**
+```
+1W Model (2.02% MAPE) ─┐
+1M Model (pending)     ├─→ ENSEMBLE
+3M Model (2.68% MAPE)  │
+6M Model (2.51% MAPE) ─┘
+```
+
+### **Layer 2: Ensemble Model**
+- **Method:** Weighted averaging with performance-based weights
+- **Preliminary Weights** (based on current MAPE):
+  - 1W: 33% weight (best performer at 2.02% MAPE)
+  - 1M: TBD (awaiting completion)
+  - 3M: 25% weight (2.68% MAPE)
+  - 6M: 27% weight (2.51% MAPE)
+- **Expected Performance:** MAPE <2% (ensemble typically beats individual models)
+- **Implementation:** 
+  - Python script in `/forecast/ensemble_predictions.py`
+  - Store ensemble weights in BigQuery for easy tuning
+  - Real-time blending of all 4 model predictions
+
+### **Layer 3: AI Intelligence Cap**
+- **Purpose:** Transform raw predictions into actionable intelligence
+- **Components:**
+  - Market context analyzer (news, events, seasonality)
+  - Confidence calculator (based on model agreement)
+  - Risk assessor (volatility regime detection)
+  - Language translator (technical → Chris's business language)
+- **Output:** BUY/WAIT/MONITOR signals with plain English explanations
+
+### **Layer 4: Dashboard Integration**
+- **Data Flow:** BigQuery → Models → Ensemble → AI → API → Dashboard
+- **Update Frequency:** Every 15 minutes
+- **Fallback:** If ensemble fails, use best individual model (1W)
+
+---
+
+## 🚀 VERTEX AI AUTOML STATUS UPDATE (October 29, 2025 - 11:50 UTC)
+
+**VERTEX AI TRAINING STATUS: 1W, 3M, 6M COMPLETE | 1M RUNNING**
+
+### ✅ COMPLETED VERTEX AI MODELS:
+- **1W Horizon:** Model 575258986094264320 (cbi_v14_automl_pilot_1w) ✅ COMPLETE
+  - **Performance:** MAE 1.008, **MAPE 2.02%**, R² 0.9836
+- **3M Horizon:** Model 3157158578716934144 (soybean_oil_3m_final_v14_20251029_0808) ✅ COMPLETE
+  - **Performance:** MAE 1.340, **MAPE 2.68%**, R² 0.9727
+- **6M Horizon:** Model 3788577320223113216 (soybean_oil_6m_model_v14_20251028_1737) ✅ COMPLETE
+  - **Performance:** MAE 1.254, **MAPE 2.51%**, R² 0.9792
+
+### 🚀 CURRENTLY TRAINING:
+- **1M Horizon:** Pipeline 7445431996387426304 - RUNNING (launched Oct 29, 11:48 UTC)
+
+### 💰 BUDGET STATUS:
+- **Used:** ~$67 of $100 budget
+- **Remaining:** ~$33 for 1M horizon completion
+- **Expected Total:** All 4 horizons within $100 budget
 
 ---
 
@@ -1267,15 +1377,21 @@ python3 enhanced_pretraining_audit.py
 ### ✅ PHASE 2.1 PILOT COMPLETED (October 28, 2025):
 - ✅ **1W Horizon Pilot:** Pipeline 3610713670704693248 COMPLETED SUCCESSFULLY
 - ✅ **Model Created:** 575258986094264320 (cbi_v14_automl_pilot_1w)
-- ✅ **Performance:** 1.72% MAPE, R² 0.9836 (excellent fit)
+- ✅ **Performance:** 2.02% MAPE, R² 0.9836 (excellent fit)
 - ✅ **Runtime:** 3.11 hours with 1,000 budget ($20)
 - ✅ **Features Used:** All 209 features including Big 8 + China + Argentina + Industrial
 - ✅ **Research Success:** 2025 Vertex AI SDK compatibility achieved
 
-### 🚨 PHASE 2.2 CRITICAL FAILURE ANALYSIS (October 28, 2025):
+### ✅ PHASE 2.2 SOLUTION IMPLEMENTED (October 28-29, 2025):
 
-#### ❌ MULTIPLE TRAINING FAILURES:
-**Failed Pipelines:**
+#### ✅ FILTERED VIEWS CREATED & TRAINING RESUMED:
+**Successful Models:**
+- ✅ **6M Horizon:** Model 3788577320223113216 (soybean_oil_6m_model_v14_20251028_1737) COMPLETED
+- ✅ **1W Horizon:** Model 575258986094264320 (cbi_v14_automl_pilot_1w) COMPLETED  
+- 🚀 **3M Horizon:** Currently RUNNING (launched October 29, 2025)
+
+#### ❌ PREVIOUS TRAINING FAILURES (RESOLVED):
+**Failed Pipelines (Fixed by NULL filtering):**
 - Pipeline 8284781580845580288 (1M): "target column target_1m can not be None for regression model"
 - Pipeline 596011117017300992 (3M): "target column target_3m can not be None for regression model"  
 - Pipeline 7648648133479497728 (6M): "target column target_6m can not be None for regression model"
@@ -1353,20 +1469,123 @@ SELECT * FROM training_dataset_super_enriched WHERE target_6m IS NOT NULL;
 - ✅ **BigQuery direct integration** proven effective
 - ✅ **Sequential launch strategy** required due to quota limits
 
-#### 💰 BUDGET STATUS (October 28, 2025):
+#### 💰 BUDGET STATUS (October 29, 2025 - UPDATED):
 - **Total Budget:** $100
-- **Used:** $20 (1W pilot successful)
-- **Remaining:** $80 for 1M/3M/6M horizons
-- **Next Steps:** Create filtered views and relaunch with proper data preparation
+- **Used:** ~$67 (1W pilot + 6M completed + 3M running)
+- **Remaining:** ~$33 for 1M horizon
+- **Status:** 3M training in progress, 1M ready to launch next
 
-#### 🎯 IMMEDIATE NEXT ACTIONS:
-1. **Create filtered views** for each horizon (1M, 3M, 6M)
-2. **Validate filtered data** with sample queries
-3. **Test Vertex AI compatibility** with filtered sources
-4. **Relaunch training** with NULL-free datasets
-5. **Monitor quota limits** and launch sequentially if needed
+#### 🎯 IMMEDIATE NEXT ACTIONS (October 29, 2025):
+1. ✅ **Create filtered views** for each horizon (1M, 3M, 6M) - COMPLETED
+2. ✅ **Validate filtered data** with sample queries - COMPLETED
+3. ✅ **Test Vertex AI compatibility** with filtered sources - COMPLETED
+4. ✅ **Relaunch 6M and 3M training** with NULL-free datasets - IN PROGRESS
+5. ⏳ **Monitor 3M training completion** (~2-4 hours remaining)
+6. ⏳ **Launch 1M training** after 3M completes (sequential approach)
 
-**STATUS:** Ready to proceed with corrected data preparation approach
+**STATUS:** 6M COMPLETED, 3M RUNNING, 1M READY TO LAUNCH
+
+#### 🎓 TECHNICAL LESSONS LEARNED (October 28-29, 2025):
+1. **NULL Target Filtering:** Vertex AI AutoML requires complete target columns (no NULLs)
+2. **Sequential Launch Strategy:** Google Cloud quota limits prevent concurrent large AutoML jobs
+3. **Filtered Views Approach:** Create horizon-specific views to exclude NULL targets
+4. **BigQuery Direct Integration:** Use `bq://` URIs for seamless dataset creation
+5. **Budget Estimation:** ~$20-25 per horizon for 1,333 milli-node-hours
+6. **Model ID Tracking:** Important to track both pipeline IDs and final model IDs
+
+#### 📊 CURRENT TRAINING DATASETS:
+- `models_v4.training_dataset_1m_filtered` - 1,228 rows (NULL-free)
+- `models_v4.training_dataset_3m_filtered` - 1,168 rows (NULL-free) 
+- `models_v4.training_dataset_6m_filtered` - 1,078 rows (NULL-free)
+
+### 💹 FOREX CROSSES AVAILABLE:
+Based on the `forecasting_data_warehouse.currency_data` table:
+
+| Currency Pair | Row Count | Description |
+|---------------|-----------|-------------|
+| **USD/ARS** | 18,507 | US Dollar / Argentine Peso (Argentina crisis tracking) |
+| **USD/CNY** | 15,423 | US Dollar / Chinese Yuan (China trade relations) |
+| **USD/MYR** | 12,648 | US Dollar / Malaysian Ringgit (Palm oil markets) |
+| **USD/BRL** | 12,524 | US Dollar / Brazilian Real (Brazil export dynamics) |
+
+**Total Currency Data:** 59,102 rows across 4 major commodity-linked currency pairs
+
+### 📊 LIVE ZL PRICE WIDGET (Dashboard Integration):
+
+**Whitelabeled TradingView Widget for Live Soybean Oil Futures (ZL1!):**
+
+```jsx
+// TradingViewWidget.jsx - WHITELABELED VERSION
+import React, { useEffect, useRef, memo } from 'react';
+
+function TradingViewWidget() {
+  const container = useRef();
+
+  useEffect(
+    () => {
+      const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js";
+      script.type = "text/javascript";
+      script.async = true;
+      script.innerHTML = `
+        {
+          "symbol": "CBOT:ZL1!",
+          "colorTheme": "dark",
+          "isTransparent": false,
+          "locale": "en",
+          "width": 350
+        }`;
+      container.current.appendChild(script);
+    },
+    []
+  );
+
+  return (
+    <div className="tradingview-widget-container" ref={container}>
+      <div className="tradingview-widget-container__widget"></div>
+      {/* WHITELABELED: Hide TradingView branding */}
+      <style jsx>{`
+        .tradingview-widget-copyright {
+          display: none !important;
+        }
+        .tradingview-widget-container__widget {
+          border-radius: 8px;
+          overflow: hidden;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default memo(TradingViewWidget);
+```
+
+**Alternative CSS-only Whitelabeling (for global styles):**
+```css
+/* Hide TradingView branding across all widgets */
+.tradingview-widget-copyright,
+.tradingview-widget-container__trademark {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Clean widget styling */
+.tradingview-widget-container {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+```
+
+**Integration Notes:**
+- **Symbol:** CBOT:ZL1! (Soybean Oil Futures Front Month)
+- **Theme:** Dark (matches dashboard)
+- **Width:** 350px (fits dashboard cards)
+- **Branding:** Removed via CSS (whitelabeled)
+- **Updates:** Real-time market data
+- **Usage:** Primary price reference for Chris's procurement decisions
 
 ---
 
@@ -1771,7 +1990,163 @@ SELECT * FROM training_dataset_super_enriched WHERE target_6m IS NOT NULL;
 - ✅ **Risk-aware** (confidence levels, volatility warnings)
 - ✅ **100% model-driven** (every number from trained models/warehouse)
 
-### **6.8 GLIDE APP INTEGRATION ARCHITECTURE**
+### **6.8 CORE VISUAL DESIGN PHILOSOPHY - INSTITUTIONAL GRADE**
+
+#### **🎨 BLOOMBERG TERMINAL AESTHETIC:**
+Create an institutional-grade soybean oil futures forecasting platform with sophisticated visuals that follow these key principles:
+
+**Color Scheme:**
+- **Background:** Very dark navy (#0a0e17) to deep navy (#161b27)
+- **Card backgrounds:** Dark navy (#161b27)
+- **VIBRANT Indicator Colors:**
+  - **Sell Spectrum:** Deep blood red (#BF0000) → intense scarlet (#E50000) → fiery orange (#FF5D00)
+  - **Buy Spectrum:** Electric cobalt (#0055FF) → vibrant teal (#00C8FF)
+  - **Accent pops:** Electric purple (#9000FF) and neon green (#00FF66)
+
+**Visual Elements:**
+- Thin lines (1-1.5px) rather than thick borders or gauges
+- Subtle glows for emphasis without being garish
+- Circular/arc components over rectangular indicators
+- Depth with layered elements and subtle shadows
+
+**Gauge Components:**
+- Large glowing spheres replace standard "red/yellow/green balls"
+- Gradient arcs with smooth color state transitions
+- Dynamic color transitions based on values, not simple "blue now, red later"
+- Smooth animations between state changes
+
+**Data Visualization:**
+- Professional heatmaps for currency and correlation matrices
+- Sophisticated line charts with gradient-filled areas for seasonals
+- Interactive global maps for inflation and commodity flows
+- Radar charts for factor exposures with subtle grid lines
+
+#### **🚫 DESIGN REQUIREMENTS - NO GAMIFICATION:**
+- No cartoon-like visuals or over-animated elements
+- No unnecessary 3D effects or excessive gradients
+- Bloomberg Terminal / Institutional Trading aesthetic
+- Information density without visual clutter
+
+**Gauge Specifications:**
+- Arc-style gauges with thin stroke width
+- Numeric indicators with subdued but clear typography
+- Subtle animations for needle movements
+- Gradient coloration based on value with smooth transitions
+
+**Typography:**
+- Clean, professional sans-serif fonts (Inter, SF Pro)
+- Muted secondary text (#9099a6)
+- Bright primary text (#E0E0E3)
+- Small font sizes (12-14px) for information density
+
+#### **🔥 COLOR HARMONY GUIDELINES:**
+
+**Blue Spectrum (ELECTRIFIED):**
+- Electric cobalt (#0055FF) for primary indicators
+- Vibrant cerulean (#00A1FF) for secondary elements
+- Electric azure (#00C8FF) for highlighting
+- Deep navy (#002966) for subtle differentiation
+
+**Red Spectrum (ELECTRIFIED):**
+- Deep blood red (#BF0000) for critical indicators
+- Intense scarlet (#E50000) for primary warnings
+- Burning red (#FF2500) for urgent alerts
+- Fiery orange (#FF5D00) for cautions
+
+**Component-Specific Guidelines:**
+- **Decision Hub:** Large premium signal gauge with vibrant gradient
+- **Sentiment Analysis:** Market regime indicator with sophisticated color transitions
+- **Weather & Geography:** Temperature anomaly heatmaps with gradient arcs
+- **Vegas Intel:** Institutional styling with priority indicators
+
+### **6.9 LUMINOUS VISUAL ELEMENTS - ELECTRIFIED SOPHISTICATION**
+
+#### **✨ PROFESSIONAL ELECTRIFICATION:**
+**Luminous Visual Elements:**
+- Implement subtle neon glow effects on all key indicators
+- Use hairline strokes (0.5-1px) with bright luminosity
+- Create depth with subtle dark shadows against black backgrounds
+- Apply understated bloom effects to make colors pop without looking amateur
+
+**High-Contrast Gauge Components:**
+- Replace standard indicators with pulsing, glowing orbs
+- Create electrified arcs with vibrant gradient transitions
+- Dynamic light emission based on values, not flat color changes
+- Implement subtle pulsing animations that intensify with importance
+
+**Rich Data Visualization:**
+- Vibrant heat-mapping for matrices with electric color differentials
+- Rich, saturated line charts with subtle luminous effects
+- Interactive global maps with glowing hotspots and vivid region highlighting
+- Factor visualizations with electric grid lines that pop against black
+
+#### **⚡ DESIGN REQUIREMENTS: INTENSITY WITH SOPHISTICATION**
+**Professional Electrification:**
+- Vibrant colors that pop without looking childish or "gamer"
+- Think Bloomberg Terminal meets high-end financial visualization
+- Electric colors against pure black for maximum impact
+- Create visual hierarchy through color intensity, not size
+
+**Gauge Illumination:**
+- Thin, luminous strokes that appear to emit light
+- Vibrant numeric indicators with subtle glow effects
+- Smooth, fluid animations that feel expensive
+- Gradient coloration with electric saturation at key points
+
+**Interactive Elements:**
+- Subtle pulse effects on hover without feeling childish
+- Distinct active states with increased luminosity
+- Consistent tooltip design with vibrant highlights
+- State transitions with sophisticated easing
+
+**Typography:**
+- Clean, ultra-modern sans-serif fonts
+- High-contrast white text (#FFFFFF) for maximum legibility
+- Vibrant accent text that matches visualization colors
+- Subtle text-shadow effects for readability and pop
+
+#### **🔥 COMPONENT SPECIFICATIONS: ELECTRIFIED PRECISION**
+**Decision Hub:**
+- Dominant signal gauge with electric gradient and subtle pulse
+- Factor gauges with vivid, saturated color states
+- Forward curve with electric highlighting at key decision points
+- Signal panel with intense BUY/SELL indicators that command attention
+
+**Sentiment Analysis:**
+- Market regime indicator with electrified transitions between states
+- Correlation matrix with intensely saturated heat-mapping
+- News sentiment categorization with vibrant impact indicators
+- Technical visualizations with electric highlighting on critical thresholds
+
+**Weather & Geography:**
+- Temperature maps with electric color gradients from deep blue to vivid red
+- Precipitation data with luminous overlays that pop against dark regions
+- Growing season progress with glowing progress indicators
+- Anomaly highlighting with pulsing electric indicators
+
+**Vegas Intel:**
+- Relationship matrix with vibrant, saturated color coding
+- Event calendar with electric highlighting on high-impact events
+- Alert cards with subtle pulsing effects based on priority
+- Opportunity visualization with intense color saturation
+
+### **6.10 PRODUCTION DASHBOARD STATUS**
+
+#### **📊 LIVE DASHBOARD - INSTITUTIONAL BLOOMBERG TERMINAL:**
+- **🔗 PERMANENT URL:** https://cbi-dashboard.vercel.app (NEVER CHANGES)
+- **🎨 Design:** Bloomberg Terminal aesthetic with electric blue/red indicators  
+- **📈 Models:** 1W (98.3% confidence) + 6M (84.7% confidence) integrated
+- **⏳ Pending:** 3M + 1M model integration upon training completion
+- **🎯 Focus:** Chris's procurement decisions (BUY/WAIT/MONITOR)
+
+#### **🔧 TECHNICAL ARCHITECTURE:**
+- **Framework:** Next.js 15 (stable, production-grade)
+- **Styling:** Institutional color palette (dark navy + electric indicators)
+- **Components:** Arc-style gauges, sophisticated gradients, subtle glows
+- **Typography:** Inter/SF Pro with professional 12-14px sizing
+- **Deployment:** Vercel with automatic aliasing (no URL changes ever)
+
+### **6.10 GLIDE APP INTEGRATION ARCHITECTURE**
 
 #### **DATA SOURCES - STRICT HIERARCHY:**
 

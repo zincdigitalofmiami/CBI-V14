@@ -30,3 +30,4 @@ FROM (
 WHERE DATE_TRUNC(base.date, WEEK) = DATE_TRUNC(industrial.date, WEEK);
 
 
+

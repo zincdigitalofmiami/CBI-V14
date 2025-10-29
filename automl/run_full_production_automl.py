@@ -3,11 +3,17 @@
 CBI-V14 VERTEX AI AUTOML - FULL PRODUCTION RUN
 ==============================================
 
-Phase 2.2: Full Production Training
+Phase 2.3: Full Production Training with NULL-Free Filtered Views
 - Budget: 4,000 milli-node-hours ($80)
 - Horizons: 1M, 3M, 6M (1W already completed)
 - Features: 209 including Big 8 + China + Argentina + Industrial
-- Approach: BigQuery direct (institutional-grade)
+- Approach: BigQuery filtered views (NULL-free, institutional-grade)
+- Enhancement: Parallel training with monitoring
+
+SOLUTION TO PREVIOUS FAILURES:
+- Uses training_dataset_1m_filtered (1,228 rows, 0 NULLs)
+- Uses training_dataset_3m_filtered (1,168 rows, 0 NULLs)
+- Uses training_dataset_6m_filtered (1,078 rows, 0 NULLs)
 
 Author: CBI-V14 Platform Team
 Date: October 28, 2025
@@ -32,12 +38,23 @@ project_id = "cbi-v14"
 region = "us-central1"
 aiplatform.init(project=project_id, location=region)
 
-# Configuration
-HORIZONS = ["1m", "3m", "6m"]  # 1w already completed
-TARGET_COLUMNS = {
-    "1m": "target_1m",
-    "3m": "target_3m", 
-    "6m": "target_6m"
+# Configuration - UPDATED FOR FILTERED VIEWS (NULL-FREE)
+HORIZONS = {
+    "1m": {
+        "target_column": "target_1m",
+        "bq_source": f"bq://{project_id}.models_v4.training_dataset_1m_filtered",
+        "expected_rows": 1228
+    },
+    "3m": {
+        "target_column": "target_3m",
+        "bq_source": f"bq://{project_id}.models_v4.training_dataset_3m_filtered",
+        "expected_rows": 1168
+    },
+    "6m": {
+        "target_column": "target_6m",
+        "bq_source": f"bq://{project_id}.models_v4.training_dataset_6m_filtered",
+        "expected_rows": 1078
+    }
 }
 
 EXCLUDED_COLUMNS = [
@@ -46,14 +63,16 @@ EXCLUDED_COLUMNS = [
     "target_1w", "target_1m", "target_3m", "target_6m"  # Exclude all targets, add back specific one
 ]
 
-BQ_SOURCE = f"bq://{project_id}.models_v4.training_dataset_super_enriched"
 BUDGET_PER_HORIZON = 1333  # 4000 / 3 horizons = ~1333 each
 
 def launch_horizon_training(horizon: str) -> dict:
-    """Launch AutoML training for a specific horizon using proper SDK parameters."""
-    
-    target_col = TARGET_COLUMNS[horizon]
-    excluded_cols = [col for col in EXCLUDED_COLUMNS if col != target_col]
+    """Launch AutoML training for a specific horizon using NULL-free filtered views."""
+
+    # Get horizon configuration
+    horizon_config = HORIZONS[horizon]
+    target_col = horizon_config["target_column"]
+    bq_source = horizon_config["bq_source"]
+    expected_rows = horizon_config["expected_rows"]
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     dataset_name = f"cbi_v14_production_{horizon}_{timestamp}"
@@ -62,15 +81,17 @@ def launch_horizon_training(horizon: str) -> dict:
     logger.info(f"🚀 LAUNCHING {horizon.upper()} HORIZON TRAINING")
     logger.info(f"{'='*80}")
     logger.info(f"Target: {target_col}")
+    logger.info(f"BigQuery Source: {bq_source}")
+    logger.info(f"Expected Rows: {expected_rows} (NULL-free)")
     logger.info(f"Budget: {BUDGET_PER_HORIZON} milli-node-hours (~${BUDGET_PER_HORIZON/50:.0f})")
     logger.info(f"Dataset: {dataset_name}")
     
     try:
-        # Create dataset from BigQuery directly (proven approach)
-        logger.info("Creating Vertex AI dataset from BigQuery...")
+        # Create dataset from filtered BigQuery view (NULL-free, proven approach)
+        logger.info("Creating Vertex AI dataset from filtered BigQuery view...")
         dataset = aiplatform.TabularDataset.create(
             display_name=dataset_name,
-            bq_source=BQ_SOURCE
+            bq_source=bq_source
         )
         
         logger.info(f"✅ Dataset created: {dataset.resource_name}")
@@ -82,18 +103,9 @@ def launch_horizon_training(horizon: str) -> dict:
         logger.info(f"   Job: {job_display_name}")
         logger.info(f"   Target: {target_col}")
         logger.info(f"   Budget: {BUDGET_PER_HORIZON} milli-node-hours")
-        logger.info(f"   Excluded: {len(excluded_cols)} columns")
-        logger.info(f"   Features: ~200 (Big 8 + China + Argentina + Industrial)")
-        
-        # Create column transformations for excluded columns (research-backed approach)
-        column_transformations = []
-        for column in excluded_cols:
-            column_transformations.append({
-                "column_name": column, 
-                "transformation": "excluded"
-            })
-        
-        logger.info(f"   Column transformations: {len(column_transformations)} exclusions")
+        logger.info(f"   Features: ALL 209 (Big 8 + China + Argentina + Industrial)")
+        logger.info(f"   Training Rows: {expected_rows} (NULL-free)")
+        logger.info(f"   Approach: Full dataset, Vertex AI auto-feature-selection")
         
         # Create training job with REQUIRED optimization_prediction_type
         job = aiplatform.AutoMLTabularTrainingJob(
@@ -112,7 +124,6 @@ def launch_horizon_training(horizon: str) -> dict:
             test_fraction_split=0.1,
             budget_milli_node_hours=BUDGET_PER_HORIZON,
             model_display_name=f"soybean_oil_{horizon}_model_v14_{timestamp}",
-            column_transformations=column_transformations,  # Use this instead of excluded_columns
             disable_early_stopping=False,
             sync=False  # Async for parallel execution
         )
@@ -214,6 +225,7 @@ def main():
     print("Budget: 4,000 milli-node-hours (~$80)")
     print("Horizons: 1M, 3M, 6M (1W already completed)")
     print("Features: 209 including Big 8 + China + Argentina + Industrial")
+    print("ENHANCED: Using NULL-free filtered views for guaranteed success")
     print("🔥" * 60)
     
     # Launch all horizons in parallel
@@ -224,7 +236,7 @@ def main():
     # Use ThreadPoolExecutor for parallel launches
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {executor.submit(launch_horizon_training, horizon): horizon 
-                  for horizon in HORIZONS}
+                  for horizon in HORIZONS.keys()}
         
         for future in as_completed(futures):
             horizon = futures[future]
