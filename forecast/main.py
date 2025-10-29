@@ -310,6 +310,228 @@ async def upload_zip(dataFile: UploadFile = File(...)):
         logger.error(f"Error uploading ZIP: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v4/forecast/latest")
+async def get_latest_vertex_predictions():
+    """
+    🚀 GET LATEST VERTEX AI PREDICTIONS FROM BIGQUERY
+    Returns all 4 horizon forecasts from today's batch prediction run
+    Used by: https://cbi-dashboard.vercel.app
+    """
+    try:
+        client = bigquery.Client()
+        
+        query = """
+        SELECT 
+            prediction_date,
+            current_price,
+            forecast_1w,
+            forecast_1m,
+            forecast_3m,
+            forecast_6m,
+            confidence_1w,
+            confidence_1m,
+            confidence_3m,
+            confidence_6m,
+            signal_1w,
+            signal_1m,
+            signal_3m,
+            signal_6m,
+            model_1w_id,
+            model_1m_id,
+            model_3m_id,
+            model_6m_id,
+            created_timestamp
+        FROM `cbi-v14.predictions.daily_forecasts`
+        WHERE prediction_date = CURRENT_DATE()
+        ORDER BY created_timestamp DESC
+        LIMIT 1
+        """
+        
+        results = client.query(query).to_dataframe()
+        
+        if results.empty:
+            return {
+                "status": "no_predictions",
+                "message": "No predictions available for today yet",
+                "data": None
+            }
+        
+        row = results.iloc[0].to_dict()
+        
+        return {
+            "status": "success",
+            "prediction_date": str(row['prediction_date']),
+            "current_price": float(row['current_price']),
+            "forecasts": {
+                "1w": {
+                    "value": float(row['forecast_1w']) if pd.notna(row['forecast_1w']) else None,
+                    "confidence": float(row['confidence_1w']) if pd.notna(row['confidence_1w']) else None,
+                    "signal": row['signal_1w'],
+                    "model_id": row['model_1w_id']
+                },
+                "1m": {
+                    "value": float(row['forecast_1m']) if pd.notna(row['forecast_1m']) else None,
+                    "confidence": float(row['confidence_1m']) if pd.notna(row['confidence_1m']) else None,
+                    "signal": row['signal_1m'],
+                    "model_id": row['model_1m_id']
+                },
+                "3m": {
+                    "value": float(row['forecast_3m']) if pd.notna(row['forecast_3m']) else None,
+                    "confidence": float(row['confidence_3m']) if pd.notna(row['confidence_3m']) else None,
+                    "signal": row['signal_3m'],
+                    "model_id": row['model_3m_id']
+                },
+                "6m": {
+                    "value": float(row['forecast_6m']) if pd.notna(row['forecast_6m']) else None,
+                    "confidence": float(row['confidence_6m']) if pd.notna(row['confidence_6m']) else None,
+                    "signal": row['signal_6m'],
+                    "model_id": row['model_6m_id']
+                }
+            },
+            "timestamp": str(row['created_timestamp'])
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Error fetching Vertex AI predictions: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "data": None
+        }
+
+@app.get("/api/v4/forecast/{horizon}")
+async def get_horizon_forecast(horizon: str):
+    """
+    🎯 GET SPECIFIC HORIZON FORECAST
+    Returns forecast for requested horizon (1w, 1m, 3m, 6m)
+    Example: GET /api/v4/forecast/1w
+    """
+    valid_horizons = ["1w", "1m", "3m", "6m"]
+    
+    if horizon not in valid_horizons:
+        return {
+            "status": "error",
+            "message": f"Invalid horizon. Must be one of: {', '.join(valid_horizons)}"
+        }
+    
+    try:
+        client = bigquery.Client()
+        
+        query = f"""
+        SELECT 
+            forecast_{horizon} as forecast,
+            confidence_{horizon} as confidence,
+            signal_{horizon} as signal,
+            model_{horizon}_id as model_id,
+            current_price,
+            prediction_date
+        FROM `cbi-v14.predictions.daily_forecasts`
+        WHERE prediction_date = CURRENT_DATE()
+        ORDER BY created_timestamp DESC
+        LIMIT 1
+        """
+        
+        results = client.query(query).to_dataframe()
+        
+        if results.empty:
+            return {
+                "status": "no_predictions",
+                "horizon": horizon,
+                "forecast": None,
+                "message": f"No {horizon} predictions available for today"
+            }
+        
+        row = results.iloc[0].to_dict()
+        
+        return {
+            "status": "success",
+            "horizon": horizon,
+            "forecast": float(row['forecast']) if pd.notna(row['forecast']) else None,
+            "confidence": float(row['confidence']) if pd.notna(row['confidence']) else None,
+            "signal": row['signal'],
+            "model_id": row['model_id'],
+            "current_price": float(row['current_price']),
+            "prediction_date": str(row['prediction_date'])
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Error fetching {horizon} forecast: {str(e)}")
+        return {
+            "status": "error",
+            "horizon": horizon,
+            "message": str(e)
+        }
+
+@app.get("/api/v4/predictions/history")
+async def get_predictions_history(days: int = 30):
+    """
+    📊 GET PREDICTION HISTORY
+    Returns all predictions from the last N days for analysis/backtesting
+    """
+    try:
+        client = bigquery.Client()
+        
+        query = f"""
+        SELECT 
+            prediction_date,
+            current_price,
+            forecast_1w,
+            forecast_1m,
+            forecast_3m,
+            forecast_6m,
+            confidence_1w,
+            confidence_1m,
+            confidence_3m,
+            confidence_6m,
+            signal_1w,
+            signal_1m,
+            signal_3m,
+            signal_6m,
+            created_timestamp
+        FROM `cbi-v14.predictions.daily_forecasts`
+        WHERE prediction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
+        ORDER BY prediction_date DESC
+        """
+        
+        results = client.query(query).to_dataframe()
+        
+        if results.empty:
+            return {
+                "status": "no_data",
+                "days": days,
+                "count": 0,
+                "predictions": []
+            }
+        
+        predictions_list = []
+        for _, row in results.iterrows():
+            predictions_list.append({
+                "date": str(row['prediction_date']),
+                "current_price": float(row['current_price']),
+                "forecast_1w": float(row['forecast_1w']) if pd.notna(row['forecast_1w']) else None,
+                "forecast_1m": float(row['forecast_1m']) if pd.notna(row['forecast_1m']) else None,
+                "forecast_3m": float(row['forecast_3m']) if pd.notna(row['forecast_3m']) else None,
+                "forecast_6m": float(row['forecast_6m']) if pd.notna(row['forecast_6m']) else None,
+                "signal_1w": row['signal_1w'],
+                "signal_1m": row['signal_1m'],
+                "signal_3m": row['signal_3m'],
+                "signal_6m": row['signal_6m']
+            })
+        
+        return {
+            "status": "success",
+            "days": days,
+            "count": len(predictions_list),
+            "predictions": predictions_list
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Error fetching prediction history: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
 def standardize_price_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     """Standardize dataframe to match BigQuery schema"""
     # Create standardized dataframe
@@ -456,3 +678,54 @@ def auto_detect_table_name(filename: str) -> str:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
+
+# ============================================================================
+# VERTEX AI PREDICTIONS - DIRECT CALLS TO TRAINED MODELS
+# ============================================================================
+from google.cloud import aiplatform
+from pydantic import BaseModel
+
+# Initialize Vertex AI
+aiplatform.init(project="cbi-v14", location="us-central1")
+
+class VertexPredictionRequest(BaseModel):
+    model_id: str
+    features: dict
+
+@app.post("/api/vertex-predict")
+async def vertex_ai_predict(request: VertexPredictionRequest):
+    """
+    Call Vertex AI trained models directly
+    Model IDs: 1W (575258986094264320), 3M (3157158578716934144), 6M (3788577320223113216)
+    """
+    try:
+        if not request.model_id:
+            raise HTTPException(status_code=400, detail="model_id required")
+        
+        logger.info(f"🔮 Calling Vertex AI model {request.model_id}")
+        
+        # Get the Vertex AI Model
+        model = aiplatform.Model(request.model_id)
+        
+        # Remove target columns from features
+        features_clean = {k: v for k, v in request.features.items() 
+                         if not k.startswith('target_')}
+        
+        # Make prediction
+        predictions = model.predict(instances=[features_clean])
+        
+        # Extract prediction value
+        prediction_value = predictions.predictions[0][0] if predictions.predictions else None
+        
+        logger.info(f"✅ Prediction: {prediction_value}")
+        
+        return {
+            "model_id": request.model_id,
+            "prediction": float(prediction_value),
+            "status": "success"
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Vertex AI error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+

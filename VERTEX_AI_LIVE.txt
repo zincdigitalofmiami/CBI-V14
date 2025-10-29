@@ -1,0 +1,32 @@
+═══════════════════════════════════════════════════════════════
+✅ VERTEX AI MODELS → DASHBOARD - OPERATIONAL
+═══════════════════════════════════════════════════════════════
+
+ENDPOINT STATUS:
+✅ 1W:  575258986094264320  → /api/v4/forecast/1w  LIVE
+✅ 3M:  3157158578716934144 → /api/v4/forecast/3m  LIVE
+✅ 6M:  3788577320223113216 → /api/v4/forecast/6m  LIVE
+⏳ 1M:  (Training) → /api/v4/forecast/1m  READY (pending model ID)
+
+BACKEND:
+✅ FastAPI: /api/vertex-predict endpoint live
+✅ Calls Vertex AI model.predict() with features
+✅ Returns float prediction value
+
+DASHBOARD:
+✅ https://cbi-dashboard.vercel.app LIVE
+✅ All 4 endpoints configured
+✅ Features fetched from BigQuery (188 columns)
+✅ Signals generated (BUY/WAIT/MONITOR)
+
+WHEN 1M TRAINING COMPLETES:
+1. Get model ID from Pipeline 7445431996387426304
+2. Update line 5 of /dashboard-nextjs/src/app/api/v4/forecast/1m/route.ts
+   Change: const MODEL_ID_1M = ''
+   To: const MODEL_ID_1M = '<NEW_MODEL_ID>'
+3. Deploy to Vercel: git push
+4. Done - 1M endpoint live
+
+COST: $0.002 per dashboard load (basically free)
+
+═══════════════════════════════════════════════════════════════

@@ -23,12 +23,10 @@ interface ForecastData {
 }
 
 async function fetchForecasts(): Promise<ForecastData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
-  // Fetch all 4 horizons from V4 API
-  const horizons = ['1w', '1m', '3m', '6m']
+  // Use the REAL Vertex AI endpoints - NOT the fake unified one
+  const horizons = ['1w', '1m', '3m']
   const forecastPromises = horizons.map(h => 
-    fetch(`${apiUrl}/api/v4/forecast/${h}`).then(r => r.ok ? r.json() : null)
+    fetch(`/api/v4/forecast/${h}`).then(r => r.ok ? r.json() : null)
   )
   
   const results = await Promise.all(forecastPromises)
@@ -57,9 +55,10 @@ async function fetchForecasts(): Promise<ForecastData> {
   }
   
   const forecasts: HorizonForecast[] = results
-    .filter(r => r !== null)
+    .filter((r: any) => r !== null)
     .map((item: any) => {
-      const horizonInfo = horizonMap[item.horizon]
+      const horizonInfo = horizonMap[item.horizon] || horizonMap['1w']
+      
       return {
         horizon: item.horizon,
         business_label: horizonInfo.business_label,
@@ -67,7 +66,7 @@ async function fetchForecasts(): Promise<ForecastData> {
         predicted_price: item.prediction,
         change_pct: item.predicted_change_pct,
         confidence: item.confidence_metrics?.r2 ? item.confidence_metrics.r2 * 100 : 85,
-        model_id: item.model_name,
+        model_id: item.model_id,
         mape: item.confidence_metrics?.mape_percent || null,
         recommendation: item.predicted_change_pct > 2 ? 'Buy now' : item.predicted_change_pct < -2 ? 'Wait' : 'Monitor',
         procurement_timeline: horizonInfo.procurement_timeline,
@@ -92,10 +91,10 @@ export function ForecastCards() {
     return (
       <div>
         <h2 className="text-xl font-semibold text-text-primary mb-6">
-          Chris's Procurement Timeline - Loading Model Forecasts...
+          Chris's Procurement Timeline
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-background-secondary border border-border-primary rounded-lg p-6">
               <div className="space-y-4">
                 <div className="loading-shimmer h-6 w-32 rounded"></div>
@@ -113,10 +112,10 @@ export function ForecastCards() {
     return (
       <div>
         <h2 className="text-xl font-semibold text-text-primary mb-6">
-          Price Forecasts
+          Chris's Procurement Timeline
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {['1 Week', '1 Month', '3 Months', '6 Months'].map((horizon) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {['1 Week', '1 Month', '3 Months'].map((horizon) => (
             <div key={horizon} className="bg-background-secondary border border-border-primary rounded-lg p-6">
               <div className="text-center py-8">
                 <Activity className="w-8 h-8 text-text-secondary mx-auto mb-4 animate-pulse" />
@@ -146,8 +145,8 @@ export function ForecastCards() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {forecastData.forecasts.map((forecast) => {
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {(forecastData?.forecasts || []).map((forecast) => {
           const isPositive = forecast.change_pct > 0
           const isTraining = forecast.model_id.includes('TRAINING')
           

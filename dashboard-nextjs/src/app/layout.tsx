@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   description: 'Institutional-grade soybean oil futures forecasting with Vertex AI AutoML',
   keywords: 'soybean oil, futures, trading, forecasting, AutoML, vertex AI',
   authors: [{ name: 'U.S. Oil Solutions' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#0D1421',
 }
 

@@ -17,10 +17,8 @@ interface ProcurementData {
 }
 
 async function fetchProcurementSignal(): Promise<ProcurementData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
-  // Get 1w forecast from V4
-  const response = await fetch(`${apiUrl}/api/v4/forecast/1w`)
+  // Use the REAL Vertex AI endpoint
+  const response = await fetch('/api/v4/forecast/1w')
   
   if (!response.ok) {
     throw new Error('Market data temporarily unavailable')

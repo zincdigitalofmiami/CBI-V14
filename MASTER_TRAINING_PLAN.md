@@ -34,24 +34,27 @@
 #### **📊 INSTITUTIONAL DASHBOARD - LIVE PRODUCTION**
 - **URL:** https://cbi-dashboard.vercel.app (PERMANENT - never changes)
 - **Status:** Bloomberg Terminal aesthetic implemented
-- **Models Integrated:** 1W (2.02% MAPE) + 6M (2.51% MAPE) 
-- **Action Required:** Connect 3M + 1M models when training completes
+- **Infrastructure:** Next.js API routes connecting directly to Vertex AI ✅
+- **Models Integrated:** 1W (2.02% MAPE) + 3M (2.68% MAPE) + 6M (2.51% MAPE) ✅
+- **Action Required:** Deploy with updated API routes (see DEPLOYMENT.md)
 
 ### **🎯 NEXT IMMEDIATE ACTIONS:**
-1. **Monitor 1M training completion** (check every 30 minutes - ETA: 2-4 hours)
-2. **Create Ensemble Model** after 1M completes:
+1. **Deploy Updated Dashboard Infrastructure** (CRITICAL) 🚨
+   - ✅ Created Next.js API routes for Vertex AI predictions
+   - ✅ Fixed localhost:8080 issue preventing Vercel deployment
+   - ⏳ Add Google Cloud credentials to Vercel environment
+   - ⏳ Deploy to production: `vercel --prod`
+   - See `dashboard-nextjs/DEPLOYMENT.md` for complete instructions
+2. **Monitor 1M training completion** (check every 30 minutes - ETA: 2-4 hours)
+3. **Create Ensemble Model** after 1M completes:
    - Weight-average all 4 models (1W, 1M, 3M, 6M)
    - Optimize weights based on historical performance
    - Expected MAPE: <2% (better than individual models)
-3. **Add AI Intelligence Layer** on top of ensemble:
+4. **Add AI Intelligence Layer** on top of ensemble:
    - Market context interpretation
    - Chris-focused language translation
    - Real-time event analysis
    - Confidence-based recommendations
-4. **Deploy Full Stack** to production dashboard:
-   - Models → Ensemble → AI Layer → Dashboard
-   - Complete integration testing
-   - Production deployment
 
 ---
 

@@ -150,7 +150,7 @@ export function BigEightSignals() {
 
       {/* Signals Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {bigEightData.signals.map((signal, index) => (
+        {(bigEightData?.signals || []).map((signal, index) => (
           <div 
             key={index}
             className="bg-background-tertiary rounded-lg p-4 border border-border-secondary hover:border-accent-purple/30 transition-all duration-200"
