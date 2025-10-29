@@ -1,5 +1,6 @@
 'use client'
 
+// Force Vercel rebuild - V4 API cleanup deployed
 import { Bell, Search, User } from 'lucide-react'
 
 export function Header() {
