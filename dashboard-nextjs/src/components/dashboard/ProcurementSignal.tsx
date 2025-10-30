@@ -179,16 +179,6 @@ export function ProcurementSignal() {
         </div>
       </div>
 
-      {/* Next Action - Highlighted */}
-      <div className="bg-gradient-to-r from-background-secondary to-background-tertiary border border-border-primary rounded-lg p-6 shadow-institutional">
-        <h3 className="text-sm font-mono font-medium text-text-secondary mb-3 flex items-center uppercase tracking-wider">
-          <Shield className="w-4 h-4 mr-2 text-buy-accent" />
-          Procurement Action
-        </h3>
-        <p className="text-base text-text-primary font-light">
-          {signal.next_action}
-        </p>
-      </div>
     </div>
   )
 }
