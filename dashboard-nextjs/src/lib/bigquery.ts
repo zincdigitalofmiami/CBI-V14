@@ -13,7 +13,7 @@ export function getBigQueryClient(): BigQuery {
 
   const options: BigQueryOptions = {
     projectId: process.env.GCP_PROJECT_ID || 'cbi-v14',
-    location: 'US', // Use US multi-region to match our datasets
+    location: 'us-central1', // Datasets are in us-central1 region
   }
 
   // Check if we have base64 encoded credentials (Vercel production)
@@ -46,11 +46,11 @@ export async function executeBigQueryQuery(query: string, location?: string): Pr
 
   try {
     const queryOptions: any = { query }
-    // Explicitly set location to US multi-region to match our datasets
+    // Explicitly set location to us-central1 to match our datasets
     if (location) {
       queryOptions.location = location
     } else {
-      queryOptions.location = 'US'
+      queryOptions.location = 'us-central1'
     }
     const [rows] = await client.query(queryOptions)
     return rows
