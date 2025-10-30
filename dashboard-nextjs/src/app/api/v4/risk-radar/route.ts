@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
           crush_margin_30d_ma as crush_margin_importance,
           seasonal_sin as seasonal_importance
           
-        FROM `cbi-v14.models_v4.training_dataset_super_enriched`
-        WHERE date = (SELECT MAX(date) FROM `cbi-v14.models_v4.training_dataset_super_enriched`)
+        FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`
+        WHERE date = (SELECT MAX(date) FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`)
       )
       SELECT * FROM latest_risk_data
     `

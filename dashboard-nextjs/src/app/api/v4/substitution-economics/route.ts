@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     // Process substitution analysis
     const currentDate = result[0].date
-    const substitutionAnalysis = {}
+    const substitutionAnalysis: Record<string, any> = {}
     
     result.forEach(row => {
       const oil_type = row.route.split('_')[0].toLowerCase()
