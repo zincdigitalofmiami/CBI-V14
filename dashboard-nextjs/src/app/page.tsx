@@ -1,9 +1,11 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
-import { ProcurementSignal } from '@/components/dashboard/ProcurementSignal'
+import { ForwardCurve } from '@/components/dashboard/ForwardCurve'
 import { ForecastCards } from '@/components/dashboard/ForecastCards'
-import { ChrisFourFactors } from '@/components/dashboard/ChrisFourFactors'
+import { BreakingNews } from '@/components/dashboard/BreakingNews'
+import { ProcurementSignal } from '@/components/dashboard/ProcurementSignal'
 import { CurrentPrice } from '@/components/dashboard/CurrentPrice'
+import { ChrisFourFactors } from '@/components/dashboard/ChrisFourFactors'
 import { MarketDrivers } from '@/components/dashboard/MarketDrivers'
 import { BigEightSignals } from '@/components/dashboard/BigEightSignals'
 
@@ -35,26 +37,36 @@ export default function DashboardPage() {
             </p>
           </div>
           
-          {/* Chris's Procurement Decision Hub */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div>
+          {/* ROW 1: MAIN FORWARD CURVE (FULL WIDTH - Most Important!) */}
+          <ForwardCurve />
+          
+          {/* ROW 2: 4 MINI FORECAST CHARTS (Equal width) */}
+          <ForecastCards />
+          
+          {/* ROW 3: BREAKING NEWS + AI ANALYSIS (FULL WIDTH) */}
+          <BreakingNews />
+          
+          {/* ROW 4: VIX METER + PRICE DRIVERS (Side by side, 40%/60%) */}
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <div className="xl:col-span-2">
               <ProcurementSignal />
             </div>
+            <div className="xl:col-span-3">
+              <MarketDrivers />
+            </div>
+          </div>
+          
+          {/* ROW 5: CHRIS'S 4 CRITICAL FACTORS (Equal cards) */}
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <div>
               <CurrentPrice />
             </div>
-            <div>
+            <div className="xl:col-span-3">
               <ChrisFourFactors />
             </div>
           </div>
           
-          {/* Model Forecasts - Chris's Timeline */}
-          <ForecastCards />
-          
-          {/* AI-Driven Market Intelligence - Real-Time Data */}
-          <MarketDrivers />
-          
-          {/* Big 8 Signals - Live BigQuery Data */}
+          {/* ROW 6: BIG 8 SIGNALS (Full width for all 8) */}
           <BigEightSignals />
         </main>
       </div>

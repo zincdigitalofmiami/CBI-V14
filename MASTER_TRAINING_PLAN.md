@@ -1,7 +1,7 @@
 # MASTER TRAINING PLAN - CBI-V14
 **Date:** October 22, 2025  
-**Last Updated:** October 29, 2025 - 17:45 UTC (ENDPOINT DEPLOYMENT IN PROGRESS)
-**Status:** 🚀 SERVERLESS ENDPOINT TRICKERY RUNNING | 4 MODELS COMPLETE | FULL AUTOMATION IMPLEMENTATION
+**Last Updated:** October 30, 2025 - 02:00 UTC (DASHBOARD REDESIGN + MODEL DEPLOYMENT)
+**Status:** ✅ 1W LIVE ON DASHBOARD | 1M/3M/6M DEPLOYING | CHRIS-FOCUSED REDESIGN IN PROGRESS
 
 ### 📊 VERTEX AI AUTOML PERFORMANCE SUMMARY:
 | Horizon | Model ID | MAPE | MAE | R² | Status |
@@ -2496,5 +2496,162 @@ Create an institutional-grade soybean oil futures forecasting platform with soph
 - ❌ **NO HARDCODED VALUES** - All dynamic from trained models
 
 **COMMITMENT:** 100% model-driven core metrics, AI agents only for supplementary context, Chris-focused language throughout, institutional rigor with practical business application. Perfect synthesis of UBS/GS trading expertise and Chris's operational procurement requirements.
+
+---
+
+## 🎨 DASHBOARD REDESIGN - OCTOBER 30, 2025 (CHRIS-FOCUSED LAYOUT)
+
+### **FINAL APPROVED HOMEPAGE LAYOUT:**
+
+**DESIGN PRINCIPLES:**
+1. **Visual Hierarchy**: Biggest = Most important (Forward Curve at top)
+2. **Full-Width Elements**: Main chart, news feed span entire width
+3. **Professional Pairing**: Related data grouped together (VIX + Price Drivers)
+4. **Institutional Aesthetics**: TradingView/Bloomberg Terminal styling
+5. **Chris's Language**: Plain English, not trader jargon
+
+**LAYOUT STRUCTURE (Top to Bottom):**
+
+**ROW 1: MAIN FORWARD CURVE (FULL WIDTH, PROMINENT)**
+- Historical ZL prices 2020-2025 (gray line from `soybean_oil_prices`)
+- 1W/1M/3M/6M Vertex AI predictions (blue dots with connecting line)
+- Shaded confidence bands (based on model MAPE)
+- Buy zones highlighted in green
+- Chart library: Recharts with professional styling
+- Height: 400px (dominant visual element)
+
+**ROW 2: 4 MINI FORECAST CHARTS (Equal width cards)**
+```
+[1 WEEK]        [1 MONTH]       [3 MONTHS]      [6 MONTHS]
+$50.19          $49.80          $51.20          $52.40
++0.16% ▲        -0.62% ▼        +2.18% ▲        +4.57% ▲
+
+[Walk-forward]  [Walk-forward]  [Walk-forward]  [Walk-forward]
+  ╱●              ●╲              ╱●                ╱●
+ ╱                 ╲             ╱                ╱
+●                   ●           ●                ●
+
+MONITOR         WAIT            BUY ZONE        LOCK NOW
+98% conf        95% conf        92% conf        89% conf
+Model: 1W       Model: 1M       Model: 3M       Model: 6M
+```
+
+**ROW 3: BREAKING NEWS + AI ANALYSIS (FULL WIDTH)**
+- Latest 2-3 news items from `news_intelligence`
+- AI translation: Why each matters for procurement
+- Dollar impact per story (-$0.80/cwt, +$1.50/cwt, etc.)
+- BUY/WAIT/MONITOR recommendation per story
+- Time stamps (2 hours ago, 5 hours ago)
+- Live feed indicator
+
+**ROW 4: VIX METER + PRICE DRIVERS (Side by side, 40%/60% split)**
+
+Left (40%):
+```
+VIX CRISIS METER
+    ╔═════════╗
+    ║         ║
+    ║   18    ║ 🟢 SAFE
+    ║         ║
+    ╚═════════╝
+
+Current: 18 (LOW)
+30-day avg: 22 (DECLINING)
+
+Safe to delay purchases
+No panic buying needed
+
+ALERT: If VIX >30 → BUY NOW!
+```
+
+Right (60%):
+```
+WHY PRICES MOVING
+
+1. Argentina: -$1.20/cwt ▼ BEARISH
+   0% tax = Undercutting US
+   ████████████████ HIGH IMPACT
+
+2. China: -$0.80/cwt ▼ BEARISH
+   Boycott active, 0 MT from US
+   ████████████ MODERATE
+
+3. Brazil: -$0.50/cwt ▼ BEARISH
+   56% harvest complete
+   ████████ MODERATE
+
+4. Industrial: +$0.40/cwt ▲ BULLISH
+   48.5% demand floor
+   ████ MODERATE
+
+NET IMPACT: -$2.10/cwt
+RECOMMENDATION: WAIT
+```
+
+**ROW 5: CHRIS'S 4 FACTORS (4 equal cards)**
+```
+[CHINA]         [HARVEST]       [BIOFUEL]       [PALM OIL]
+0 MT            56% complete    48.5% demand    $68.46/cwt
+BOYCOTT         Supply glut     Floor support   No risk
+-$1.20/cwt      -$0.50/cwt      +$0.40/cwt      $0.00/cwt
+```
+
+---
+
+### **IMPLEMENTATION STATUS (October 30, 2025):**
+
+**✅ COMPLETED:**
+- 1W Vertex AI model deployed and live ($50.19)
+- Big 8 signals API with real BigQuery data
+- Breaking News API with AI procurement analysis
+- Ultra-dark gloss styling
+- Gradient fade headers on all pages
+- Blue confidence gauges (matches timeline)
+
+**🚀 IN PROGRESS:**
+- 1M, 3M, 6M model deployment (quota blocked)
+- Forward curve chart component
+- Mini forecast charts with walk-forward
+- VIX meter component
+- Price drivers breakdown
+
+**⏳ PENDING:**
+- Historical price data for forward curve
+- Confidence band calculations
+- Buy zone highlighting
+- Dollar impact calculations from model SHAP values
+
+---
+
+### **DATA SOURCES (All REAL from BigQuery):**
+
+**For Forward Curve:**
+- `forecasting_data_warehouse.soybean_oil_prices` (2,930 rows, 2018-2025)
+- `predictions.monthly_vertex_predictions` (1W complete, 1M/3M/6M pending)
+- Model MAPE for confidence bands (2.02%, 2.5%, 2.68%, 2.51%)
+
+**For Breaking News:**
+- `forecasting_data_warehouse.news_intelligence` (551 articles)
+- GDELT events (updated hourly)
+- AI analysis translates to procurement impact
+
+**For VIX Meter:**
+- `forecasting_data_warehouse.vix_daily` (2,717 rows)
+- `feature_vix_stress` from training dataset (0.26 current)
+- 30-day moving average calculation
+
+**For Price Drivers:**
+- All Big 8 signals from `training_dataset_super_enriched`
+- Dollar impacts (calculated from model predictions)
+- Plain English translations
+
+---
+
+**NEXT STEPS:**
+1. Install Recharts library for professional charts
+2. Build forward curve component with historical + forecasts
+3. Build 4 mini chart components with walk-forward validation
+4. Implement new homepage layout
+5. Deploy 1M/3M/6M models (tomorrow after quota increase)
 
 ---
