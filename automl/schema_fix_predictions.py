@@ -186,9 +186,9 @@ def save_predictions_to_bigquery(horizon, prediction_data):
         raise Exception(f"Failed to insert data: {errors}")
 
 def run_single_model_test(horizon='1W'):
-    """Test with a single model before running all"""
+    """Deploy single model to get prediction"""
     logger.info(f"\n{'='*70}")
-    logger.info(f"🧪 TESTING SINGLE MODEL: {horizon}")
+    logger.info(f"🚀 VERTEX AI DEPLOYMENT: {horizon} HORIZON")
     logger.info(f"{'='*70}\n")
     
     if horizon not in MODEL_INFO:
@@ -201,11 +201,13 @@ def run_single_model_test(horizon='1W'):
     mape = info['mape']
     days_ahead = info['days_ahead']
     
-    # Create temporary endpoint
+    # Create endpoint with date-based naming
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     endpoint = aiplatform.Endpoint.create(
-        display_name=f"test_endpoint_{horizon}_{int(time.time())}"
+        display_name=f"vertex_{horizon.lower()}_{timestamp}"
     )
-    logger.info(f"✅ Created test endpoint: {endpoint.display_name}")
+    logger.info(f"✅ Created endpoint: {endpoint.display_name}")
     
     try:
         # Get input data with schema fixes
@@ -312,13 +314,22 @@ def run_all_models():
     logger.info(f"🚀 GETTING PREDICTIONS FROM ALL 4 MODELS")
     logger.info(f"{'='*70}\n")
     
+    # Create single endpoint for all models
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+    endpoint = aiplatform.Endpoint.create(
+        display_name=f"vertex_all_horizons_{timestamp}"
+    )
+    logger.info(f"✅ Created endpoint: {endpoint.display_name} (ID: {endpoint.name})")
+    
     results = {}
     
-    # Get input data once (same for all models)
-    instance = get_prediction_input()
-    
-    # Process each model sequentially
-    for horizon, info in MODEL_INFO.items():
+    try:
+        # Get input data once (same for all models)
+        instance = get_prediction_input()
+        
+        # Process each model sequentially
+        for horizon, info in MODEL_INFO.items():
             logger.info(f"\n{'-'*70}")
             logger.info(f"Processing {horizon} horizon...")
             logger.info(f"{'-'*70}")

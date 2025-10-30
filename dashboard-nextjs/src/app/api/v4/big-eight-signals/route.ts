@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
         china_soybean_imports_mt,
         argentina_export_tax,
         industrial_demand_index,
-        palm_soy_spread,
+        palm_price,
+        zl_price_current,
         date
       FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`
       WHERE date IS NOT NULL
@@ -86,9 +87,9 @@ export async function GET(request: NextRequest) {
       {
         name: 'Palm Substitution',
         key: 'palm_spread',
-        value: signals.palm_soy_spread,
-        status: signals.palm_soy_spread < 10 ? 'BEARISH' : signals.palm_soy_spread > 20 ? 'BULLISH' : 'NEUTRAL',
-        impact: signals.palm_soy_spread < 10 ? 'HIGH' : signals.palm_soy_spread > 20 ? 'LOW' : 'MEDIUM'
+        value: Math.abs(signals.palm_price - signals.zl_price_current),
+        status: Math.abs(signals.palm_price - signals.zl_price_current) < 10 ? 'BEARISH' : Math.abs(signals.palm_price - signals.zl_price_current) > 20 ? 'BULLISH' : 'NEUTRAL',
+        impact: Math.abs(signals.palm_price - signals.zl_price_current) < 10 ? 'HIGH' : Math.abs(signals.palm_price - signals.zl_price_current) > 20 ? 'LOW' : 'MEDIUM'
       }
     ]
 

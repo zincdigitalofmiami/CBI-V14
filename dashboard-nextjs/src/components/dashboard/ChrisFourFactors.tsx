@@ -40,33 +40,48 @@ async function fetchFourFactors(): Promise<FourFactorsData> {
     throw new Error('Market data temporarily unavailable')
   }
   
-  await response.json()
+  const forecastData = await response.json()
+  
+  // Get Big 8 signals
+  const signalsResponse = await fetch('/api/v4/big-eight-signals')
+  if (!signalsResponse.ok) {
+    throw new Error('Signals unavailable')
+  }
+  
+  const signalsData = await signalsResponse.json()
+  
+  // Find specific signals
+  const chinaSignal = signalsData.signals.find((s: any) => s.key === 'china_imports')
+  const argentinaSignal = signalsData.signals.find((s: any) => s.key === 'argentina_tax')
+  const industrialSignal = signalsData.signals.find((s: any) => s.key === 'industrial_demand')
+  const palmSignal = signalsData.signals.find((s: any) => s.key === 'palm_spread')
+  const harvestSignal = signalsData.signals.find((s: any) => s.key === 'harvest_pace')
   
   // Transform to four factors format
   return {
     china_status: {
-      imports_mt: 0,
-      status: 'BOYCOTT ACTIVE',
-      impact_cwt: -1.20,
-      timeline: 'Through Q1 2026'
+      imports_mt: chinaSignal?.value || 0,
+      status: chinaSignal?.value < 1 ? 'BOYCOTT ACTIVE' : chinaSignal?.value > 12 ? 'STRONG DEMAND' : 'NORMAL',
+      impact_cwt: chinaSignal?.value < 1 ? -1.20 : chinaSignal?.value > 12 ? 1.50 : 0,
+      timeline: chinaSignal?.value < 1 ? 'Through Q1 2026' : 'Ongoing'
     },
     harvest_status: {
-      brazil_pct: 78,
-      argentina_status: 'Competitive (0% tax)',
-      impact_cwt: -0.80,
-      description: 'Supply glut developing'
+      brazil_pct: (harvestSignal?.value || 0) * 100,
+      argentina_status: argentinaSignal?.value < 5 ? 'Competitive (low tax)' : 'Normal taxation',
+      impact_cwt: (harvestSignal?.value || 0) > 0.7 ? -0.80 : 0,
+      description: (harvestSignal?.value || 0) > 0.7 ? 'Supply glut developing' : 'Normal supply'
     },
     biofuel_status: {
       rin_prices: 'Stable',
-      industrial_demand: 0.51,
-      impact_cwt: 0.40,
-      trend: 'Growing demand'
+      industrial_demand: industrialSignal?.value || 0,
+      impact_cwt: (industrialSignal?.value || 0) > 0.5 ? 0.40 : 0,
+      trend: (industrialSignal?.value || 0) > 0.5 ? 'Growing demand' : 'Stable'
     },
     palm_oil_status: {
-      spread_mt: 12,
-      substitution_risk: 'Low',
-      impact_cwt: 0.00,
-      assessment: 'Neutral impact'
+      spread_mt: palmSignal?.value || 0,
+      substitution_risk: (palmSignal?.value || 0) < 10 ? 'High' : (palmSignal?.value || 0) > 20 ? 'Low' : 'Medium',
+      impact_cwt: (palmSignal?.value || 0) < 10 ? -0.50 : 0,
+      assessment: (palmSignal?.value || 0) < 10 ? 'Risk of substitution' : 'Neutral impact'
     }
   }
 }

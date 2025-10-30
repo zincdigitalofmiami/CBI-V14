@@ -13,10 +13,8 @@ interface CurrentPriceData {
 }
 
 async function fetchCurrentPrice(): Promise<CurrentPriceData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
   // Get current price from 1w forecast
-  const response = await fetch(`${apiUrl}/api/v4/forecast/1w`)
+  const response = await fetch('/api/v4/forecast/1w')
   
   if (!response.ok) {
     throw new Error('Price data temporarily unavailable')

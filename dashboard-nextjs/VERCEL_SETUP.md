@@ -154,3 +154,4 @@ curl https://cbi-dashboard.vercel.app/api/v4/forecast/1w?model_type=automl_v4
 
 
 
+
