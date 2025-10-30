@@ -10,11 +10,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // INSTITUTIONAL BLOOMBERG TERMINAL AESTHETIC
+        // INSTITUTIONAL BLOOMBERG TERMINAL AESTHETIC - ULTRA DARK GLOSS
         background: {
-          primary: '#0a0e17',      // Very dark navy background
-          secondary: '#161b27',    // Dark navy card backgrounds
-          tertiary: '#1f2937',     // Slightly lighter for depth
+          primary: '#000000',      // Pure black background
+          secondary: '#0a0a0f',    // Near-black sidebar and cards - MUCH DARKER
+          tertiary: '#12121a',     // Very dark for depth layers
         },
         text: {
           primary: '#E0E0E3',      // Bright primary text
