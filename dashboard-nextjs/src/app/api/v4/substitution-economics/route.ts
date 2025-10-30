@@ -3,22 +3,19 @@ import { getBigQueryClient, executeBigQueryQuery } from '@/lib/bigquery'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get substitution analysis data (soy oil vs palm oil vs canola)
+    // Get substitution analysis data (soy oil vs palm oil vs canola) - ALL REAL DATA
     const substitutionQuery = `
       WITH price_data AS (
         SELECT 
           DATE(s.time) as date,
           s.close as soy_oil_price,
           p.close as palm_oil_price,
-          -- Estimate canola price (not in dataset, use correlation with soy)
-          s.close * 1.15 as canola_oil_price,
-          -- Get feature importance for substitution analysis
-          corr_zl_palm_90d as palm_correlation,
-          corr_zl_palm_365d as palm_correlation_annual,
-          zl_palm_corr_30d as palm_correlation_monthly
+          c.close as canola_oil_price
         FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\` s
         LEFT JOIN \`cbi-v14.forecasting_data_warehouse.palm_oil_prices\` p
           ON DATE(s.time) = DATE(p.time)
+        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.canola_oil_prices\` c
+          ON DATE(s.time) = DATE(c.time)
         WHERE s.symbol = 'ZL'
           AND DATE(s.time) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
           AND s.close IS NOT NULL
@@ -44,12 +41,7 @@ export async function GET(request: NextRequest) {
       
       latest_features AS (
         SELECT 
-          palm_price,
-          corr_zl_palm_90d as palm_correlation_feature,
-          zl_palm_corr_30d as recent_palm_correlation,
-          -- Feature importance from model
-          target_1w as target_importance,
-          corr_price as price_correlation_importance
+          feature_hidden_correlation
         FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`
         WHERE date = (SELECT MAX(date) FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`)
       )
@@ -58,10 +50,7 @@ export async function GET(request: NextRequest) {
         p.*,
         t.cost_per_unit,
         t.description as transport_description,
-        f.palm_correlation_feature,
-        f.recent_palm_correlation,
-        f.target_importance,
-        f.price_correlation_importance,
+        f.feature_hidden_correlation,
         -- Calculate total delivered cost
         CASE 
           WHEN t.route = 'SOY_TO_US' THEN p.soy_oil_price + t.cost_per_unit
@@ -98,26 +87,25 @@ export async function GET(request: NextRequest) {
       }, { status: 503 })
     }
 
-    // Process substitution analysis
+    // Process substitution analysis - USE ONLY REAL DATA
     const currentDate = result[0].date
     const substitutionAnalysis: Record<string, any> = {}
     
     result.forEach(row => {
       const oil_type = row.route.split('_')[0].toLowerCase()
+      const basePrice = oil_type === 'soy' ? row.soy_oil_price :
+                       oil_type === 'palm' ? row.palm_oil_price : row.canola_oil_price
+      
       substitutionAnalysis[oil_type] = {
         name: oil_type === 'soy' ? 'Soybean Oil' : 
               oil_type === 'palm' ? 'Palm Oil' : 'Canola Oil',
-        base_price: oil_type === 'soy' ? row.soy_oil_price :
-                   oil_type === 'palm' ? row.palm_oil_price : row.canola_oil_price,
+        base_price: basePrice,
         transport_cost: row.cost_per_unit,
         total_cost: row.total_delivered_cost,
         transport_description: row.transport_description,
         substitution_signal: row.substitution_signal,
-        correlation: oil_type === 'palm' ? row.recent_palm_correlation : 
-                    oil_type === 'canola' ? 0.75 : 1.0, // Estimated canola correlation
-        model_importance: oil_type === 'palm' ? 
-          Math.abs(row.palm_correlation_feature || 0.10) * 100 : 
-          oil_type === 'soy' ? Math.abs(row.price_correlation_importance || 0.25) * 100 : 8.5
+        correlation: row.feature_hidden_correlation || null, // Use real correlation if available
+        model_importance: Math.abs(row.feature_hidden_correlation || 0) * 100 // Real value only
       }
     })
 
@@ -161,7 +149,7 @@ export async function GET(request: NextRequest) {
       cost_curves: costCurves,
       switching_points: switchingPoints,
       market_dynamics: {
-        palm_correlation: substitutionAnalysis.palm.correlation,
+        hidden_correlation: substitutionAnalysis.soy.correlation,
         substitution_active: switchingPoints.length > 0,
         current_leader: getOptimalChoice(
           substitutionAnalysis.soy.total_cost,
@@ -174,9 +162,8 @@ export async function GET(request: NextRequest) {
         )
       },
       feature_importance: {
-        palm_correlation_weight: substitutionAnalysis.palm.model_importance,
-        price_correlation_weight: substitutionAnalysis.soy.model_importance,
-        substitution_regime: substitutionAnalysis.palm.model_importance > 12 ? 'HIGH_IMPACT' : 'MODERATE_IMPACT'
+        hidden_correlation_weight: substitutionAnalysis.soy.model_importance,
+        substitution_regime: substitutionAnalysis.soy.model_importance > 50 ? 'HIGH_IMPACT' : 'MODERATE_IMPACT'
       },
       last_updated: new Date().toISOString()
     })
