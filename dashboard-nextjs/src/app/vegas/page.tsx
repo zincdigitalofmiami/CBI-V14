@@ -12,11 +12,16 @@ export default function VegasIntelPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-light text-text-primary mb-2">
-                Vegas Sales Intelligence
+              <h1 className="text-4xl font-light text-text-primary mb-2" style={{
+                background: 'linear-gradient(135deg, #E0E0E3 0%, #9099a6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                Vegas Intelligence & Market Rumors
               </h1>
-              <p className="text-text-secondary">
-                Event-driven upsell opportunities, customer relationship matrix, and margin protection alerts
+              <p className="text-text-secondary text-sm">
+                Live event-based risk analytics and market-moving intelligence
               </p>
             </div>
             

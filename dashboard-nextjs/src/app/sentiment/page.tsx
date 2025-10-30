@@ -12,11 +12,16 @@ export default function SentimentPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-light text-text-primary mb-2">
-                Market Sentiment Intelligence
+              <h1 className="text-4xl font-light text-text-primary mb-2" style={{
+                background: 'linear-gradient(135deg, #E0E0E3 0%, #9099a6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                Quantitative Sentiment Analysis
               </h1>
-              <p className="text-text-secondary">
-                Social media sentiment, news analysis, and market psychology indicators
+              <p className="text-text-secondary text-sm">
+                Multi-horizon neural ensemble with adaptive regime detection
               </p>
             </div>
             
