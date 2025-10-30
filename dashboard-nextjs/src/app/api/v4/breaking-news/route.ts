@@ -1,53 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getBigQueryClient } from '@/lib/bigquery'
 
 export async function GET() {
-  try {
-    const client = getBigQueryClient();
-    const query = `
-      SELECT 
-        timestamp,
-        headline,
-        source,
-        relevance_score as impact_score,
-        'news' as category,
-        NULL as entities,
-        NULL as goldstein_scale,
-        sentiment_score as sentiment_tone
-      FROM \`cbi-v14.forecasting_data_warehouse.breaking_news_hourly\`
-      WHERE timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
-      ORDER BY relevance_score DESC
-      LIMIT 5
-    `;
-    
-    const [rows] = await client.query(query);
-    
-    if (!rows || rows.length === 0) {
-      return NextResponse.json({ 
-        news: [],
-        message: "No breaking news in last 24 hours"
-      });
-    }
-
-    return NextResponse.json({ 
-      news: rows.map(row => ({
-        timestamp: row.timestamp.value,
-        headline: row.headline,
-        source: row.source,
-        impact: row.impact_score,
-        category: row.category,
-        entities: row.entities,
-        goldstein: row.goldstein_scale,
-        sentiment: row.sentiment_tone
-      })),
-      last_updated: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('Breaking news error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch breaking news',
-      details: error.message 
-    }, { status: 500 });
-  }
+  // TEMPORARILY DISABLED - Returning empty array to prevent site breakage
+  // API needs table schema fix before re-enabling
+  return NextResponse.json({ 
+    news: [],
+    message: "Breaking news temporarily unavailable"
+  });
 }

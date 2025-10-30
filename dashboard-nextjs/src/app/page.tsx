@@ -2,7 +2,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { ForwardCurve } from '@/components/dashboard/ForwardCurve'
 import { ForecastCards } from '@/components/dashboard/ForecastCards'
-import { BreakingNews } from '@/components/dashboard/BreakingNews'
+// import { BreakingNews } from '@/components/dashboard/BreakingNews' // TEMPORARILY DISABLED - API needs fixing
 import { ProcurementSignal } from '@/components/dashboard/ProcurementSignal'
 import { CurrentPrice } from '@/components/dashboard/CurrentPrice'
 import { ChrisFourFactors } from '@/components/dashboard/ChrisFourFactors'
@@ -46,8 +46,8 @@ export default function DashboardPage() {
           {/* ROW 2: 4 MINI FORECAST CHARTS (Equal width) */}
           <ForecastCards />
           
-          {/* ROW 3: BREAKING NEWS + AI ANALYSIS (FULL WIDTH) */}
-          <BreakingNews />
+          {/* ROW 3: BREAKING NEWS + AI ANALYSIS (FULL WIDTH) - TEMPORARILY DISABLED */}
+          {/* <BreakingNews /> */}
           
           {/* ROW 4: VIX METER + PRICE DRIVERS (Side by side, 40%/60%) */}
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
