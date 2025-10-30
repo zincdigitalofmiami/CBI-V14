@@ -29,13 +29,13 @@ async function fetchBigEight(): Promise<BigEightData> {
   
   const data = await response.json()
   
-  // Transform to expected format
+  // Transform to expected format - USE ACTUAL PERCENTAGES FROM API
   const signals: BigEightSignal[] = data.signals.map((s: any) => ({
     signal_name: s.name,
     current_value: s.value,
     signal_strength: s.impact === 'HIGH' ? 'STRONG' : s.impact === 'MEDIUM' ? 'MODERATE' : 'WEAK',
-    trend: s.status === 'BULLISH' ? 'BULLISH' : s.status === 'BEARISH' || s.status === 'CRITICAL' ? 'BEARISH' : 'NEUTRAL',
-    impact_score: s.impact === 'HIGH' ? 85 : s.impact === 'MEDIUM' ? 60 : 35,
+    trend: s.status === 'BULLISH' ? 'BULLISH' : s.status === 'BEARISH' || s.status === 'CRITICAL' || s.status === 'ELEVATED' ? 'BEARISH' : 'NEUTRAL',
+    impact_score: s.percentage, // USE ACTUAL PERCENTAGE (26%, 56%, 0%, 20%, etc)
     last_updated: data.data_date,
     bigquery_view: s.key
   }))
@@ -217,7 +217,7 @@ export function BigEightSignals() {
                       : 'bg-gradient-to-r from-text-secondary to-text-tertiary'
                   }`}
                   style={{ 
-                    width: `${Math.min(Math.abs(signal.impact_score) * 20, 100)}%`,
+                    width: `${Math.min(Math.abs(signal.impact_score), 100)}%`, // Direct percentage
                     boxShadow: signal.impact_score !== 0 
                       ? `0 0 6px ${signal.impact_score > 0 ? 'rgba(0, 85, 255, 0.4)' : 'rgba(229, 0, 0, 0.4)'}` 
                       : 'none'

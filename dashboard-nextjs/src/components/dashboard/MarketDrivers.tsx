@@ -29,13 +29,13 @@ async function fetchMarketDrivers(): Promise<MarketDriversData> {
   
   const data = await response.json()
   
-  // Transform Big 8 to Market Drivers format
+  // Transform Big 8 to Market Drivers format - USE ACTUAL PERCENTAGES
   const drivers: MarketDriver[] = data.signals.slice(0, 4).map((s: any) => ({
     title: s.name,
     status: s.status,
-    value: typeof s.value === 'number' ? s.value.toFixed(2) : s.value,
+    value: s.display_value || (typeof s.value === 'number' ? s.value.toFixed(2) : s.value),
     impact_description: `Signal strength: ${s.impact}`,
-    confidence: s.impact === 'HIGH' ? 90 : s.impact === 'MEDIUM' ? 70 : 50,
+    confidence: s.percentage, // USE ACTUAL PERCENTAGE (26%, 56%, 0%, 20%)
     last_updated: data.data_date,
     data_source: `BigQuery: ${s.key}`
   }))
