@@ -179,17 +179,6 @@ export function ProcurementSignal() {
         </div>
       </div>
 
-      {/* Why - Business Explanation */}
-      <div className="bg-background-secondary border border-border-secondary rounded-lg p-6 mb-6">
-        <h3 className="text-sm font-mono font-medium text-text-secondary mb-3 flex items-center uppercase tracking-wider">
-          <AlertTriangle className="w-4 h-4 mr-2 text-accent-purple" />
-          Market Intelligence
-        </h3>
-        <p className="text-sm text-text-primary leading-relaxed font-light">
-          {signal.reason}
-        </p>
-      </div>
-
       {/* Next Action - Highlighted */}
       <div className="bg-gradient-to-r from-background-secondary to-background-tertiary border border-border-primary rounded-lg p-6 shadow-institutional">
         <h3 className="text-sm font-mono font-medium text-text-secondary mb-3 flex items-center uppercase tracking-wider">
