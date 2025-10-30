@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
         close as price,
         'historical' as type
       FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
-      WHERE time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 365 DAY)
+      WHERE time >= DATETIME_SUB(CURRENT_DATETIME(), INTERVAL 365 DAY)
       ORDER BY time ASC
     `
     
@@ -112,5 +112,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-

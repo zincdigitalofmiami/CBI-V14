@@ -41,11 +41,18 @@ export function getBigQueryClient(): BigQuery {
 /**
  * Execute a BigQuery query with error handling
  */
-export async function executeBigQueryQuery(query: string): Promise<any[]> {
+export async function executeBigQueryQuery(query: string, location?: string): Promise<any[]> {
   const client = getBigQueryClient()
 
   try {
-    const [rows] = await client.query({ query })
+    const queryOptions: any = { query }
+    // Explicitly set location to US multi-region to match our datasets
+    if (location) {
+      queryOptions.location = location
+    } else {
+      queryOptions.location = 'US'
+    }
+    const [rows] = await client.query(queryOptions)
     return rows
   } catch (error: any) {
     console.error('BigQuery query error:', error)
@@ -66,8 +73,3 @@ export async function testBigQueryConnection(): Promise<boolean> {
     return false
   }
 }
-
-
-
-
-
