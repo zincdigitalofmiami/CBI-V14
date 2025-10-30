@@ -8,6 +8,8 @@ import { CurrentPrice } from '@/components/dashboard/CurrentPrice'
 import { ChrisFourFactors } from '@/components/dashboard/ChrisFourFactors'
 import { MarketDrivers } from '@/components/dashboard/MarketDrivers'
 import { BigEightSignals } from '@/components/dashboard/BigEightSignals'
+import PriceDrivers from '@/components/dashboard/PriceDrivers'
+import ProcurementOptimizer from '@/components/dashboard/ProcurementOptimizer'
 
 export default function DashboardPage() {
   return (
@@ -66,8 +68,14 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* ROW 6: BIG 8 SIGNALS (Full width for all 8) */}
+          {/* ROW 6: WHY PRICES ARE MOVING - AI INTELLIGENCE (Full width) */}
+          <PriceDrivers />
+          
+          {/* ROW 7: BIG 8 SIGNALS (Full width for all 8) */}
           <BigEightSignals />
+          
+          {/* ROW 8: PROCUREMENT TIMING OPTIMIZER WITH VIX (Full width) */}
+          <ProcurementOptimizer />
         </main>
       </div>
     </div>
