@@ -1,7 +1,17 @@
 # MASTER TRAINING PLAN - CBI-V14
 **Date:** October 22, 2025  
-**Last Updated:** October 30, 2025 - 02:00 UTC (DASHBOARD REDESIGN + MODEL DEPLOYMENT)
-**Status:** ✅ 1W LIVE ON DASHBOARD | 1M/3M/6M DEPLOYING | CHRIS-FOCUSED REDESIGN IN PROGRESS
+**Last Updated:** October 30, 2025 - 20:55 UTC (COMPLETE IMPLEMENTATION SCAFFOLD CREATED)
+**Status:** 🚧 COMPLETE REBUILD IN PROGRESS | IMPLEMENTATION SCAFFOLD CREATED | ALL PROMISED FEATURES BEING DELIVERED
+
+### 📋 **IMPLEMENTATION SCAFFOLD CREATED**
+**File:** `IMPLEMENTATION_SCAFFOLD.md`  
+**Scope:** Complete delivery of all promised dashboard features:
+- Advanced visualizations (substitution economics, risk radar, currency waterfall, procurement optimizer, biofuel mandates)
+- AI intelligence layer (SHAP drivers, ensemble meta-learner, breaking news AI)
+- Data pipeline fixes (Big-8 refresh, predictions population, breaking news feeds)
+- Dashboard integration (8+ new components while preserving existing layout)
+
+**Current Focus:** Phase 1 - Core Data Pipeline (fixing 17-day stale Big-8 table, empty predictions table, missing breaking news)
 
 ### 📊 VERTEX AI AUTOML PERFORMANCE SUMMARY:
 | Horizon | Model ID | MAPE | MAE | R² | Status |
@@ -2653,5 +2663,274 @@ BOYCOTT         Supply glut     Floor support   No risk
 3. Build 4 mini chart components with walk-forward validation
 4. Implement new homepage layout
 5. Deploy 1M/3M/6M models (tomorrow after quota increase)
+
+---
+
+## 🎯 FEATURE IMPORTANCE & RICH DATA VISUALIZATION PLAN (October 30, 2025)
+
+### **VERTEX AI FEATURE IMPORTANCE - THE KEY TO "WHY PRICES MOVING":**
+
+**What Vertex AI Provides:**
+- Feature attribution percentages (which features drive predictions)
+- Top drivers: `corr_price` (65%), `target_1w` (momentum), `corr_zl_palm_90d`, `crush_margin_30d_ma`, `seasonal_sin`
+- Can extract from model explanations or SHAP values
+- Translate percentages to dollar impacts for Chris
+
+**Example Translation:**
+```
+VERTEX AI FEATURE IMPORTANCE → CHRIS'S PROCUREMENT INTEL
+
+1. corr_price (65% importance)
+   → "Price Momentum: Last week's close continuing trend"
+   → Dollar impact: +$0.12/cwt
+   → What it means: Market has inertia, trend continues
+
+2. corr_zl_palm_90d (18% importance)  
+   → "Palm Oil Relationship: No substitution pressure"
+   → Dollar impact: -$0.08/cwt
+   → What it means: Palm stable = No demand switching
+
+3. crush_margin_30d_ma (12% importance)
+   → "Crush Economics: Strong demand for oil over meal"
+   → Dollar impact: +$0.05/cwt
+   → What it means: Crushers want oil = Price support
+
+4. seasonal_sin (5% importance)
+   → "Seasonal Pattern: Pre-harvest lull"
+   → Dollar impact: -$0.02/cwt
+   → What it means: Normal October weakness
+
+NET: +$0.07/cwt = Model predicts $50.19
+```
+
+---
+
+### **RICH DATA PAGE-BY-PAGE DESIGN:**
+
+#### **PAGE 1: HOMEPAGE (Executive Dashboard)**
+
+**SECTION 1: FORWARD CURVE (Full width)**
+- Historical 2020-2025 (gray line)
+- 1W/1M/3M/6M predictions (blue dots)
+- Confidence bands (shaded)
+- Buy zones (green markers)
+
+**SECTION 2: MINI CHARTS (4 equal cards)**
+- Walk-forward validation charts
+- Each shows recent trend + prediction
+- Confidence percentage
+- BUY/WAIT/MONITOR signal
+
+**SECTION 3: BREAKING NEWS + AI (Full width)**
+- Latest 2-3 news from `news_intelligence`
+- AI analysis: Why each matters
+- Dollar impact per story
+- Procurement recommendation
+- Time stamps
+
+**SECTION 4: WHAT'S DRIVING PRICES (Feature Importance)**
+- Top 4-5 features from model
+- Ranked by importance percentage
+- Plain English translation
+- Dollar impact calculation
+- Direction (bearish/bullish)
+- Bar chart showing contribution
+
+**SECTION 5: VIX CRISIS METER + NET IMPACT**
+- Large VIX gauge (Chris knows this!)
+- Red/yellow/green thresholds
+- Procurement safety assessment
+- Net dollar impact summary
+
+**SECTION 6: CHRIS'S 4 FACTORS**
+- China, Harvest, Biofuel, Palm
+- Real values from BigQuery
+- Dollar impacts
+- Status indicators
+
+---
+
+#### **PAGE 2: STRATEGY (Deep Quantitative Analysis)**
+
+**FEATURE IMPORTANCE CHART (Like Vertex AI shows)**
+- Full bar chart of all 209 features
+- Top 20 expanded with explanations
+- Historical performance of each signal
+- Regime-dependent importance (crisis vs calm)
+- Correlation breakdowns over time
+
+**SUBSTITUTION ECONOMICS:**
+- Soybean vs Palm vs Canola cost comparison
+- Delivered cost to Las Vegas calculator
+- Switching point thresholds
+- Transportation cost breakdown
+- Historical substitution patterns
+
+**PROCUREMENT OPTIMIZER:**
+- Optimal buy window calculator
+- Contract strategy (spot vs fixed)
+- Volume recommendations
+- Savings projections
+- Risk-adjusted timing
+
+**CORRELATION MATRICES:**
+- ZL vs Palm (90-day rolling)
+- ZL vs Crude (energy complex)
+- ZL vs USD/BRL (currency impact)
+- Weather correlations by region
+
+---
+
+#### **PAGE 3: SENTIMENT (Market Psychology)**
+
+**NEWS FEED WITH AI ANALYSIS:**
+- All `news_intelligence` articles
+- Segmented by category (China, biofuel, weather, policy)
+- Sentiment scores
+- Price impact predictions
+- Related trade events
+
+**SOCIAL SENTIMENT:**
+- `social_sentiment` table (3,718 posts)
+- Sentiment trends over time
+- Volume spikes = market attention
+- Trump/China mentions
+- Agricultural keyword tracking
+
+**TRUMP POLICY INTELLIGENCE:**
+- `trump_policy_intelligence` table
+- Trade war timeline
+- Tariff announcements
+- China relations tracking
+- Policy impact scores
+
+---
+
+#### **PAGE 4: LEGISLATION (Regulatory Intel)**
+
+**BIOFUEL MANDATES:**
+- EPA RFS requirements
+- SAF demand projections
+- RIN price tracking
+- State-level mandates
+- Policy change timeline
+
+**TRADE POLICY:**
+- US-China tariff history
+- Argentina tax policy
+- Brazil export regulations
+- Import/export tracking
+- USDA reports integration
+
+**REGULATORY CALENDAR:**
+- USDA WASDE report dates
+- FOMC meetings
+- Policy announcement schedule
+- Comment period deadlines
+
+---
+
+#### **PAGE 5: VEGAS INTEL (Sales Intelligence)**
+
+**CUSTOMER DASHBOARD:**
+- Glide App integration
+- Relationship matrix
+- Order volumes
+- Last contact dates
+- At-risk customers
+
+**EVENT CALENDAR:**
+- Las Vegas events (F1, conventions, fights)
+- Volume multipliers per event
+- Lead time requirements
+- Upsell opportunities
+- Margin protection alerts
+
+**CHRIS'S PROCUREMENT + KEVIN'S SALES:**
+- Price forecast tied to event calendar
+- Lock contracts before high-volume events
+- Margin calculations
+- Revenue projections
+
+---
+
+### **DATA SOURCES FOR RICH VISUALIZATION:**
+
+**HAVE (Real from BigQuery):**
+- ✅ 2,930 historical price points
+- ✅ 209 features in training dataset
+- ✅ Feature correlations (7d, 30d, 90d, 180d, 365d)
+- ✅ 59,102 currency data points (4 pairs)
+- ✅ 551 news articles with intelligence scores
+- ✅ 3,718 social sentiment posts
+- ✅ 215 Trump policy events
+- ✅ 2,717 VIX daily values
+- ✅ 72 CFTC positioning records
+- ✅ Weather data (13,828 rows)
+
+**NEED TO ADD:**
+- ❌ Canola prices (for substitution calc)
+- ❌ Chris's typical order volumes (config file)
+- ❌ Shipping costs by region (config)
+- ❌ Customer data from Glide App
+- ❌ Vegas event calendar
+- ❌ Forward weather forecasts (have historical only)
+
+**CAN CALCULATE:**
+- ✅ Feature importance → Dollar impacts (from model)
+- ✅ Optimal buy windows (from forecasts + harvest timing)
+- ✅ Savings projections (from price differentials)
+- ✅ Substitution points (from palm/soy spreads)
+- ✅ Currency impacts (from FX correlations)
+- ✅ Net impact summaries (sum all factors)
+
+---
+
+### **IMPLEMENTATION PRIORITY (After 1M/3M/6M Deploy):**
+
+**PHASE 1 (Homepage - Chris's Daily View):**
+1. Feature importance → "What's Driving Prices"
+2. Dollar impact calculations
+3. Net impact summary
+4. VIX crisis meter (prominent)
+5. Procurement timing recommendation
+
+**PHASE 2 (Strategy Page - Deep Analysis):**
+1. Full feature importance chart (209 features)
+2. Correlation matrices (heatmaps)
+3. Substitution economics calculator
+4. Contract strategy advisor
+5. Historical pattern matching
+
+**PHASE 3 (Sentiment Page - Market Intel):**
+1. News feed with AI analysis
+2. Social sentiment trends
+3. Trump policy timeline
+4. Event-driven volatility
+5. Keyword tracking
+
+**PHASE 4 (Legislation Page - Regulatory):**
+1. Biofuel mandate tracker
+2. Trade policy timeline
+3. Regulatory calendar
+4. USDA report integration
+5. Policy impact scores
+
+**PHASE 5 (Vegas Page - Sales Intel):**
+1. Glide App integration
+2. Customer relationship matrix
+3. Event calendar with multipliers
+4. Upsell opportunity engine
+5. Margin protection alerts
+
+---
+
+**NOTE ON BATCH INFERENCE:**
+Batch inference jobs failed (quota limits + schema errors). Current architecture is BETTER:
+- Monthly endpoint deployments (cost: $0.60/month)
+- Predictions saved to BigQuery
+- Dashboard reads cached predictions
+- No ongoing costs, no quota issues
+- Failed batch jobs can be ignored
 
 ---

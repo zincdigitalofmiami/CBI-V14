@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         target_date,
         created_at,
         DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
-      FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
+      FROM \`cbi-v14.predictions.daily_forecasts\`
       WHERE horizon = '1M'
       ORDER BY created_at DESC
       LIMIT 1

@@ -41,6 +41,12 @@ cat > /tmp/cbi_crontab << 'EOF'
 # Dashboard Cache Refresh (:45 of every hour)
 45 * * * * cd /Users/zincdigital/CBI-V14/scripts && python3 refresh_dashboard_cache.py >> /Users/zincdigital/CBI-V14/logs/cache.log 2>&1
 
+# === BIG-8 FEATURE REFRESH (twice daily) ===
+0 6 * * * cd /Users/zincdigital/CBI-V14/scripts && python3 refresh_features_pipeline.py >> /Users/zincdigital/CBI-V14/logs/feature_refresh.log 2>&1
+0 18 * * * cd /Users/zincdigital/CBI-V14/scripts && python3 refresh_features_pipeline.py >> /Users/zincdigital/CBI-V14/logs/feature_refresh.log 2>&1
+# === HOURLY BREAKING NEWS ===
+15 * * * * cd /Users/zincdigital/CBI-V14/scripts && python3 hourly_news.py >> /Users/zincdigital/CBI-V14/logs/breaking_news.log 2>&1
+
 # ============================================================================
 # CLEANUP & MONITORING
 # ============================================================================

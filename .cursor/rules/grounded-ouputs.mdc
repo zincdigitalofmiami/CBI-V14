@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 You're absolutely right, we need to add some rules to combat hallucinations and ensure the assistant always provides truthful, grounded information. Here are a few additions to strengthen our Project Rules:
 Grounded Outputs:
