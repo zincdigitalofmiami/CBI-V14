@@ -20,16 +20,35 @@ interface MarketDriversData {
 }
 
 async function fetchMarketDrivers(): Promise<MarketDriversData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
-  const response = await fetch(`${apiUrl}/api/v4/forecast/1w`)
+  const response = await fetch('/api/v4/big-eight-signals')
   
   if (!response.ok) {
     // NO FAKE DATA - Must connect to real BigQuery market driver signals
     throw new Error(`Market Drivers API unavailable: ${response.status}. ZERO FAKE DATA POLICY - Cannot display hardcoded market driver data.`)
   }
   
-  return await response.json()
+  const data = await response.json()
+  
+  // Transform Big 8 to Market Drivers format
+  const drivers: MarketDriver[] = data.signals.slice(0, 4).map((s: any) => ({
+    title: s.name,
+    status: s.status,
+    value: typeof s.value === 'number' ? s.value.toFixed(2) : s.value,
+    impact_description: `Signal strength: ${s.impact}`,
+    confidence: s.impact === 'HIGH' ? 90 : s.impact === 'MEDIUM' ? 70 : 50,
+    last_updated: data.data_date,
+    data_source: `BigQuery: ${s.key}`
+  }))
+  
+  const bearishCount = drivers.filter(d => d.status === 'BEARISH' || d.status === 'CRITICAL').length
+  const bullishCount = drivers.filter(d => d.status === 'BULLISH').length
+  const net_sentiment = bearishCount > bullishCount ? 'BEARISH' : bullishCount > bearishCount ? 'BULLISH' : 'NEUTRAL'
+  
+  return {
+    drivers,
+    net_sentiment,
+    updated_at: data.updated_at
+  }
 }
 
 const getStatusColor = (status: MarketDriver['status']) => {

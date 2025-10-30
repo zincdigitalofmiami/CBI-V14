@@ -20,16 +20,35 @@ interface BigEightData {
 }
 
 async function fetchBigEight(): Promise<BigEightData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
-  const response = await fetch(`${apiUrl}/api/v4/forecast/1w`)
+  const response = await fetch('/api/v4/big-eight-signals')
   
   if (!response.ok) {
     // NO FAKE DATA - Must connect to real BigQuery BIG 8 signals
     throw new Error(`Big Eight Signals API unavailable: ${response.status}. ZERO FAKE DATA POLICY - Cannot display hardcoded signal values.`)
   }
   
-  return await response.json()
+  const data = await response.json()
+  
+  // Transform to expected format
+  const signals: BigEightSignal[] = data.signals.map((s: any) => ({
+    signal_name: s.name,
+    current_value: s.value,
+    signal_strength: s.impact === 'HIGH' ? 'STRONG' : s.impact === 'MEDIUM' ? 'MODERATE' : 'WEAK',
+    trend: s.status === 'BULLISH' ? 'BULLISH' : s.status === 'BEARISH' || s.status === 'CRITICAL' ? 'BEARISH' : 'NEUTRAL',
+    impact_score: s.impact === 'HIGH' ? 85 : s.impact === 'MEDIUM' ? 60 : 35,
+    last_updated: data.data_date,
+    bigquery_view: s.key
+  }))
+  
+  const bullishCount = signals.filter(s => s.trend === 'BULLISH').length
+  const bearishCount = signals.filter(s => s.trend === 'BEARISH').length
+  const overall_sentiment = bullishCount > bearishCount ? 'BULLISH' : bearishCount > bullishCount ? 'BEARISH' : 'NEUTRAL'
+  
+  return {
+    signals,
+    overall_sentiment,
+    last_updated: data.updated_at
+  }
 }
 
 const getTrendColor = (trend: string) => {
