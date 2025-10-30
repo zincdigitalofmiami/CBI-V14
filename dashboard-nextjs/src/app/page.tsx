@@ -20,6 +20,21 @@ export default function DashboardPage() {
         
         {/* Dashboard Content */}
         <main className="flex-1 overflow-auto p-6 space-y-6">
+          {/* Page Header */}
+          <div className="mb-4">
+            <h1 className="text-4xl font-light text-text-primary mb-2" style={{
+              background: 'linear-gradient(135deg, #E0E0E3 0%, #9099a6 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              Soybean Oil Futures Intelligence
+            </h1>
+            <p className="text-text-secondary text-sm">
+              Real-time market signals and institutional-grade forecasting for procurement decisions
+            </p>
+          </div>
+          
           {/* Chris's Procurement Decision Hub */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div>
