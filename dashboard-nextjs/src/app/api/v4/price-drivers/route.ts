@@ -3,176 +3,172 @@ import { getBigQueryClient, executeBigQueryQuery } from '@/lib/bigquery'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get latest feature importance from Big-8 table
-    const driversQuery = `
-      WITH latest_features AS (
-        SELECT 
-          date,
-          -- VIX Stress (Market Fear)
-          feature_vix_stress * 100 as vix_stress_pct,
-          -- China Relations Impact
-          feature_china_relations * 100 as china_relations_pct,
-          -- Harvest Pace Pressure
-          feature_harvest_pace * 100 as harvest_pace_pct,
-          -- Tariff Threat Level
-          feature_tariff_threat * 100 as tariff_threat_pct,
-          -- Current ZL Price for dollar impact calculation
-          zl_price_current,
-          -- Raw feature values for impact calculation
-          china_soybean_imports_mt,
-          argentina_export_tax,
-          industrial_demand_index,
-          palm_price,
-          -- Volatility indicators
-          feature_vix_stress as vix_raw,
-          -- Correlation features
-          zl_crude_corr_30d,
-          zl_palm_corr_30d,
-          zl_vix_corr_30d
-        FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`
-        WHERE date = (SELECT MAX(date) FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`)
-      )
-      SELECT * FROM latest_features
+    // Get latest Big-8 features (only columns that actually exist)
+    const featuresQuery = `
+      SELECT 
+        date,
+        feature_vix_stress,
+        feature_harvest_pace,
+        feature_china_relations,
+        feature_tariff_threat,
+        feature_geopolitical_volatility,
+        feature_biofuel_cascade,
+        feature_hidden_correlation,
+        feature_biofuel_ethanol,
+        big8_composite_score,
+        market_regime
+      FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`
+      WHERE date = (SELECT MAX(date) FROM \`cbi-v14.models_v4.training_dataset_super_enriched\`)
     `
     
-    const result = await executeBigQueryQuery(driversQuery)
-    if (result.length === 0) {
+    const featuresResult = await executeBigQueryQuery(featuresQuery)
+    if (featuresResult.length === 0) {
       return NextResponse.json({
         error: 'No feature data available',
-        message: 'Big-8 feature table is empty'
+        message: 'Big-8 feature table is empty or stale'
       }, { status: 503 })
     }
 
-    const data = result[0]
-    const currentPrice = data.zl_price_current || 50.0
+    // Get current price from actual price table
+    const priceQuery = `
+      SELECT close as current_price
+      FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
+      ORDER BY time DESC
+      LIMIT 1
+    `
+    const priceResult = await executeBigQueryQuery(priceQuery)
+    if (priceResult.length === 0) {
+      return NextResponse.json({
+        error: 'No price data available',
+        message: 'Current price not found'
+      }, { status: 503 })
+    }
 
-    // Calculate dollar impacts based on feature importance and correlations
+    const features = featuresResult[0]
+    const currentPrice = priceResult[0].current_price || 0
+
+    // Build drivers using ONLY real feature values from Big-8
+    // No random math - use actual feature values scaled to dollar impact
     const drivers = [
       {
         id: 'vix_stress',
         name: 'Market Volatility (VIX)',
         technical_name: 'feature_vix_stress',
-        current_value: data.vix_stress_pct,
-        impact_score: Math.abs(data.vix_stress_pct),
-        dollar_impact: (data.vix_stress_pct / 100) * currentPrice * 0.15, // VIX has ~15% price correlation
-        direction: data.vix_stress_pct > 50 ? 'BEARISH' : 'BULLISH',
-        explanation: data.vix_stress_pct > 70 ? 'Extreme fear driving commodity selloff' :
-                    data.vix_stress_pct > 50 ? 'Market stress pressuring oil prices' :
-                    data.vix_stress_pct > 30 ? 'Moderate volatility - neutral impact' :
-                    'Low volatility supporting steady demand',
-        confidence: data.vix_stress_pct > 60 ? 'HIGH' : data.vix_stress_pct > 30 ? 'MEDIUM' : 'LOW'
+        current_value: features.feature_vix_stress,
+        impact_score: Math.abs(features.feature_vix_stress),
+        dollar_impact: features.feature_vix_stress * currentPrice,
+        direction: features.feature_vix_stress > 0.5 ? 'BEARISH' : features.feature_vix_stress > 0.3 ? 'NEUTRAL' : 'BULLISH',
+        explanation: features.feature_vix_stress > 0.7 ? 'Extreme market volatility' :
+                    features.feature_vix_stress > 0.5 ? 'Elevated volatility' :
+                    features.feature_vix_stress > 0.3 ? 'Normal volatility' :
+                    'Low volatility',
+        confidence: features.feature_vix_stress > 0.6 ? 'HIGH' : features.feature_vix_stress > 0.3 ? 'MEDIUM' : 'LOW'
       },
       {
-        id: 'china_demand',
-        name: 'China Import Demand',
-        technical_name: 'china_soybean_imports_mt',
-        current_value: data.china_soybean_imports_mt,
-        impact_score: Math.abs(data.china_relations_pct),
-        dollar_impact: (data.china_relations_pct / 100) * currentPrice * 0.25, // China has ~25% price impact
-        direction: data.china_relations_pct > 0 ? 'BULLISH' : 'BEARISH',
-        explanation: data.china_soybean_imports_mt > 8 ? 'Strong Chinese buying supporting prices' :
-                    data.china_soybean_imports_mt > 6 ? 'Steady Chinese demand' :
-                    data.china_soybean_imports_mt > 4 ? 'Moderate Chinese imports' :
-                    'Weak Chinese demand pressuring prices',
-        confidence: Math.abs(data.china_relations_pct) > 60 ? 'HIGH' : 'MEDIUM'
-      },
-      {
-        id: 'harvest_pressure',
+        id: 'harvest_pace',
         name: 'Harvest Supply Pressure',
         technical_name: 'feature_harvest_pace',
-        current_value: data.harvest_pace_pct,
-        impact_score: Math.abs(data.harvest_pace_pct),
-        dollar_impact: -(data.harvest_pace_pct / 100) * currentPrice * 0.20, // Harvest pressure negative
-        direction: data.harvest_pace_pct > 50 ? 'BEARISH' : 'BULLISH',
-        explanation: data.harvest_pace_pct > 80 ? 'Record harvest pace pressuring prices' :
-                    data.harvest_pace_pct > 60 ? 'Fast harvest increasing supply' :
-                    data.harvest_pace_pct > 40 ? 'Normal harvest pace' :
-                    'Slow harvest supporting prices',
-        confidence: data.harvest_pace_pct > 70 ? 'HIGH' : 'MEDIUM'
+        current_value: features.feature_harvest_pace,
+        impact_score: Math.abs(features.feature_harvest_pace),
+        dollar_impact: -features.feature_harvest_pace * currentPrice, // Negative impact
+        direction: features.feature_harvest_pace > 0.5 ? 'BEARISH' : 'BULLISH',
+        explanation: features.feature_harvest_pace > 0.7 ? 'Fast harvest pace increasing supply' :
+                    features.feature_harvest_pace > 0.5 ? 'Normal harvest pace' :
+                    'Slow harvest pace',
+        confidence: features.feature_harvest_pace > 0.6 ? 'HIGH' : 'MEDIUM'
       },
       {
-        id: 'tariff_risk',
+        id: 'china_relations',
+        name: 'China Relations Impact',
+        technical_name: 'feature_china_relations',
+        current_value: features.feature_china_relations,
+        impact_score: Math.abs(features.feature_china_relations),
+        dollar_impact: features.feature_china_relations * currentPrice,
+        direction: features.feature_china_relations > 0.3 ? 'BULLISH' : features.feature_china_relations < -0.3 ? 'BEARISH' : 'NEUTRAL',
+        explanation: features.feature_china_relations > 0.5 ? 'Strong China demand' :
+                    features.feature_china_relations > 0.3 ? 'Positive China relations' :
+                    features.feature_china_relations < -0.3 ? 'Negative China relations' :
+                    'Neutral China relations',
+        confidence: Math.abs(features.feature_china_relations) > 0.5 ? 'HIGH' : 'MEDIUM'
+      },
+      {
+        id: 'tariff_threat',
         name: 'Trade War Risk',
         technical_name: 'feature_tariff_threat',
-        current_value: data.tariff_threat_pct,
-        impact_score: Math.abs(data.tariff_threat_pct),
-        dollar_impact: (data.tariff_threat_pct / 100) * currentPrice * 0.18, // Trade uncertainty premium
-        direction: data.tariff_threat_pct > 50 ? 'BULLISH' : 'BEARISH',
-        explanation: data.tariff_threat_pct > 80 ? 'High trade war risk boosting US premiums' :
-                    data.tariff_threat_pct > 60 ? 'Elevated trade tensions' :
-                    data.tariff_threat_pct > 30 ? 'Moderate trade uncertainty' :
-                    'Low trade risk - normal flows',
-        confidence: data.tariff_threat_pct > 70 ? 'HIGH' : 'MEDIUM'
+        current_value: features.feature_tariff_threat,
+        impact_score: Math.abs(features.feature_tariff_threat),
+        dollar_impact: features.feature_tariff_threat * currentPrice,
+        direction: features.feature_tariff_threat > 0.5 ? 'BEARISH' : 'NEUTRAL',
+        explanation: features.feature_tariff_threat > 0.7 ? 'High trade war risk' :
+                    features.feature_tariff_threat > 0.5 ? 'Elevated trade tensions' :
+                    'Low trade risk',
+        confidence: features.feature_tariff_threat > 0.6 ? 'HIGH' : 'MEDIUM'
       },
       {
-        id: 'argentina_crisis',
-        name: 'Argentina Export Crisis',
-        technical_name: 'argentina_export_tax',
-        current_value: data.argentina_export_tax,
-        impact_score: Math.abs(data.argentina_export_tax * 2), // Scale for display
-        dollar_impact: (data.argentina_export_tax / 100) * currentPrice * 0.12,
-        direction: data.argentina_export_tax > 30 ? 'BULLISH' : 'NEUTRAL',
-        explanation: data.argentina_export_tax > 40 ? 'High export taxes limiting Argentine supply' :
-                    data.argentina_export_tax > 30 ? 'Export taxes supporting global prices' :
-                    'Normal Argentine export flows',
-        confidence: data.argentina_export_tax > 35 ? 'HIGH' : 'MEDIUM'
+        id: 'geopolitical_volatility',
+        name: 'Geopolitical Risk',
+        technical_name: 'feature_geopolitical_volatility',
+        current_value: features.feature_geopolitical_volatility,
+        impact_score: Math.abs(features.feature_geopolitical_volatility),
+        dollar_impact: features.feature_geopolitical_volatility * currentPrice,
+        direction: features.feature_geopolitical_volatility > 0.5 ? 'BEARISH' : 'NEUTRAL',
+        explanation: features.feature_geopolitical_volatility > 0.7 ? 'High geopolitical risk' :
+                    features.feature_geopolitical_volatility > 0.5 ? 'Elevated geopolitical tensions' :
+                    'Normal geopolitical conditions',
+        confidence: features.feature_geopolitical_volatility > 0.6 ? 'HIGH' : 'MEDIUM'
       },
       {
-        id: 'industrial_demand',
-        name: 'Industrial Demand Index',
-        technical_name: 'industrial_demand_index',
-        current_value: data.industrial_demand_index,
-        impact_score: Math.abs((data.industrial_demand_index - 100) / 2), // Normalize around 100
-        dollar_impact: ((data.industrial_demand_index - 100) / 100) * currentPrice * 0.15,
-        direction: data.industrial_demand_index > 105 ? 'BULLISH' : data.industrial_demand_index < 95 ? 'BEARISH' : 'NEUTRAL',
-        explanation: data.industrial_demand_index > 110 ? 'Strong industrial demand boosting consumption' :
-                    data.industrial_demand_index > 105 ? 'Above-normal industrial demand' :
-                    data.industrial_demand_index > 95 ? 'Normal industrial demand' :
-                    'Weak industrial demand pressuring prices',
-        confidence: Math.abs(data.industrial_demand_index - 100) > 10 ? 'HIGH' : 'MEDIUM'
+        id: 'biofuel_cascade',
+        name: 'Biofuel Demand',
+        technical_name: 'feature_biofuel_cascade',
+        current_value: features.feature_biofuel_cascade,
+        impact_score: Math.abs(features.feature_biofuel_cascade),
+        dollar_impact: features.feature_biofuel_cascade * currentPrice,
+        direction: features.feature_biofuel_cascade > 0.5 ? 'BULLISH' : 'NEUTRAL',
+        explanation: features.feature_biofuel_cascade > 0.7 ? 'Strong biofuel demand' :
+                    features.feature_biofuel_cascade > 0.5 ? 'Healthy biofuel demand' :
+                    'Normal biofuel demand',
+        confidence: features.feature_biofuel_cascade > 0.6 ? 'HIGH' : 'MEDIUM'
       },
       {
-        id: 'palm_substitution',
-        name: 'Palm Oil Competition',
-        technical_name: 'palm_price',
-        current_value: data.palm_price,
-        impact_score: Math.abs(data.zl_palm_corr_30d * 100),
-        dollar_impact: -(data.zl_palm_corr_30d * (data.palm_price - 800) / 100) * 0.10, // Palm competition effect
-        direction: data.palm_price > 900 ? 'BULLISH' : 'BEARISH',
-        explanation: data.palm_price > 1000 ? 'High palm prices boosting soy oil demand' :
-                    data.palm_price > 900 ? 'Palm oil premium supporting soy prices' :
-                    data.palm_price > 800 ? 'Normal palm oil competition' :
-                    'Cheap palm oil pressuring soy oil demand',
-        confidence: Math.abs(data.zl_palm_corr_30d) > 0.6 ? 'HIGH' : 'MEDIUM'
+        id: 'hidden_correlation',
+        name: 'Hidden Correlations',
+        technical_name: 'feature_hidden_correlation',
+        current_value: features.feature_hidden_correlation,
+        impact_score: Math.abs(features.feature_hidden_correlation),
+        dollar_impact: features.feature_hidden_correlation * currentPrice,
+        direction: Math.abs(features.feature_hidden_correlation) > 0.5 ? 'SIGNIFICANT' : 'MINIMAL',
+        explanation: Math.abs(features.feature_hidden_correlation) > 0.7 ? 'Strong hidden correlations' :
+                    Math.abs(features.feature_hidden_correlation) > 0.5 ? 'Moderate correlations' :
+                    'Minimal correlations',
+        confidence: Math.abs(features.feature_hidden_correlation) > 0.6 ? 'HIGH' : 'MEDIUM'
       },
       {
-        id: 'crude_energy',
-        name: 'Crude Oil Energy Complex',
-        technical_name: 'zl_crude_corr_30d',
-        current_value: data.zl_crude_corr_30d * 100,
-        impact_score: Math.abs(data.zl_crude_corr_30d * 100),
-        dollar_impact: data.zl_crude_corr_30d * currentPrice * 0.08, // Energy correlation
-        direction: data.zl_crude_corr_30d > 0.3 ? 'BULLISH' : 'BEARISH',
-        explanation: data.zl_crude_corr_30d > 0.5 ? 'Strong energy complex correlation lifting oils' :
-                    data.zl_crude_corr_30d > 0.2 ? 'Moderate energy sector support' :
-                    data.zl_crude_corr_30d > -0.2 ? 'Neutral energy impact' :
-                    'Energy weakness pressuring vegetable oils',
-        confidence: Math.abs(data.zl_crude_corr_30d) > 0.4 ? 'HIGH' : 'MEDIUM'
+        id: 'biofuel_ethanol',
+        name: 'Ethanol Impact',
+        technical_name: 'feature_biofuel_ethanol',
+        current_value: features.feature_biofuel_ethanol,
+        impact_score: Math.abs(features.feature_biofuel_ethanol),
+        dollar_impact: features.feature_biofuel_ethanol * currentPrice,
+        direction: features.feature_biofuel_ethanol > 0.5 ? 'BULLISH' : 'NEUTRAL',
+        explanation: features.feature_biofuel_ethanol > 0.7 ? 'Strong ethanol demand' :
+                    features.feature_biofuel_ethanol > 0.5 ? 'Healthy ethanol demand' :
+                    'Normal ethanol demand',
+        confidence: features.feature_biofuel_ethanol > 0.6 ? 'HIGH' : 'MEDIUM'
       }
     ]
 
-    // Sort by absolute impact score (most important first)
+    // Sort by absolute impact score
     drivers.sort((a, b) => Math.abs(b.impact_score) - Math.abs(a.impact_score))
 
     return NextResponse.json({
-      data_date: data.date,
+      data_date: features.date,
       current_price: currentPrice,
       total_drivers: drivers.length,
       net_dollar_impact: drivers.reduce((sum, d) => sum + d.dollar_impact, 0),
-      drivers: drivers.slice(0, 8), // Top 8 drivers
-      market_regime: data.vix_raw > 0.7 ? 'HIGH_VOLATILITY' : 
-                    data.vix_raw > 0.5 ? 'ELEVATED_VOLATILITY' : 
-                    data.vix_raw > 0.3 ? 'NORMAL_VOLATILITY' : 'LOW_VOLATILITY',
+      drivers: drivers.slice(0, 8),
+      market_regime: features.market_regime,
+      big8_composite_score: features.big8_composite_score,
       last_updated: new Date().toISOString()
     })
 
