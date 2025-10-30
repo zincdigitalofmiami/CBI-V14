@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     
     // Get current price from latest soybean oil data
     const priceQuery = `
-      SELECT close_price as current_price
+      SELECT close as current_price
       FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
       ORDER BY time DESC
       LIMIT 1
