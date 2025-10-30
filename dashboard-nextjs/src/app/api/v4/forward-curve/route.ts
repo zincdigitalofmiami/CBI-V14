@@ -69,11 +69,19 @@ export async function GET(request: NextRequest) {
       }))
     ]
     
+    // Check for current price before processing
+    if (!current || current.length === 0 || !current[0]?.price) {
+      return NextResponse.json({
+        error: 'No current price data available',
+        message: 'Cannot calculate forward curve without current price'
+      }, { status: 503 })
+    }
+    const currentPrice = current[0].price
+    
     // Calculate buy zones (where forecast shows price drop)
     const buyZones = []
     for (let i = 0; i < forecasts.length; i++) {
       const forecast = forecasts[i]
-      const currentPrice = current[0]?.price || 50.0
       
       if (parseFloat(forecast.price) < currentPrice * 0.98) { // 2% drop = buy zone
         buyZones.push({
@@ -88,7 +96,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       chartData,
       buyZones,
-      currentPrice: current[0]?.price || 50.0,
+      currentPrice: currentPrice,
       forecastCount: forecasts.length,
       updated_at: new Date().toISOString()
     })

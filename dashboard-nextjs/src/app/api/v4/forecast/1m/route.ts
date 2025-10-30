@@ -69,7 +69,13 @@ export async function GET(request: NextRequest) {
       LIMIT 1
     `
     const priceResult = await executeBigQueryQuery(priceQuery)
-    const currentPrice = priceResult[0]?.current_price || 50.0
+    if (!priceResult || priceResult.length === 0 || !priceResult[0]?.current_price) {
+      return NextResponse.json({
+        error: 'No current price data available',
+        message: 'Cannot calculate price change without current price'
+      }, { status: 503 })
+    }
+    const currentPrice = priceResult[0].current_price
     
     const prediction = forecast.predicted_price
     const change = prediction - currentPrice

@@ -13,6 +13,7 @@ export function getBigQueryClient(): BigQuery {
 
   const options: BigQueryOptions = {
     projectId: process.env.GCP_PROJECT_ID || 'cbi-v14',
+    location: 'US', // Use US multi-region to match our datasets
   }
 
   // Check if we have base64 encoded credentials (Vercel production)
