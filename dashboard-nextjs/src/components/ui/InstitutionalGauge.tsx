@@ -29,16 +29,16 @@ export const InstitutionalGauge: React.FC<InstitutionalGaugeProps> = ({
         text: 'text-buy-primary'
       }
       case 'WAIT': return {
-        gradientStart: '#9000FF', // Electric purple
-        gradientEnd: '#00FF66',   // Neon green
-        glow: '#9000FF',
-        text: 'text-accent-purple'
-      }
-      case 'MONITOR': return {
         gradientStart: '#FF5D00', // Fiery orange
         gradientEnd: '#E50000',   // Intense scarlet
         glow: '#FF5D00',
         text: 'text-sell-caution'
+      }
+      case 'MONITOR': return {
+        gradientStart: '#0055FF', // Electric cobalt - BLUE for high confidence
+        gradientEnd: '#00C8FF',   // Electric azure
+        glow: '#0055FF',
+        text: 'text-buy-primary'
       }
       default: return {
         gradientStart: '#9099a6',
