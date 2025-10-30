@@ -78,3 +78,5 @@ echo "1. If tests pass locally, deploy to Vercel: vercel --prod"
 echo "2. Run tests against production: ./test-api.sh https://cbi-dashboard.vercel.app"
 echo "3. Check Vercel logs if any issues: vercel logs"
 
+
+

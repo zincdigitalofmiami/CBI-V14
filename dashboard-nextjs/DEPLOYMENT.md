@@ -245,3 +245,5 @@ If you encounter issues:
 
 **Cost**: Next.js API routes on Vercel are included in your plan, no additional backend costs!
 
+
+

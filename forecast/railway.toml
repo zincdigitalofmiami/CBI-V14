@@ -10,3 +10,5 @@ restartPolicyMaxRetries = 10
 
 [env]
 GOOGLE_APPLICATION_CREDENTIALS = "/app/service-account.json"
+
+

@@ -152,3 +152,5 @@ curl https://cbi-dashboard.vercel.app/api/v4/forecast/1w?model_type=automl_v4
 4. **Cost efficient** - No need to run separate FastAPI server
 5. **Single deployment** - Dashboard + API in one Vercel project
 
+
+

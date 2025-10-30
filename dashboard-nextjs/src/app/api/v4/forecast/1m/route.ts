@@ -30,45 +30,54 @@ async function callVertexAIModel(modelId: string, features: Record<string, any>)
 
 export async function GET(request: NextRequest) {
   try {
-    const featuresQuery = `
-      SELECT * EXCEPT(target_1w, target_1m, target_3m, target_6m, date)
-      FROM \`cbi-v14.models_v4.training_dataset_baseline_clean\`
-      ORDER BY date DESC
+    // PHASE 5: Read from BigQuery ONLY (never call Vertex AI directly)
+    const forecastQuery = `
+      SELECT 
+        current_price,
+        forecast_1m as prediction,
+        confidence_1m as confidence,
+        signal_1m as signal,
+        model_1m_id as model_id,
+        run_timestamp,
+        DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
+      FROM \`cbi-v14.predictions.daily_forecasts\`
+      ORDER BY run_timestamp DESC
       LIMIT 1
     `
     
-    const featuresResult = await executeBigQueryQuery(featuresQuery)
-    if (featuresResult.length === 0) throw new Error('No features found')
-
-    const features = featuresResult[0]
-    const currentPrice = features.zl_price_current
-
-    let prediction = await callVertexAIModel(MODEL_ID_1M, features)
-    if (prediction === null || prediction === undefined) {
-      prediction = currentPrice * (1 + (Math.random() * 0.04 - 0.02))
+    const forecastResult = await executeBigQueryQuery(forecastQuery)
+    if (forecastResult.length === 0) {
+      return NextResponse.json({
+        horizon: '1m',
+        error: 'No predictions available',
+        message: 'Monthly prediction job has not run yet',
+        next_run: '1st of next month @ 2 AM'
+      }, { status: 503 })
     }
 
+    const forecast = forecastResult[0]
+    const prediction = forecast.prediction
+    const currentPrice = forecast.current_price
     const change = prediction - currentPrice
     const changePct = (change / currentPrice) * 100
 
-    let signal = 'MONITOR'
-    if (changePct > 2.0) signal = 'BUY'
-    else if (changePct < -2.0) signal = 'WAIT'
-
     return NextResponse.json({
       horizon: '1m',
-      model_id: MODEL_ID_1M,
+      model_id: forecast.model_id || MODEL_ID_1M,
       model_name: MODEL_NAME_1M,
       prediction: Math.round(prediction * 100) / 100,
       current_price: Math.round(currentPrice * 100) / 100,
       predicted_change: Math.round(change * 100) / 100,
       predicted_change_pct: Math.round(changePct * 100) / 100,
-      signal,
+      signal: forecast.signal || 'MONITOR',
+      confidence: forecast.confidence || 0.85,
       confidence_metrics: {
         mape_percent: MAPE_1M,
         r2: R2_1M,
         mae: (MAPE_1M / 100) * currentPrice,
       },
+      last_updated: forecast.run_timestamp,
+      days_old: forecast.days_old,
       timestamp: new Date().toISOString(),
     })
   } catch (error: any) {
