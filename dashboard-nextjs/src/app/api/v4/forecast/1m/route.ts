@@ -33,15 +33,19 @@ export async function GET(request: NextRequest) {
     // PHASE 5: Read from BigQuery ONLY (never call Vertex AI directly)
     const forecastQuery = `
       SELECT 
-        current_price,
-        forecast_1m as prediction,
-        confidence_1m as confidence,
-        signal_1m as signal,
-        model_1m_id as model_id,
-        run_timestamp,
+        predicted_price,
+        confidence_lower,
+        confidence_upper,
+        mape,
+        model_id,
+        model_name,
+        prediction_date,
+        target_date,
+        created_at,
         DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
-      FROM \`cbi-v14.predictions.daily_forecasts\`
-      ORDER BY run_timestamp DESC
+      FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
+      WHERE horizon = '1M'
+      ORDER BY created_at DESC
       LIMIT 1
     `
     
@@ -56,27 +60,40 @@ export async function GET(request: NextRequest) {
     }
 
     const forecast = forecastResult[0]
-    const prediction = forecast.prediction
-    const currentPrice = forecast.current_price
+    
+    // Get current price
+    const priceQuery = `
+      SELECT close as current_price
+      FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
+      ORDER BY time DESC
+      LIMIT 1
+    `
+    const priceResult = await executeBigQueryQuery(priceQuery)
+    const currentPrice = priceResult[0]?.current_price || 50.0
+    
+    const prediction = forecast.predicted_price
     const change = prediction - currentPrice
     const changePct = (change / currentPrice) * 100
 
     return NextResponse.json({
       horizon: '1m',
-      model_id: forecast.model_id || MODEL_ID_1M,
-      model_name: MODEL_NAME_1M,
+      model_id: forecast.model_id,
+      model_name: forecast.model_name,
       prediction: Math.round(prediction * 100) / 100,
       current_price: Math.round(currentPrice * 100) / 100,
       predicted_change: Math.round(change * 100) / 100,
       predicted_change_pct: Math.round(changePct * 100) / 100,
-      signal: forecast.signal || 'MONITOR',
-      confidence: forecast.confidence || 0.85,
+      confidence_lower: Math.round(forecast.confidence_lower * 100) / 100,
+      confidence_upper: Math.round(forecast.confidence_upper * 100) / 100,
+      signal: changePct > 2 ? 'BUY' : changePct < -2 ? 'WAIT' : 'MONITOR',
       confidence_metrics: {
-        mape_percent: MAPE_1M,
+        mape_percent: forecast.mape,
         r2: R2_1M,
-        mae: (MAPE_1M / 100) * currentPrice,
+        mae: (forecast.mape / 100) * currentPrice,
       },
-      last_updated: forecast.run_timestamp,
+      prediction_date: forecast.prediction_date,
+      target_date: forecast.target_date,
+      last_updated: forecast.created_at,
       days_old: forecast.days_old,
       timestamp: new Date().toISOString(),
     })
