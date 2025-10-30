@@ -21,8 +21,8 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         <main className="flex-1 overflow-auto p-6 space-y-6">
           {/* Chris's Procurement Decision Hub */}
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            <div className="xl:col-span-2">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div>
               <ProcurementSignal />
             </div>
             <div>
