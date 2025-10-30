@@ -6,16 +6,16 @@ export async function GET() {
     const client = getBigQueryClient();
     const query = `
       SELECT 
-        published_at AS timestamp,
+        published AS timestamp,
         headline,
         source,
         impact_score,
         category,
-        entities,
-        goldstein_scale,
-        sentiment_tone
-      FROM \`cbi-v14.intelligence.breaking_news\`
-      WHERE published_at > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
+        NULL as entities,
+        NULL as goldstein_scale,
+        NULL as sentiment_tone
+      FROM \`cbi-v14.forecasting_data_warehouse.breaking_news_hourly\`
+      WHERE published > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)
       ORDER BY impact_score DESC
       LIMIT 5
     `;
