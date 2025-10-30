@@ -34,48 +34,72 @@ async function callVertexAIModel(modelId: string, features: Record<string, any>)
 
 export async function GET(request: NextRequest) {
   try {
-    const featuresQuery = `
-      SELECT * EXCEPT(target_1w, target_1m, target_3m, target_6m, date)
-      FROM \`cbi-v14.models_v4.training_dataset_baseline_clean\`
-      ORDER BY date DESC
+    // Read from monthly_vertex_predictions table
+    const forecastQuery = `
+      SELECT 
+        predicted_price,
+        confidence_lower,
+        confidence_upper,
+        mape,
+        model_id,
+        model_name,
+        prediction_date,
+        target_date,
+        created_at,
+        DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
+      FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
+      WHERE horizon = '1W'
+      ORDER BY created_at DESC
       LIMIT 1
     `
     
-    const featuresResult = await executeBigQueryQuery(featuresQuery)
-    if (featuresResult.length === 0) {
-      throw new Error('No features found')
-    }
-
-    const features = featuresResult[0]
-    const currentPrice = features.zl_price_current
-
-    let prediction = await callVertexAIModel(MODEL_ID_1W, features)
+    const forecastResult = await executeBigQueryQuery(forecastQuery)
     
-    if (prediction === null || prediction === undefined) {
-      prediction = currentPrice * (1 + (Math.random() * 0.02 - 0.01))
+    if (forecastResult.length === 0) {
+      return NextResponse.json({
+        horizon: '1w',
+        error: 'No predictions available',
+        message: 'Monthly prediction job has not run yet',
+        next_run: '1st of next month @ 2 AM'
+      }, { status: 503 })
     }
 
+    const forecast = forecastResult[0]
+    
+    // Get current price from latest soybean oil data
+    const priceQuery = `
+      SELECT close_price as current_price
+      FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
+      ORDER BY time DESC
+      LIMIT 1
+    `
+    const priceResult = await executeBigQueryQuery(priceQuery)
+    const currentPrice = priceResult[0]?.current_price || 50.0
+    
+    const prediction = forecast.predicted_price
     const change = prediction - currentPrice
     const changePct = (change / currentPrice) * 100
 
-    let signal = 'MONITOR'
-    if (changePct > 2.0) signal = 'BUY'
-    else if (changePct < -2.0) signal = 'WAIT'
-
     return NextResponse.json({
       horizon: '1w',
-      model_id: MODEL_ID_1W,
-      model_name: MODEL_NAME_1W,
+      model_id: forecast.model_id,
+      model_name: forecast.model_name,
       prediction: Math.round(prediction * 100) / 100,
       current_price: Math.round(currentPrice * 100) / 100,
       predicted_change: Math.round(change * 100) / 100,
       predicted_change_pct: Math.round(changePct * 100) / 100,
-      signal,
+      confidence_lower: Math.round(forecast.confidence_lower * 100) / 100,
+      confidence_upper: Math.round(forecast.confidence_upper * 100) / 100,
+      signal: changePct > 2 ? 'BUY' : changePct < -2 ? 'WAIT' : 'MONITOR',
       confidence_metrics: {
-        mape_percent: MAPE_1W,
+        mape_percent: forecast.mape,
         r2: R2_1W,
-        mae: (MAPE_1W / 100) * currentPrice,
+        mae: (forecast.mape / 100) * currentPrice,
       },
+      prediction_date: forecast.prediction_date,
+      target_date: forecast.target_date,
+      last_updated: forecast.created_at,
+      days_old: forecast.days_old,
       timestamp: new Date().toISOString(),
     })
   } catch (error: any) {
