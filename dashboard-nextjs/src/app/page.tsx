@@ -10,6 +10,7 @@ import { MarketDrivers } from '@/components/dashboard/MarketDrivers'
 import { BigEightSignals } from '@/components/dashboard/BigEightSignals'
 import PriceDrivers from '@/components/dashboard/PriceDrivers'
 import ProcurementOptimizer from '@/components/dashboard/ProcurementOptimizer'
+import AdvancedAnalyticsCarousel from '@/components/dashboard/AdvancedAnalyticsCarousel'
 
 export default function DashboardPage() {
   return (
@@ -71,10 +72,13 @@ export default function DashboardPage() {
           {/* ROW 6: WHY PRICES ARE MOVING - AI INTELLIGENCE (Full width) */}
           <PriceDrivers />
           
-          {/* ROW 7: BIG 8 SIGNALS (Full width for all 8) */}
+          {/* ROW 7: ADVANCED ANALYTICS CAROUSEL (Full width) */}
+          <AdvancedAnalyticsCarousel />
+          
+          {/* ROW 8: BIG 8 SIGNALS (Full width for all 8) */}
           <BigEightSignals />
           
-          {/* ROW 8: PROCUREMENT TIMING OPTIMIZER WITH VIX (Full width) */}
+          {/* ROW 9: PROCUREMENT TIMING OPTIMIZER WITH VIX (Full width) */}
           <ProcurementOptimizer />
         </main>
       </div>
