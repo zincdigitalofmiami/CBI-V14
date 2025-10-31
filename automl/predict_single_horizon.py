@@ -4,11 +4,11 @@ predict_single_horizon.py
 Generate prediction for a single horizon (deploy → predict → undeploy)
 """
 
-import json, math, pandas as pd, sys
+import json, math, pandas as pd, sys, os
 from google.cloud import bigquery, aiplatform
 
-PROJECT  = "cbi-v14"
-LOCATION = "us-central1"
+PROJECT  = os.getenv("PROJECT", "cbi-v14")
+LOCATION = os.getenv("REGION", "us-central1")
 BQ = bigquery.Client(project=PROJECT, location=LOCATION)
 
 MODELS = {
@@ -18,8 +18,12 @@ MODELS = {
     "6M": "3788577320223113216",
 }
 
-ENDPOINT_ID = "7286867078038945792"
+# Accept either EP or ENDPOINT_ID
+ENDPOINT_ID = os.getenv("ENDPOINT_ID", os.getenv("EP", "7286867078038945792")).split("/")[-1]
 MACHINE = "n1-standard-2"
+
+# Optional mode: "use-existing" | "auto" (default) | "force-deploy"
+PREDICT_MODE = os.getenv("PREDICT_MODE", "auto").lower()
 
 def _sanitize_instance(obj):
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
@@ -36,16 +40,41 @@ def load_predict_row():
     if df.empty:
         raise RuntimeError("predict_frame_209 is empty.")
     
+    # Convert date column to string before JSON serialization
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+    
     df = df.where(pd.notnull(df), None)
     row = json.loads(df.to_json(orient="records"))[0]
     row = {k: _sanitize_instance(v) for k, v in row.items()}
     
-    # Validate targets are not NULL
+    # Validate targets are not NULL (they should be set to current price in predict_frame_209)
     for target in ['target_1w', 'target_1m', 'target_3m', 'target_6m']:
-        if row.get(target) is None:
+        if target in row and row.get(target) is None:
             raise ValueError(f"{target} is NULL in predict_frame_209")
     
     return row
+
+def predict_only(horizon: str, instance: dict) -> float:
+    """Predict using the **existing** deployed model on the endpoint — no deploy/undeploy."""
+    aiplatform.init(project=PROJECT, location=LOCATION)
+    endpoint = aiplatform.Endpoint(
+        endpoint_name=f"projects/{PROJECT}/locations/{LOCATION}/endpoints/{ENDPOINT_ID}"
+    )
+    
+    print(f"  🔮 Predicting using existing deployment (no redeploy)...")
+    resp = endpoint.predict(instances=[instance])
+    pred = resp.predictions[0]
+    
+    # normalize scalar
+    if isinstance(pred, dict) and "value" in pred:
+        pred = pred["value"]
+    elif isinstance(pred, (list, tuple)) and len(pred) > 0:
+        pred = pred[0]
+    
+    yhat = float(pred)
+    print(f"  ✅ Prediction: {yhat:.4f}")
+    return yhat
 
 def deploy_predict_undeploy(horizon: str, model_id: str, instance: dict) -> float:
     aiplatform.init(project=PROJECT, location=LOCATION)
@@ -134,8 +163,25 @@ if __name__ == "__main__":
     row = load_predict_row()
     print("✅ Loaded predict row")
     
-    try:
+    # Decide prediction path based on PREDICT_MODE
+    aiplatform.init(project=PROJECT, location=LOCATION)
+    endpoint = aiplatform.Endpoint(
+        endpoint_name=f"projects/{PROJECT}/locations/{LOCATION}/endpoints/{ENDPOINT_ID}"
+    )
+    has_deployed = bool(endpoint.list_models())
+    
+    if PREDICT_MODE == "use-existing" or (PREDICT_MODE == "auto" and has_deployed):
+        print(f"  Mode: {PREDICT_MODE}, has_deployed: {has_deployed} → using existing deployment")
+        yhat = predict_only(horizon, row)  # ✅ no deploy/undeploy
+    elif PREDICT_MODE == "force-deploy":
+        print(f"  Mode: force-deploy → deploying fresh")
         yhat = deploy_predict_undeploy(horizon, model_id, row)
+    else:
+        # auto mode but nothing deployed → safe deploy path
+        print(f"  Mode: auto, no deployment → deploying")
+        yhat = deploy_predict_undeploy(horizon, model_id, row)
+    
+    try:
         write_prediction(horizon, yhat)
         print(f"✅ Written to BigQuery: {yhat:.4f}")
     except Exception as e:
