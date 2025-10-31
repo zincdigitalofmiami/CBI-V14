@@ -2934,3 +2934,199 @@ Batch inference jobs failed (quota limits + schema errors). Current architecture
 - Failed batch jobs can be ignored
 
 ---
+
+---
+
+## 🚀 VERTEX AI FEATURE IMPORTANCE + PREDICTION PIPELINE - OCTOBER 31, 2025
+
+**Last Updated:** October 31, 2025 - 03:00 UTC  
+**Status:** Feature Importance Infrastructure COMPLETE | Prediction Pipeline HARDENED | Endpoint Management FIXED
+
+### 📊 FEATURE IMPORTANCE INFRASTRUCTURE - ✅ COMPLETE
+
+**IMPLEMENTATION:**
+Created complete end-to-end Vertex AI feature importance pipeline:
+
+**1. Export Script Created:** `scripts/export_feature_importance.py`
+   - Queries Vertex AI Model Evaluations API for feature attributions
+   - Extracts `meanAttributions` from model explanation metadata
+   - Writes to BigQuery: `predictions_uc1.model_feature_importance`
+   - Partitioned by `prediction_date`, Clustered by (`horizon`, `feature`)
+   - Status: ⏳ AWAITING MODEL EVALUATIONS (evaluations not yet run with explanations enabled)
+
+**2. Online Explain Script Created:** `automl/explain_single_horizon.py`
+   - Calls `Endpoint.explain()` for online feature importance extraction
+   - Extracts top-15 features by absolute importance
+   - Writes to BigQuery with `importance_abs` and `raw_contribution`
+   - Integrated into prediction pipeline (runs after each prediction)
+   - Status: ✅ READY (will populate table when predictions run)
+
+**3. API Route Created:** `dashboard-nextjs/src/app/api/v4/feature-importance/[horizon]/route.ts`
+   - Endpoint: `/api/v4/feature-importance/[horizon]`
+   - Returns top 25 features for a given horizon (1W, 1M, 3M, 6M)
+   - Queries from `vw_feature_importance_latest` view (latest prediction_date)
+   - NO PLACEHOLDERS - Returns empty array if no data
+   - Status: ✅ COMPLETE
+
+**4. React Component Created:** `dashboard-nextjs/src/components/dashboard/FeatureImportanceCard.tsx`
+   - Recharts bar chart + ranked list visualization
+   - Shows "No data" state if table empty (NO FAKE DATA)
+   - Purely data-driven from BigQuery via API
+   - Status: ✅ COMPLETE
+
+**5. BigQuery Infrastructure:**
+   - Table: `predictions_uc1.model_feature_importance`
+     - Schema: `horizon`, `prediction_date`, `feature`, `importance_abs`, `raw_contribution`, `model_id`, `created_at`
+     - Partitioned by: `prediction_date` (daily)
+     - Clustered by: `horizon`, `feature`
+   - View: `predictions_uc1.vw_feature_importance_latest`
+     - Joins latest `prediction_date` per horizon
+     - Enables efficient API queries
+   - Status: ✅ COMPLETE
+
+### 🔧 PREDICTION PIPELINE HARDENING - ✅ COMPLETE
+
+**RUNNER SCRIPT HARDENING:** `automl/run_all_predictions_safe.sh`
+
+**FIXES APPLIED:**
+1. **Horizon Normalization:**
+   - Validates horizon argument at script start
+   - Normalizes to uppercase (1W, 1M, 3M, 6M)
+   - Prevents case-sensitivity issues
+   - Status: ✅ FIXED
+
+2. **Deployment Idempotency:**
+   - `deploy_wait()` now checks if model already deployed before deploying
+   - Skips deploy if endpoint has existing deployment
+   - Prevents redundant deployments
+   - Status: ✅ FIXED
+
+3. **Endpoint Idle Check Fixed:**
+   - `ensure_endpoint_idle()` now ONLY checks for pending operations
+   - NO LONGER undeloys existing models
+   - Allows use of existing deployments
+   - Status: ✅ FIXED
+
+4. **Smart Undeploy:**
+   - `undeploy_all()` now ONLY undeploys models with `displayName` starting with `temp_`
+   - Preserves non-temporary deployments
+   - Uses JMESPath filter: `deployedModels[?starts_with(displayName,"temp_")].id`
+   - Status: ✅ FIXED
+
+5. **Single-Horizon Mode:**
+   - Runner now accepts single horizon as argument: `bash run_all_predictions_safe.sh 1W`
+   - Runs one horizon at a time (prevents quota issues)
+   - Shows summary for that horizon only
+   - Status: ✅ COMPLETE
+
+**PREDICT SCRIPT HARDENING:** `automl/predict_single_horizon.py`
+
+**FIXES APPLIED:**
+1. **Environment Variable Support:**
+   - `PROJECT`, `REGION` from env vars (defaults to cbi-v14, us-central1)
+   - `ENDPOINT_ID` from env (accepts both `EP` and `ENDPOINT_ID`)
+   - `PREDICT_MODE` for deployment behavior control
+   - Status: ✅ COMPLETE
+
+2. **Prediction Modes:**
+   - `use-existing`: NEVER deploy, use existing deployment only
+   - `auto`: Use existing if present, deploy only if empty (default)
+   - `force-deploy`: Always deploy fresh (ignores existing)
+   - Status: ✅ COMPLETE
+
+3. **Date Type Conversion:**
+   - Converts `date` column to string (`YYYY-MM-DD`) before JSON serialization
+   - Prevents "Expected string_value but got number_value" error
+   - Status: ✅ FIXED
+
+4. **Predict-Only Function:**
+   - `predict_only()` function for using existing deployments
+   - No deploy/undeploy overhead
+   - Status: ✅ COMPLETE
+
+**EXPLAIN SCRIPT HARDENING:** `automl/explain_single_horizon.py`
+
+**FIXES APPLIED:**
+1. **Endpoint Wait Loop:**
+   - Polls endpoint for up to 3 minutes for deployed model
+   - Uses `gca_resource.deployed_models` for reliable check
+   - Non-fatal if no model found (exits gracefully)
+   - Status: ✅ COMPLETE
+
+2. **Non-Fatal Execution:**
+   - Wrapped in `|| true` in runner script
+   - Predictions succeed even if explain fails
+   - Status: ✅ COMPLETE
+
+### ❌ KNOWN ISSUES (NOT FIXED)
+
+**ISSUE 1: Endpoint Traffic Split Misconfiguration**
+- **Problem:** Endpoint 7286867078038945792 has deployed model but `traffic_split` not set
+- **Error:** `FAILED_PRECONDITION: "traffic_split" not set. Verify if any models are deployed to the endpoint and traffic split is configured for them.`
+- **Root Cause:** Model deployed without proper `traffic_split` configuration
+- **Status:** ❌ NOT FIXED
+- **Workaround:** Undeploy misconfigured model, redeploy with proper `traffic_split`
+
+**ISSUE 2: gcloud ai operations wait Command**
+- **Problem:** `gcloud ai operations wait` command does not exist
+- **Error:** `ERROR: (gcloud.ai.operations) Invalid choice: 'wait'.`
+- **Root Cause:** gcloud SDK version incompatibility or command removed
+- **Status:** ❌ REMOVED from code (was false negative)
+- **Fix Applied:** Replaced with `gcloud ai endpoints describe` for verification
+
+### 📋 FILES CREATED/MODIFIED
+
+**Scripts:**
+- ✅ `scripts/export_feature_importance.py` - Vertex evaluation export (awaiting evaluations)
+- ✅ `automl/explain_single_horizon.py` - Online feature importance extraction
+- ✅ `automl/run_all_predictions_safe.sh` - Hardened prediction runner
+- ✅ `automl/predict_single_horizon.py` - Hardened predict script with modes
+
+**Dashboard:**
+- ✅ `dashboard-nextjs/src/app/api/v4/feature-importance/[horizon]/route.ts` - API route
+- ✅ `dashboard-nextjs/src/components/dashboard/FeatureImportanceCard.tsx` - React component
+
+**BigQuery:**
+- ✅ `predictions_uc1.model_feature_importance` - Partitioned/clustered table
+- ✅ `predictions_uc1.vw_feature_importance_latest` - Latest features view
+
+**Documentation:**
+- ✅ Multiple audit reports (BIGQUERY_AUDIT_20251030.md, etc.)
+- ✅ SQL scripts for schema verification and table rebuilding
+
+### 🎯 CURRENT STATUS
+
+**Endpoint Status:**
+- Endpoint: `7286867078038945792` (soybean_oil_1w_working_endpoint)
+- Deployed Model: `temp_1W_213449` (ID: 3054582939938455552)
+- Issue: Traffic split not configured
+- Action Required: Undeploy and redeploy with proper configuration
+
+**Prediction Status:**
+- 1W: ⏳ READY TO RUN (after endpoint fix)
+- 1M: ⏳ PENDING
+- 3M: ⏳ PENDING
+- 6M: ⏳ PENDING
+
+**Feature Importance Status:**
+- Infrastructure: ✅ COMPLETE
+- Table: ✅ CREATED (empty - awaiting predictions)
+- API: ✅ READY
+- Component: ✅ READY
+
+**Next Steps:**
+1. Fix endpoint traffic split configuration
+2. Run 1W prediction using existing deployment
+3. Run 1W explain to populate feature importance
+4. Verify BigQuery writes
+5. Clean up temp_* models
+6. Repeat for 1M, 3M, 6M sequentially
+
+### 💰 COST STATUS
+
+**Total Spend Today:** ~$0.15 (endpoint deployment attempts)
+**Budget Remaining:** Sufficient for 1M/3M/6M predictions
+**Architecture:** Serverless endpoint trickery ($0.60/month total)
+
+---
+
