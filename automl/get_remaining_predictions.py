@@ -36,7 +36,12 @@ def get_prediction_data():
     
     df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
     df = df.replace({np.nan: None})
-    df = df.drop(columns=['target_1w', 'target_1m', 'target_3m', 'target_6m'])
+    
+    # Models require target columns - set to null for predictions
+    target_cols = ['target_1w', 'target_1m', 'target_3m', 'target_6m']
+    for col in target_cols:
+        if col not in df.columns:
+            df[col] = None
     
     return df.to_dict('records')[0]
 
@@ -79,7 +84,7 @@ for horizon, model_info in MODELS.items():
         endpoint.deploy(
             model=model,
             deployed_model_display_name=f'{horizon}_model',
-            machine_type='n1-standard-4',
+            machine_type='n1-standard-2',  # Smaller machine to save quota
             min_replica_count=1,
             max_replica_count=1,
             sync=True

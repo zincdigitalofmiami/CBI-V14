@@ -31,10 +31,9 @@ interface FourFactorsData {
 }
 
 async function fetchFourFactors(): Promise<FourFactorsData> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
-  
+  // Use relative path for API calls (works in both dev and production)
   // Get forecast data to derive factors
-  const response = await fetch(`${apiUrl}/api/v4/forecast/1w`)
+  const response = await fetch('/api/v4/forecast/1w')
   
   if (!response.ok) {
     throw new Error('Market data temporarily unavailable')
