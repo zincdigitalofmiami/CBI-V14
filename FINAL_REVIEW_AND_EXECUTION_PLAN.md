@@ -271,8 +271,8 @@
 #### 3. Prediction Pipeline (with 1W Gate Blend)
 - **MISSING:** 1M predictor job (`scripts/1m_predictor_job.py`)
 - **MISSING:** Feature injection: merge 209 features + latest 1W signals from `signals_1w` table
-- **MISSING:** Vertex call returns q10/mean/q90 (from distilled quantile model)
-- **MISSING:** Post-process gate blend: for D+1-14, apply weighted blend with rolled 1W forecast; D+15-30 pure 1M
+- **MISSING:** Vertex call returns q10/mean/q90 (from 3 separate endpoints - one per quantile)
+- **MISSING:** Post-process gate blend: for D+1-7 only, apply weighted blend with rolled 1W forecast; D+8-30 pure 1M
 - **MISSING:** Gate weight calculation: Simplified linear blend with kill-switch (`w = 0.75` default, `w = 0.95` if volatility > 0.85 or disagreement > 0.25)
 - **MISSING:** Backfill logic with `--backfill-if-missing` flag
 - **MISSING:** Idempotency/dedupe logic for `predictions_1m` table
@@ -285,18 +285,18 @@
 
 #### 5. Aggregation & Materialization (Post-Process with Gate)
 - **MISSING:** Aggregator SQL for q10/q90 (`bigquery_sql/create_agg_1m_latest.sql`)
-- **MISSING:** Post-processing logic in predictor job: apply 1W gate blend for D+1-14 only
+- **MISSING:** Post-processing logic in predictor job: apply 1W gate blend for D+1-7 only
 - **MISSING:** Gate weighting formula: Simplified linear blend (`w = 0.75` default) with kill-switch conditions
 - **MISSING:** Dynamic quantile spread: `spread_pct = volatility_score_1w * 0.15` (replaces fixed 12%)
-- **MISSING:** Materialized table `agg_1m_latest` (contains blended forecasts for D+1-14, pure 1M for D+15-30)
+- **MISSING:** Materialized table `agg_1m_latest` (contains blended forecasts for D+1-7, pure 1M for D+8-30)
 - **MISSING:** Divergence monitoring (kill-switch: if d>0.25 OR v>0.85, set w=0.95)
 - **MISSING:** Scheduled aggregator job
 
 #### 6. API Routes (New `/api/*` Structure)
-- **MISSING:** `/app/api/forecast/route.ts` (ISR 5m)
-- **MISSING:** `/app/api/volatility/route.ts` (ISR 5m)
-- **MISSING:** `/app/api/strategy/route.ts` (ISR 10m)
-- **MISSING:** `/app/api/vegas/route.ts` (unified 5min cache)
+- **MISSING:** `/app/api/forecast/route.ts` (unified 5min cache - revalidate=300)
+- **MISSING:** `/app/api/volatility/route.ts` (unified 5min cache - revalidate=300)
+- **MISSING:** `/app/api/strategy/route.ts` (unified 5min cache - revalidate=300)
+- **MISSING:** `/app/api/vegas/route.ts` (unified 5min cache - revalidate=300)
 - **MISSING:** `/app/api/explain/route.ts` (no cache, deterministic)
 
 #### 7. BigQuery Tables
@@ -890,7 +890,7 @@
 **Mitigation:** Schema validator with hash + coverage checks, abort on mismatch
 
 ### Risk: BigQuery Cost Overrun
-**Mitigation:** ISR caching (5-10m), materialized tables, rate limiting, budget alerts
+**Mitigation:** ISR caching (5m unified), materialized tables, rate limiting, budget alerts
 
 ### Risk: Empty Tables Day 1
 **Mitigation:** Backfill flag, run predictor job immediately after deployment
@@ -963,8 +963,9 @@
 - Target: 1.62% MAPE (distilled + gate) = **+18% improvement**
 
 **Quantile Bands:**
-- q10/q90 width: ±12% @ D+30 (tight, believable)
+- q10/q90 width: Dynamic based on volatility (0-15% spread: `spread_pct = volatility_score_1w * 0.15`)
 - Full quantile coverage for confidence envelopes
+- Width adapts to market conditions (higher volatility = wider bands)
 
 **Cost:**
 - Vertex endpoints: $40/mo × 3 = $120/mo (n1-standard-2 each, min=1, max=1) OR $40/mo with custom container
