@@ -17,6 +17,25 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ID = "cbi-v14"
 
+def load_schema_contract():
+    """Load immutable schema contract"""
+    contract_path = Path('config/schema_contract.json')
+    if not contract_path.exists():
+        logger.warning(f"Schema contract not found: {contract_path}. Features will not be filled with contract.")
+        return None
+    
+    with open(contract_path, 'r') as f:
+        contract = json.load(f)
+    
+    return contract
+
+def fill_missing_schema_fields(instance: dict, required_fields: list) -> dict:
+    """
+    AutoML requires ALL training columns present (even targets as None)
+    Ensures ALL columns from schema contract exist in prediction payload
+    """
+    return {key: instance.get(key, None) for key in required_fields}
+
 def get_latest_209_features():
     """Get latest 209 features from training dataset"""
     logger.info("Fetching 209 Phase 0/1 features...")
@@ -172,6 +191,19 @@ def main() -> tuple:
     
     try:
         features, date = assemble_features()
+        
+        # CRITICAL: Apply schema contract - ensure ALL 210 columns exist (targets as None)
+        contract = load_schema_contract()
+        if contract:
+            required_columns = contract['columns']
+            features = fill_missing_schema_fields(features, required_columns)
+            
+            # Explicitly set target columns to None (AutoML requires presence, not value)
+            target_cols = [c for c in required_columns if c.startswith('target_')]
+            for target in target_cols:
+                features[target] = None
+            
+            logger.info(f"Applied schema contract: {len(features)} columns (includes targets as None)")
         
         # Save to file for predictor job
         save_features(features, 'features_1m_latest.json')

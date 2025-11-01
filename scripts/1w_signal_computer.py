@@ -27,7 +27,7 @@ def get_price_history(days=30):
       DATE(time) as date,
       close as price
     FROM `cbi-v14.forecasting_data_warehouse.soybean_oil_prices`
-    WHERE time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
+    WHERE TIMESTAMP(time) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
     ORDER BY date ASC
     """
     

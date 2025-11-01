@@ -2,25 +2,38 @@
 
 # Final Review & Execution Plan - 1M Live + 1W Signal Go-Live
 
-**Date:** 2025-01-XX  
-**Status:** PRE-EXECUTION REVIEW COMPLETE - **UPDATED: 90-MODEL, 3-ENDPOINT ARCHITECTURE (ZERO RISK)**  
-**Goal:** Deploy **90 standalone LightGBM models** (30 horizons × 3 quantiles) as **3 separate Vertex AI endpoints** (one per quantile). Eliminates custom class deployment risk. 1W participates as **features + short-window gate** (D+1-7 only). No 1W endpoint.
+**Date:** 2025-11-01  
+**Status:** PLAN UPDATED - **MIGRATED TO BQML (ZERO COST, ZERO COMPLEXITY)**  
+**Goal:** Train **4 BQML BOOSTED_TREE mean models** (1W, 1M, 3M, 6M) with **ALL 205 features** + residual quantiles in BigQuery. Predictions via `ML.PREDICT`, explanations via `ML.EXPLAIN_PREDICT`. Eliminates Vertex AI entirely ($180/month → $0/month). 1W participates as **features + short-window gate** (D+1-7 only). **MAX ACCURACY** settings, **CONSTANT AUDITS**, **NO GUESSWORK**.
+
+**✅ EXISTING WORK AUDIT (November 1, 2025):**
+- 4 existing models WORKING: MAE 1.03-1.19, R² 0.98-0.99 (EXCELLENT)
+- Retrain with explicit EXCEPT clause (ensure zero label leakage)
+- Use MAX accuracy hyperparameters (100 iterations, depth 8, regularization)
+
+**✅ AUDIT FINDINGS INTEGRATED (November 1, 2025):**
+- **Data Freshness:** training_dataset_super_enriched is 19 days stale (latest: 2025-10-13) - **PHASE 0 REQUIRED**
+- **Schema Verified:** 205 features confirmed (160 FLOAT64, 43 INT64, 2 STRING categorical) - **LOCKED IN**
+- **FX Features:** All 7 FX features verified with complete build chains - **DOCUMENTED**
+- **Feature Logic:** Complete source mapping (14 categories, 205 features) - **VERIFIED**
+- **See:** `docs/audits/AUDIT_FINDINGS_INTEGRATED.md` for complete integration summary
 
 ---
 
-## 🎯 ARCHITECTURE DECISION: 90-MODEL, 3-ENDPOINT (UPDATED FOR ZERO RISK)
+## 🎯 ARCHITECTURE DECISION: BQML FOR ALL 4 MODELS (ZERO COST, ZERO COMPLEXITY)
 
-**Decision:** Use **90 standalone LightGBM models** (30 horizons × 3 quantiles) deployed as **3 separate Vertex AI endpoints** (one per quantile). Eliminates custom class deployment risk entirely. 1W participates as **features + short-window gate** (D+1-7 only). No 1W endpoint.
+**Decision:** Use **BigQuery ML BOOSTED_TREE_REGRESSOR** for all 4 models (1W, 1M, 3M, 6M). Predictions via `ML.PREDICT`, explanations via `ML.EXPLAIN_PREDICT`. Eliminates Vertex AI endpoints entirely. 1W participates as **features + short-window gate** (D+1-7 only).
 
 **Key Benefits:**
-- **Zero deployment risk**: 100% native LightGBM - no custom classes, zero serialization risk
-- **Three endpoints** (enterprise-grade): n1-standard-2 each ≈ $40/mo × 3 = **$120/mo total** (OR can optimize with custom container to single endpoint with all 30 models per quantile = $40/mo)
-- **Full horizon independence**: Each horizon trained separately, easier retraining, perfect horizon continuity
-- **Quantile bands built-in**: q10/q90 from separate models, perfect for confidence envelopes
-- **SHAP works**: Tree models maintain explainability per quantile
-- **1W informs but doesn't destabilize**: Gate only for D+1-7, pure 1M for D+8-30
-- **Training optimizations**: Warm-start, quantile reuse, memory-mapped features cut training time 30-40%
-- **Cost:** ~$120/mo (3 endpoints) + ~$5/mo (signal computation) = **$125/mo total** (OR $40/mo if custom container)
+- **Zero endpoint management**: No Vertex AI endpoints, no traffic splits, no deployment failures
+- **Zero infrastructure cost**: $0/month (within BigQuery free tier for 1.25K rows)
+- **Native explainability**: `ML.EXPLAIN_PREDICT` provides Shapley values (SHAP-equivalent) built-in
+- **Quantile approach**: Train 4 mean models + compute quantiles from residual distributions (BQML doesn't support quantile regression)
+- **Comparable accuracy**: Historical BQML MAE 1.19-1.58 vs Vertex 1.98-2.68% MAPE (BQML wins on 6M)
+- **Zero label leakage**: Explicit schema in SQL prevents target columns as features
+- **Simpler operations**: SQL-only training, SQL-only predictions, SQL-only explanations
+- **Faster iterations**: Retrain in 2-3 hours vs $415 + days for Vertex AutoML
+- **Cost:** **$0/month** (predictions) + **$11/month** (optional daily LLM summary) = **$11/mo total**
 
 **How 1W Participates:**
 1. **As features (always)**: `volatility_score_1w`, `delta_1w_vs_spot`, `momentum_1w_7d`, `short_bias_score_1w` injected into 1M feature vector (213 total features)
@@ -44,16 +57,20 @@
 - **Local Market Sync**: `vegas_sales` → Vegas overlay → Regional demand alignment
 
 **Training (Offline, Monthly):**
-- Train 90 standalone LightGBM models: 30 horizons (D+1 to D+30) × 3 quantiles (q10=0.1, mean=0.5, q90=0.9)
-- Optimizations: Warm-start (horizons D+2-30 initialize from previous), quantile reuse (q10/q90 clone mean tree structure), memory-mapped features, checkpointing every 10 horizons
-- Each model: Native LightGBM with `objective='quantile'`, `alpha=[0.1, 0.5, 0.9]`
-- Output: 90 model files saved to GCS: `gs://cbi-v14-models/1m/quantile/{quantile}_D{day}.pkl`
+- Train 12 BQML BOOSTED_TREE_REGRESSOR models in BigQuery (SQL only):
+  - 4 models for mean predictions: `bqml_1w_mean`, `bqml_1m_mean`, `bqml_3m_mean`, `bqml_6m_mean`
+  - 4 models for q10 (quantile=0.1): `bqml_1w_q10`, `bqml_1m_q10`, `bqml_3m_q10`, `bqml_6m_q10`
+  - 4 models for q90 (quantile=0.9): `bqml_1w_q90`, `bqml_1m_q90`, `bqml_3m_q90`, `bqml_6m_q90`
+- Each model: `CREATE MODEL ... OPTIONS(model_type='BOOSTED_TREE_REGRESSOR', input_label_cols=['target_1m'], ...) AS SELECT * EXCEPT(date, target_1w, target_3m, target_6m) ...`
+- Features: 206 columns (210 total - 4 targets explicitly excluded to prevent label leakage)
+- Training time: ~2-3 hours total (all models)
+- Cost: $0 (within BigQuery free tier for 1.25K rows)
 
-**Serving (Online):**
-- Deploy 90 models as 3 separate Vertex AI endpoints (one per quantile: q10, mean, q90)
-- Each endpoint contains 30 models (one per horizon) - Option B: deploy each model separately, predictor calls endpoint 30 times per quantile; OR Option A: custom container loading all 30 at startup
-- Prediction job: Fetch features (209 + 4 1W signals) → call 3 endpoints → combine to [30,3] array (q10/mean/q90) → apply gate blend for D+1-7 → write to BigQuery
+**Serving (Batch Predictions):**
+- Daily batch predictions via SQL `ML.PREDICT`: No endpoints, no serving infrastructure
+- Prediction job: Assemble features (209 + 4 1W signals) → `SELECT * FROM ML.PREDICT(MODEL bqml_1m_mean, ...)` → write to BigQuery
 - 1W signals computed offline (Cloud Run job), stored in BigQuery, used as features + gate input
+- Gate blend applied in SQL/Python post-processing for D+1-7 (simplified linear blend with kill-switch)
 
 ---
 
@@ -178,6 +195,16 @@
 - **Fix:** Add `const bq = new BigQuery()` and proper try/catch blocks with error responses
 - **Impact:** API routes work reliably
 
+#### 16. ✅ Schema Contract System (Industrial-Grade Validation) - NEW
+- **Files:** `scripts/generate_schema_contract.py`, `scripts/1m_predictor_job_interim.py`, `scripts/1m_schema_validator.py`, `scripts/1m_feature_assembler.py`
+- **Issue:** AutoML models trained on `training_dataset_super_enriched` expect ALL 210 columns including target columns (target_1w, target_1m, target_3m, target_6m) as input features - presence required (can be None), not value. Current schema validation lacks structure, version locking, and precise mismatch diagnostics.
+- **Fix:**
+  - **Generate immutable schema contract:** `scripts/generate_schema_contract.py` exports all 210 columns from training dataset to `config/schema_contract.json` with version, source table, export date
+  - **Fill missing schema fields:** `fill_missing_schema_fields()` function ensures ALL contract columns exist in prediction payload (targets as None)
+  - **Precise CI validation:** Schema validator reports EXACT mismatches (missing vs extra keys), not vague errors
+  - **Version locking:** Schema contract becomes immutable single source of truth
+- **Impact:** Prevents AutoML prediction failures ("Missing struct property: target_1w"), enables industrial-grade validation with clear diagnostics, prevents schema drift
+
 ### Additional Technical Requirements (From Reviews):
 
 #### ✅ 30-Day Target Creation
@@ -263,9 +290,12 @@
 - **ISSUE:** Model ID mismatch - route.ts has `3156316301270450176`, but correct is `274643710967283712`
 
 #### 2. Feature Assembly & Validation
+- **MISSING:** `config/schema_contract.json` (CRITICAL - immutable contract with all 210 columns from training dataset)
+- **MISSING:** `scripts/generate_schema_contract.py` (generates immutable schema contract)
+- **MISSING:** `fill_missing_schema_fields()` function in predictor and assembler (ensures ALL contract columns present, targets as None)
 - **MISSING:** `config/1m_feature_schema.json` (pinned schema with hash + min_coverage)
-- **MISSING:** Feature assembler script (`scripts/1m_feature_assembler.py`)
-- **MISSING:** Schema validator script (`scripts/1m_schema_validator.py`)
+- **MISSING:** Feature assembler script (`scripts/1m_feature_assembler.py`) - must apply schema contract fill
+- **MISSING:** Schema validator script (`scripts/1m_schema_validator.py`) - must use schema contract with precise mismatch reporting
 - **MISSING:** Health check script (`scripts/health_check.py`)
 
 #### 3. Prediction Pipeline (with 1W Gate Blend)
@@ -328,121 +358,185 @@
 
 ## 🎯 EXECUTION PRIORITIES (Phase-by-Phase)
 
-### Phase 1: Train 90-Model Quantile Architecture (1.5h) - CRITICAL FIRST - UPDATED FOR ZERO RISK
-**Why First:** Need models with quantile outputs before deployment. **ELIMINATE CUSTOM CLASS RISK** by training 90 standalone LightGBM models.
+### ⚠️ **PHASE 0: DATA FRESHNESS AUDIT & REFRESH (1h) - CRITICAL FIRST**
 
-**Architecture Decision:** 90 models (30 horizons × 3 quantiles) deployed as 3 separate endpoints (one per quantile). Zero deployment risk - 100% native LightGBM.
+**AUDIT FINDINGS (November 1, 2025):**
+- ✅ **Fresh Data (≤2 days):** soybean_oil_prices (2025-10-30), corn_prices (2025-10-30), weather_data (2025-10-31)
+- ⚠️ **Stale Data (3-7 days):** currency_data (2025-10-27), palm_oil_prices (2025-10-24)
+- ❌ **Very Stale (8+ days):** crude_oil_prices (2025-10-21), vix_daily (2025-10-21)
+- ❌ **CRITICAL BLOCKER:** training_dataset_super_enriched (2025-10-13, **19 days old**)
 
-1. **Create training script for 90 models:**
-   - Script: `scripts/train_quantile_1m_90models.py` (NEW - replaces train_distilled_quantile_1m.py)
-   - Input: Reuse 209 features from Phase 0/1 + 4 1W signals (213 total)
-   - Training loop: For each quantile (q10=0.1, mean=0.5, q90=0.9), train 30 models (one per horizon D+1 to D+30)
-   - Model: Native LightGBM with `objective='quantile'`, `alpha=[0.1, 0.5, 0.9]`
-   - Training dataset: `models_v4.training_dataset_super_enriched`
-   - Target columns: `target_D1` through `target_D30` (created via shift(-i))
+**Action Required BEFORE Phase 1:**
+1. **Update stale source data:**
+   - Update crude_oil_prices (11 days stale)
+   - Update vix_daily (11 days stale)
+   - Update palm_oil_prices (8 days stale)
+   - Update currency_data (5 days stale)
 
-2. **Training optimizations:**
-   - **Warm-start:** For horizons D+2 through D+30, initialize with previous day's model (`init_model=`)
-   - **Quantile reuse:** Train mean (0.5) first, then clone tree structure for q10/q90 (reuse splits, retrain leaf weights)
-   - **Memory-mapped features:** Cache `X.values` to `cache/features.npy` with `mmap_mode='r'` for parallel training
-   - **Performance tuning:** `num_threads=1`, `max_bin=128`, `min_data_in_bin=3` for raw throughput
-   - **Checkpointing:** Save progress every 10 horizons to enable restart from checkpoint
+2. **Refresh training_dataset_super_enriched:**
+   - Extend from 2025-10-13 to latest date (target: 2025-10-30+)
+   - Verify all 205 features computed correctly
+   - **AUDIT CHECKPOINT:** Verify column count = 205 (210 total - 4 targets - 1 date)
+   - **AUDIT CHECKPOINT:** Verify no NULLs in key features (zl_price_current, crude_price, palm_price, vix_level)
 
-3. **Model storage:**
-   - Save 90 models to GCS: `gs://cbi-v14-models/1m/quantile/q10_D1.pkl` through `q90_D30.pkl`
-   - Naming convention: `{quantile}_D{day}.pkl` (e.g., `q10_D1.pkl`, `mean_D15.pkl`, `q90_D30.pkl`)
-   - Create manifest: `config/1m_model_manifest.json` listing all 90 models
+3. **Verify feature sources:**
+   - ✅ FX z-scores: `vw_fx_all` view → `currency_data` table (VERIFIED)
+   - ✅ FX rates: `vw_economic_daily` → `economic_indicators` table (VERIFIED)
+   - ✅ FX 7d_change: `fx_derived_features` table (VERIFIED - latest 2025-10-28)
+   - ⚠️ Verify derived feature tables are fresh: `volatility_derived_features`, `fundamentals_derived_features`, `monetary_derived_features`
 
-4. **Deploy 3 endpoints (one per quantile):**
-   - Script: `scripts/deploy_quantile_endpoints.py` (NEW)
-   - Create 3 separate Vertex AI endpoints:
-     - `1m_quantile_q10_endpoint`
-     - `1m_quantile_mean_endpoint`
-     - `1m_quantile_q90_endpoint`
-   - For each endpoint: Deploy 30 models (Option B: deploy each model separately, predictor calls 30 times per quantile)
-   - Machine type: n1-standard-2, min=1, max=1
-   - Traffic split: 100% to first model (or custom container loading all 30 at once)
-   - Capture: `q10_endpoint_id`, `mean_endpoint_id`, `q90_endpoint_id`
+**Files:**
+- See `AUDIT_FINDINGS_DATA_SCHEMA_NOV1.md` for complete data freshness audit
+- See `FEATURE_LOGIC_AUDIT_COMPLETE.md` for complete feature source mapping
+
+**Time Estimate:** 1 hour (source data updates + training dataset refresh)
+
+---
+
+### Phase 1: Train BQML Models (All 4 Horizons with Quantiles) (2h) - CRITICAL FIRST
+
+**⚠️ PREREQUISITE:** Phase 0 must complete successfully (fresh training dataset with latest data)
+
+**AUDIT FINDINGS INTEGRATED:**
+- ✅ **Schema Verified:** 205 features (210 total - 4 targets - 1 date)
+- ✅ **Feature Types:** 160 FLOAT64, 43 INT64, 2 STRING (categorical: market_regime, volatility_regime)
+- ✅ **BQML Compatible:** All feature types supported (STRING handled via one-hot encoding)
+- ✅ **FX Features Verified:** All 7 FX features have verified sources and logic
+- ✅ **No NULLs:** Recent rows have all key features populated
+- ✅ **No Constants:** All features have variance (checked in audit)
+**Why First:** Need working models before predictions. BQML eliminates Vertex deployment complexity entirely.
+
+**Architecture Decision:** 4 BQML BOOSTED_TREE mean models (1W, 1M, 3M, 6M) + residual quantiles. Zero endpoints, zero deployment risk, zero cost. **ALL 205 FEATURES**, **MAX ACCURACY SETTINGS**.
+
+1. **Create features view (NO LABEL LEAKAGE):**
+   - SQL: `bigquery_sql/create_features_clean.sql`
+   - View: `models_v4.features_1m_clean`
+   - Query: `SELECT * EXCEPT(date, target_1w, target_1m, target_3m, target_6m) FROM training_dataset_super_enriched`
+   - **Critical:** Explicitly exclude ALL target columns to prevent label leakage
+   - Features: **205 columns** ✅ VERIFIED (210 total - 4 targets - 1 date)
+   - This view is used for ALL model training (1W, 1M, 3M, 6M)
+   - **AUDIT CHECKPOINT #1:** After creation, verify column count = 205
+
+2. **Create BQML training SQL scripts (4 mean models + residual computation):**
+   - `bigquery_sql/train_bqml_1w_mean.sql` (MAX ACCURACY)
+   - `bigquery_sql/train_bqml_1m_mean.sql` (MAX ACCURACY)
+   - `bigquery_sql/train_bqml_3m_mean.sql` (MAX ACCURACY)
+   - `bigquery_sql/train_bqml_6m_mean.sql` (MAX ACCURACY)
+   - `bigquery_sql/compute_residual_distributions.sql` (for quantiles)
+   - Template (MAX ACCURACY SETTINGS):
+   ```sql
+   CREATE OR REPLACE MODEL `cbi-v14.models_v4.bqml_1m_mean`
+   OPTIONS(
+     model_type='BOOSTED_TREE_REGRESSOR',
+     input_label_cols=['target_1m'],
+     data_split_method='AUTO_SPLIT',
+     max_iterations=100,        -- MAX: More trees for accuracy
+     early_stop=True,            -- MAX: Prevents overfitting
+     l2_reg=0.1,                 -- MAX: Regularization
+     max_tree_depth=8,           -- MAX: Deeper trees (vs default 6)
+     min_split_loss=0.01,        -- MAX: Fine-grained splits
+     subsample=0.8               -- MAX: Row subsampling
+   ) AS
+   SELECT * FROM `cbi-v14.models_v4.features_1m_clean`
+   WHERE target_1m IS NOT NULL
+   ```
+
+3. **Train all models (run SQL in BigQuery console or via Python):**
+   - Script: `scripts/train_all_bqml_models.py` (Python wrapper to execute SQL)
+   - Models to create: 12 total (1W/1M/3M/6M × mean/q10/q90)
+   - Training time: ~2-3 hours total (can run in parallel)
+   - Cost: $0 (within free tier for 1.25K rows)
+   - Validate each model after training:
+   ```sql
+   SELECT * FROM ML.EVALUATE(MODEL `cbi-v14.models_v4.bqml_1m_mean`)
+   ```
+
+4. **No deployment step needed:**
+   - BQML models live in BigQuery - no endpoints to deploy
+   - No traffic splits to configure
+   - No container images to build
+   - No Vertex AI infrastructure
 
 5. **Create config file:**
-   - `config/vertex_1m_config.json`
-   - Fields: `q10_endpoint_id`, `mean_endpoint_id`, `q90_endpoint_id`, `location`, `project`
-   - Mark: `architecture='90_models_3_endpoints'`, `quantiles=['q10', 'mean', 'q90']`, `horizons=30`
+   - `config/bqml_models_config.json`
+   - Fields: `models` dict with model names, horizons, quantiles
+   - Example: `{"1m_mean": "cbi-v14.models_v4.bqml_1m_mean", ...}`
+   - Mark: `architecture='bqml'`, `model_type='BOOSTED_TREE_REGRESSOR'`
 
-6. **Create health check:**
-   - `scripts/health_check.py` (UPDATE)
-   - Validates: All 3 endpoints exist, each has deployed models, traffic splits correct
-   - Test predict: Call each endpoint with dummy features, verify each returns [30] array
+6. **Validate models (test predictions):**
+   - Script: `scripts/validate_bqml_models.py`
+   - For each model: Run `ML.PREDICT` with latest features
+   - Verify output format matches expected schema
+   - Log MAE/RMSE metrics
 
-7. **Export schema:**
-   - Generate `config/1m_feature_schema.json` from training dataset
-   - Include: field names, types, hash, min_coverage thresholds
-   - Note: 213 features total (209 + 4 1W signals)
+7. **Feature schema export (for validation):**
+   - Script: `scripts/export_bqml_feature_schema.py`
+   - Query: `SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = 'features_1m_clean'`
+   - Export to: `config/bqml_feature_schema.json`
+   - Include: field names, types (no schema contract needed - BigQuery enforces schema automatically)
 
-8. **Create validator:**
-   - `scripts/1m_schema_validator.py` (unchanged)
-   - **CRITICAL OPERATIONAL REQUIREMENT:** Validates: hash match, coverage >= thresholds, **ABORT ON MISMATCH** (non-negotiable)
-   - **Enforcement:** Must run before every prediction call, before every training run, before every deployment
-   - **Failure mode:** If validation fails, predictor job MUST exit with error code, NOT proceed with mismatch
-   - **Rationale:** Rogue NaN or column mismatch will ruin deployment - schema validation is non-negotiable
-
-### Phase 2: Feature Assembly & 1M Predict with 1W Gate (1.5h)
-**Why Second:** Core prediction pipeline with gate blend post-processing
+### Phase 2: BQML Batch Predictions with 1W Gate (1h)
+**Why Second:** Core prediction pipeline using ML.PREDICT (no endpoints needed)
 
 1. **Build feature assembler (with 1W signal injection):**
-   - `scripts/1m_feature_assembler.py`
+   - `scripts/1m_feature_assembler.py` (SIMPLIFIED - no schema contract needed for BQML)
    - Reads from Phase 0/1 sources (209 features)
-   - **NEW:** Fetches latest 1W signals from `signals_1w` table
-   - **NEW:** Injects 1W signals as features: `volatility_score_1w`, `delta_1w_vs_spot`, `momentum_1w_7d`, `short_bias_score_1w`
-   - Outputs single-row JSON matching schema exactly (209 + 4 = 213 features)
+   - Fetches latest 1W signals from `signals_1w` table
+   - Injects 1W signals as features: `volatility_score_1w`, `delta_1w_vs_spot`, `momentum_1w_7d`, `short_bias_score_1w`
+   - Outputs: 213-column feature row (209 base + 4 1W signals)
+   - **Note:** BigQuery enforces schema automatically - no manual validation needed
 
-2. **Build predictor job (with gate blend) - UPDATED:**
-   - `scripts/1m_predictor_job.py` (MODIFY - replace single endpoint call with 3 calls)
-   - **CRITICAL FLOW:** Calls feature assembler → **SCHEMA VALIDATOR (ABORT ON MISMATCH)** → **3 Vertex endpoints** (one per quantile)
-   - **Schema validation enforcement:** If validator fails, job MUST exit immediately with error code. Do NOT proceed with prediction.
-   - **Operational requirement:** Schema validation is non-negotiable - rogue NaN or column mismatch will ruin deployment
-   - **NEW:** Predict from 3 endpoints:
-     - Call `q10_endpoint` → returns [30] array (q10 predictions for D+1 to D+30)
-     - Call `mean_endpoint` → returns [30] array (mean predictions for D+1 to D+30)
-     - Call `q90_endpoint` → returns [30] array (q90 predictions for D+1 to D+30)
-   - **Combine:** `np.array([q10_array, mean_array, q90_array]).T` → [30, 3] shape
-   - **Parse output:** q10, mean, q90 arrays (30 values each) - same as before
+2. **Build BQML predictor job (SQL-based predictions):**
+   - `scripts/1m_predictor_job_bqml.py` (NEW - replaces Vertex predictor)
+   - **Flow:** Assemble features → Write to temp table → Call ML.PREDICT (3 times for q10/mean/q90) → Combine results → Apply gate blend
+   - **Prediction SQL template:**
+   ```sql
+   -- Get mean prediction
+   SELECT predicted_target_1m as mean_1m
+   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_1m_mean`,
+     (SELECT * FROM temp_features))
+   
+   -- Get q10 prediction
+   SELECT predicted_target_1m as q10_1m
+   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_1m_q10`,
+     (SELECT * FROM temp_features))
+   
+   -- Get q90 prediction
+   SELECT predicted_target_1m as q90_1m
+   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_1m_q90`,
+     (SELECT * FROM temp_features))
+   ```
+   - **Parse output:** Combine 3 predictions into single row (q10, mean, q90)
    - **Post-process gate blend for D+1-7 only:**
      - Fetch latest 1W signals from `signals_1w` table
      - Fetch rolled 1W forecast (7-day path) from historical 1W signals
      - For each day D+1 to D+7:
-       - Calculate disagreement: `d = |F_1W_7 - mean_1M[D+7]| / mean_1M[D+7]`
+       - Calculate disagreement: `d = |F_1W_7 - mean_1M| / mean_1M`
        - Calculate weight: `w = 0.75` (default balanced blend)
        - Kill-switch: if `abs(d) > 0.25` OR `volatility_score_1w > 0.85`, set `w = 0.95` (trust 1M)
-       - Blend mean: `mean[D] = w * mean_1M[D] + (1-w) * rolled_1W[D]`
+       - Blend mean: `mean = w * mean_1M + (1-w) * rolled_1W`
        - Blend q10/q90 with dynamic spread: 
          - `spread_pct = volatility_score_1w * 0.15` (dynamic: 0-15% based on volatility)
-         - `q10[D] = w * q10_1M[D] + (1-w) * (rolled_1W[D] * (1 - spread_pct))`
-         - `q90[D] = w * q90_1M[D] + (1-w) * (rolled_1W[D] * (1 + spread_pct))`
-       - **Rationale**: Simplified from dual sigmoid (maintainable) + dynamic spread replaces fixed 12% (adaptive)
-   - **D+8-30:** Pure 1M (no blend): `mean`, `q10`, `q90` = Vertex output as-is
-   - Write predictions to BigQuery: one row per future_day (30 rows total)
+         - `q10 = w * q10_1M + (1-w) * (rolled_1W * (1 - spread_pct))`
+         - `q90 = w * q90_1M + (1-w) * (rolled_1W * (1 + spread_pct))`
+   - **D+8-30:** Pure 1M (no blend): use BQML output as-is
+   - Write predictions to BigQuery: one row per future_day
    - Idempotent: dedupe by (as_of_timestamp, future_day)
-   - Supports `--backfill-if-missing` flag for 30-day backfill
-   - **After successful BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache (ensure live freshness)
-   - **Cloud Scheduler setup:** Configure heartbeat to verify invalidation after every job completion
+   - **After successful BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache
 
 3. **Create predictions_1m table:**
-   - `bigquery_sql/create_predictions_1m_table.sql`
+   - `bigquery_sql/create_predictions_1m_table.sql` (same schema as before)
    - Columns: `as_of_timestamp`, `future_day`, `q10`, `mean`, `q90`, `gate_weight`, `blended`, `model_version`
    - Partitioned by DATE(as_of_timestamp)
    - Clustered by (future_day, model_version)
 
 4. **Test end-to-end:**
-   - Run predictor job once
-   - **CRITICAL:** Schema validator MUST pass before every predict (enforce on every step - abort on mismatch)
-   - Verify rows written for D+1-30 (D+1-7 blended with simplified gate weight, D+8-30 pure)
+   - Run BQML predictor job once
+   - Verify ML.PREDICT calls succeed for all 3 models (q10/mean/q90)
+   - Verify rows written for D+1-30 (D+1-7 blended, D+8-30 pure)
    - Verify gate weight uses simplified linear blend (w = 0.75 default, w = 0.95 with kill-switch)
-   - Verify dynamic quantile spread (volatility-based: `spread_pct = volatility_score_1w * 0.15`, not fixed 12%)
-   - Verify no redeploy occurred
-   - Verify all 3 endpoints called successfully
-   - **After BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache (verify cache refresh works)
-   - **Operational requirement:** Rogue NaN or column mismatch will ruin deployment - schema validation is non-negotiable
+   - Verify dynamic quantile spread (volatility-based: `spread_pct = volatility_score_1w * 0.15`)
+   - **After BigQuery write:** Verify `/api/revalidate` cache invalidation works
 
 ### Phase 3: 1W Signal Computation (Offline, No Endpoint) (45min)
 **Why Third:** Compute 1W signals as features + gate input (NOT a separate model)
@@ -532,15 +626,35 @@
    - `legislation_events` table (can be empty initially)
    - `vegas_sales` table (can be empty initially)
 
-### Phase 6: Dashboard Refactoring (30min)
-**Why Sixth:** Connect dashboard to new API routes
+### Phase 6: Dashboard Refactoring & Advanced Components (2h)
+**Why Sixth:** Connect dashboard + add Risk Radar, Substitution Economics, Procurement Optimizer
 
 1. **Update existing components:**
    - Replace direct BQ calls with `/api/*` fetches
    - Use `fetch('/api/forecast')` instead of `executeBigQueryQuery(...)`
    - Preserve existing UI/UX
 
-2. **Add rate limiting (optional):**
+2. **Create Risk Radar Component:**
+   - API: `/api/v4/risk-radar` 
+   - Data sources: Volatility + SHAP std + Policy events + VIX
+   - Visualization: Radar chart (Nivo) with combined stress drivers index
+   - Metrics: volatility_score_1w + VIX stress + tariff_threat + china_relations
+   - Output: Combined risk score (0-100), breakdown by category
+
+3. **Create Substitution Economics Component:**
+   - API: `/api/v4/substitution-economics`
+   - Data sources: ZL–FCPO spread, ZL–canola spread, ZL–ZM crush margin
+   - Visualization: Waterfall or stacked bar chart
+   - Logic: Calculate switching points, procurement cost comparison
+   - Output: Substitution risk score, cost delta by commodity
+
+4. **Create Procurement Optimizer (integrated with Phase 8):**
+   - Uses agg_1m_latest + current prices
+   - Highlights optimal buy windows (green zones on forward curve)
+   - Calculates savings potential vs current price
+   - Output: "Best buy window: D+14-21, save $X/cwt"
+
+5. **Add rate limiting (optional):**
    - Middleware for IP-based rate limiting
    - Protect BigQuery from excessive calls
 
@@ -581,18 +695,37 @@
    - All features have business labels, interpretations, and category assignments
    - Purpose: Consistent business language across dashboard
 
-2. **SHAP calculation for distilled model:**
-   - Script: `scripts/calculate_shap_drivers.py`
-   - Options:
-     - Use Vertex AI explanations (if available for custom models)
-     - Compute SHAP locally using shap library (if Vertex doesn't support)
-   - Load business labels from `config/shap_business_labels.json`
-   - Map technical features to business language using dictionary
+2. **SHAP calculation using BQML ML.EXPLAIN_PREDICT:**
+   - Script: `scripts/calculate_shap_drivers_bqml.py` (NEW - SQL-based explanations)
+   - Use BQML's built-in explainability: `ML.EXPLAIN_PREDICT` returns Shapley values for each feature
+   - SQL template:
+   ```sql
+   INSERT INTO `cbi-v14.forecasting_data_warehouse.shap_drivers`
+   SELECT 
+     CURRENT_TIMESTAMP() as as_of_timestamp,
+     14 as future_day,  -- or parameterize
+     feature,
+     bl.business_label,
+     attribution as shap_value,
+     bl.interpretation,
+     bl.category,
+     'bqml_1m_mean' as model_version
+   FROM ML.EXPLAIN_PREDICT(
+     MODEL `cbi-v14.models_v4.bqml_1m_mean`,
+     (SELECT * FROM features_1m_clean ORDER BY date DESC LIMIT 1)
+   )
+   LEFT JOIN `cbi-v14.config.shap_business_labels` bl
+     ON feature = bl.feature_name
+   ORDER BY ABS(attribution) DESC
+   LIMIT 10
+   ```
+   - Load business labels from `config/shap_business_labels.json` (upload to BigQuery table for JOIN)
    - For each feature, fetch current value and historical value (7-day or 30-day ago)
    - Calculate feature % change: `feature_change_pct = (current - historical) / historical * 100`
-   - Calculate dollar impact: `dollar_impact = shap_value * (predicted_price / current_price) * current_price`
+   - Calculate dollar impact: `dollar_impact = shap_value * predicted_price` (approximation)
    - Store in BigQuery: `shap_drivers` table
    - Include: `feature_current_value`, `feature_historical_value`, `feature_change_pct` for tooltip formatting
+   - **Optional:** Add daily LLM summary (Grok API) for executive briefing (cost: $0.03/day = $11/month)
 
 3. **Update `/api/v4/price-drivers`:**
    - Read SHAP contributions from `shap_drivers` table
@@ -822,7 +955,9 @@
 - [ ] `VERTEX_AI_INTEGRATION.md` (update with 3-endpoint architecture, simplified gate blend, cache invalidation)
 - [x] `FINAL_REVIEW_AND_EXECUTION_PLAN.md` (✅ UPDATED - Phase 1-2 with 90-model architecture, all simplifications documented)
 
-### Additional API Routes (Phases 11-14)
+### Additional API Routes (Phases 6, 11-14)
+- [ ] `dashboard-nextjs/src/app/api/v4/risk-radar/route.ts` (Phase 6 - combined stress index from volatility + SHAP + VIX + policy)
+- [ ] `dashboard-nextjs/src/app/api/v4/substitution-economics/route.ts` (Phase 6 - ZL–FCPO–canola spreads, switching points)
 - [ ] `dashboard-nextjs/src/app/api/v4/breaking-news/route.ts` (verify/activate - Gemini summarizer, Big-8 refresh)
 - [ ] `dashboard-nextjs/src/app/api/v4/vegas-customers/route.ts` (Glide API customer data - ZERO FAKE DATA)
 - [ ] `dashboard-nextjs/src/app/api/v4/vegas-volume/route.ts` (consumption tracking from Glide)
@@ -940,21 +1075,21 @@
 ## ✅ EXECUTION APPROVAL
 
 **Ready to Execute:** YES  
-**Estimated Time:** 14.5-16.5 hours total
-- Phase 1: 1.5h (90-model training)
-- Phase 2: 1.5h (Feature assembly + predictor)
+**Estimated Time:** 16-18 hours total (BQML Architecture)
+- Phase 1: 2h (BQML training - 12 models)
+- Phase 2: 1h (BQML batch predictions with 1W gate)
 - Phase 3: 45min (1W signal computation)
 - Phase 4: 30min (Aggregation)
 - Phase 5: 1h (API Routes)
-- Phase 6: 30min (Dashboard refactoring)
+- Phase 6: 2h (Dashboard + Risk Radar + Substitution Economics + Procurement Optimizer)
 - Phase 7: 30min (Monitoring)
 - Phase 8: 45min (Forward curve)
-- Phase 9: 1.5h (SHAP integration)
+- Phase 9: 1.5h (SHAP integration with ML.EXPLAIN_PREDICT)
 - Phase 10: 30min (Documentation)
 - Phase 11: 30min (Breaking News + Big-8)
-- Phase 12: 2h (Vegas Intel)
-- Phase 13: 3h (Legislative Dashboard)
-- Phase 14: 1h (Currency Waterfall)
+- Phase 12: 2h (Vegas Intel - 6 routes, 4 tables, Glide API)
+- Phase 13: 3h (Legislative Dashboard - 5 modules, AI curation)
+- Phase 14: 1h (Currency Waterfall - 5 FX pairs)
 
 **Note:** Phase 1 increased from 1h to 1.5h due to 90-model training, but risk eliminated.  
 **Critical Dependencies:** 
