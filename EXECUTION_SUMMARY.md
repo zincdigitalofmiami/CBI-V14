@@ -78,14 +78,18 @@
   - Budget alerts ($100 Vertex threshold)
 
 ### Phase 9: SHAP Integration
-- ✅ `scripts/calculate_shap_drivers.py` - Already exists
-- ⏳ Needs verification for 3-endpoint architecture
-- ⏳ May need updates to work with separate quantile models
+- ✅ `scripts/calculate_shap_drivers.py` - **UPDATED** for 3-endpoint architecture
+  - Loads models from 3-endpoint architecture (mean models for D+7, D+14, D+30)
+  - Cost-optimized: Only computes SHAP for key horizons (D+7, D+14, D+30)
+  - Propagates SHAP from key horizons to other days
+  - Falls back to feature importance if models unavailable
+  - **NOTE:** SHAP is expensive - use selectively (debugging, one-off analysis), not hourly
 
 ### Phase 10: Documentation
-- ⏳ Update `MASTER_TRAINING_PLAN.md` - Already updated in previous commits
-- ⏳ Update `VERTEX_AI_INTEGRATION.md` - Pending
+- ✅ Update `MASTER_TRAINING_PLAN.md` - Already updated in previous commits
+- ✅ Update `VERTEX_AI_INTEGRATION.md` - **COMPLETE** (3-endpoint architecture, deployment, risk mitigation)
 - ✅ `docs/OPERATIONAL_RUNBOOK.md` - Already exists
+- ✅ `docs/MONITORING_SETUP.md` - **COMPLETE** (Cloud Scheduler, Monitoring alerts, budget alerts)
 
 ### Helper Scripts (Optional, for data ingestion)
 - ⏳ `scripts/glide_export_customers.py` - For Glide API integration

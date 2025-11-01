@@ -68,37 +68,82 @@ def get_current_and_historical_features(feature_name, current_value):
     
     return current_value, historical_value, change_pct
 
-def calculate_shap_values(model, features_dict, X_sample):
+def load_models_for_shap():
     """
-    Calculate SHAP values for predictions
-    Falls back to feature importance if SHAP unavailable
+    Load models for SHAP calculation (3-endpoint architecture)
+    Returns dict with {quantile: model} for mean model (or all 3 if needed)
     """
-    if SHAP_AVAILABLE:
-        try:
-            # Use TreeExplainer for LightGBM
-            explainer = shap.TreeExplainer(model.models[0][0.5])  # Use mean model
-            shap_values = explainer.shap_values(X_sample)
-            
-            # For multi-output, average across days or use D+1
-            if isinstance(shap_values, list):
-                shap_values = shap_values[0]  # Use first sample
-            if len(shap_values.shape) > 1:
-                shap_values = shap_values[0]  # Use first row
-            
-            return shap_values
-        except Exception as e:
-            logger.warning(f"SHAP calculation failed: {e}, using feature importance")
-            return None
+    import joblib
+    from google.cloud import storage
     
-    # Fallback: Use feature importance (simplified)
-    return None
+    models = {}
+    
+    # Load mean model for SHAP (represents primary forecast)
+    # Models are stored locally after training or can be loaded from GCS
+    local_model_dir = Path("models/1m/quantile")
+    
+    # Try to load mean_D7 model (representative horizon for D+7)
+    # In practice, you'd compute SHAP for key horizons: D+7, D+14, D+30
+    for horizon in [7, 14, 30]:
+        model_path = local_model_dir / f"mean_D{horizon}.pkl"
+        if model_path.exists():
+            models[f'D{horizon}'] = joblib.load(model_path)
+            logger.info(f"Loaded model for D+{horizon} from {model_path}")
+    
+    # If no local models, return None (will use fallback)
+    if not models:
+        logger.warning("No local models found - SHAP will use feature importance fallback")
+        return None
+    
+    return models
 
-def compute_shap_drivers(features_dict, model=None):
+def calculate_shap_values_3endpoint(models_dict, features_dict, X_sample, horizon=7):
     """
-    Compute SHAP drivers for latest prediction
-    If model not available, uses simplified importance scores
+    Calculate SHAP values for 3-endpoint architecture
+    Uses mean model for representative horizon (D+7, D+14, or D+30)
+    NOTE: SHAP is expensive - use selectively (debugging, one-off analysis)
     """
-    logger.info("Computing SHAP drivers...")
+    if not SHAP_AVAILABLE:
+        return None
+    
+    if not models_dict:
+        return None
+    
+    # Use model for specified horizon, or closest available
+    model_key = f'D{horizon}'
+    if model_key not in models_dict:
+        # Use closest available horizon
+        available = sorted([int(k[1:]) for k in models_dict.keys()])
+        closest = min(available, key=lambda x: abs(x - horizon))
+        model_key = f'D{closest}'
+        logger.info(f"Using model for D+{closest} (requested D+{horizon})")
+    
+    model = models_dict[model_key]
+    
+    try:
+        # Use TreeExplainer for LightGBM
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X_sample)
+        
+        # Handle output format
+        if isinstance(shap_values, list):
+            shap_values = shap_values[0]  # Use first sample
+        if len(shap_values.shape) > 1:
+            shap_values = shap_values[0]  # Use first row
+        
+        logger.info(f"✅ SHAP calculated for D+{horizon} (using {model_key} model)")
+        return shap_values
+    except Exception as e:
+        logger.warning(f"SHAP calculation failed: {e}, using feature importance")
+        return None
+
+def compute_shap_drivers(features_dict, future_day=7, models_dict=None):
+    """
+    Compute SHAP drivers for latest prediction (3-endpoint architecture)
+    If models not available, uses simplified importance scores
+    NOTE: Only compute for representative horizons (D+7, D+14, D+30) to control cost
+    """
+    logger.info(f"Computing SHAP drivers for D+{future_day}...")
     
     business_labels = load_business_labels()
     
@@ -107,10 +152,16 @@ def compute_shap_drivers(features_dict, model=None):
                     if not k.startswith('_') and not k.startswith('target_')]
     X_sample = np.array([[features_dict[f] for f in feature_names]])
     
-    # Calculate SHAP values (or fallback)
-    if model and SHAP_AVAILABLE:
-        shap_values = calculate_shap_values(model, features_dict, X_sample)
+    # Calculate SHAP values (3-endpoint architecture)
+    # Only compute for key horizons to control cost (D+7, D+14, D+30)
+    if future_day in [7, 14, 30] and models_dict and SHAP_AVAILABLE:
+        shap_values = calculate_shap_values_3endpoint(models_dict, features_dict, X_sample, future_day)
     else:
+        shap_values = None
+    
+    # Fallback: Use simplified importance if SHAP unavailable or not key horizon
+    if shap_values is None:
+        logger.info(f"Using feature importance fallback for D+{future_day}")
         # Simplified: Use absolute feature values as proxy
         shap_values = np.array([abs(float(features_dict.get(f, 0))) for f in feature_names])
         shap_values = shap_values / shap_values.sum() * 100  # Normalize
@@ -186,7 +237,7 @@ def write_shap_to_bigquery(drivers, future_day, as_of_timestamp):
             'dollar_impact': driver['dollar_impact'],
             'direction': driver['direction'],
             'category': driver['category'],
-            'model_version': 'distilled_quantile_1m',
+            'model_version': '90_models_3_endpoints',
             'created_at': datetime.utcnow().isoformat()
         })
     
@@ -211,11 +262,14 @@ def write_shap_to_bigquery(drivers, future_day, as_of_timestamp):
 
 def main():
     """
-    Calculate SHAP drivers for all future days (D+1 to D+30)
+    Calculate SHAP drivers for representative horizons (D+7, D+14, D+30)
     Called after predictor job runs
+    NOTE: SHAP is expensive - only compute for key horizons to control cost
     """
     logger.info("=" * 80)
-    logger.info("CALCULATE SHAP DRIVERS")
+    logger.info("CALCULATE SHAP DRIVERS (3-ENDPOINT ARCHITECTURE)")
+    logger.info("=" * 80)
+    logger.info("⚠️  COST WARNING: SHAP is expensive. Only computing for key horizons (D+7, D+14, D+30)")
     logger.info("=" * 80)
     
     try:
@@ -228,17 +282,37 @@ def main():
         with open(features_path, 'r') as f:
             features = json.load(f)
         
-        # For each future day D+1 to D+30, compute SHAP
-        # Note: In practice, model would need to be loaded to compute true SHAP
-        # For now, using simplified importance
-        # Use UTC timestamp in ISO format (BigQuery TIMESTAMP() accepts this)
-        as_of_timestamp = datetime.utcnow().isoformat() + 'Z'  # Add Z for UTC clarity
+        # Load models for SHAP (3-endpoint architecture)
+        models_dict = load_models_for_shap()
+        if models_dict:
+            logger.info(f"Loaded {len(models_dict)} model(s) for SHAP calculation")
+        else:
+            logger.warning("No models loaded - using feature importance fallback")
+        
+        # Only compute SHAP for key horizons (cost control)
+        # For other days, use simplified importance or copy from nearest key day
+        key_horizons = [7, 14, 30]
+        as_of_timestamp = datetime.utcnow().isoformat() + 'Z'
         total_rows = 0
         
-        for future_day in range(1, 31):
-            drivers = compute_shap_drivers(features, model=None)
+        # Compute SHAP for key horizons
+        shap_cache = {}
+        for future_day in key_horizons:
+            logger.info(f"\nComputing SHAP for D+{future_day}...")
+            drivers = compute_shap_drivers(features, future_day, models_dict)
+            shap_cache[future_day] = drivers
             row_count = write_shap_to_bigquery(drivers, future_day, as_of_timestamp)
             total_rows += row_count
+        
+        # For other days (D+1-6, D+8-13, D+15-29), use nearest key day's SHAP
+        logger.info("\nPropagating SHAP from key horizons to other days...")
+        for future_day in range(1, 31):
+            if future_day not in key_horizons:
+                # Find nearest key horizon
+                nearest = min(key_horizons, key=lambda x: abs(x - future_day))
+                drivers = shap_cache[nearest]
+                row_count = write_shap_to_bigquery(drivers, future_day, as_of_timestamp)
+                total_rows += row_count
         
         logger.info("=" * 80)
         logger.info("✅ SHAP CALCULATION COMPLETE")
