@@ -805,25 +805,51 @@
 ### Documentation (1 file)
 - [ ] `docs/OPERATIONAL_RUNBOOK.md`
 
-### Updates (4 files)
-- [ ] `MASTER_TRAINING_PLAN.md` (update architecture to 90-model, 3-endpoint setup)
-- [ ] `VERTEX_AI_INTEGRATION.md` (update)
-- [ ] `dashboard-nextjs/src/app/api/v4/forecast/1m/route.ts` (unchanged - uses API routes)
-- [ ] `FINAL_REVIEW_AND_EXECUTION_PLAN.md` (update Phase 1-2 to reflect 90-model architecture)
+### Updates (3 files)
+- [x] `MASTER_TRAINING_PLAN.md` (✅ UPDATED - architecture to 90-model, 3-endpoint setup, legacy work marked, dates updated to 2025-10-31)
+- [ ] `VERTEX_AI_INTEGRATION.md` (update with 3-endpoint architecture, simplified gate blend, cache invalidation)
+- [x] `FINAL_REVIEW_AND_EXECUTION_PLAN.md` (✅ UPDATED - Phase 1-2 with 90-model architecture, all simplifications documented)
 
 ### Additional API Routes (Phases 11-14)
-- [ ] `/api/v4/breaking-news` (verify/activate)
-- [ ] `/api/v4/vegas-customers`, `/api/v4/vegas-volume`, `/api/v4/vegas-events`, `/api/v4/vegas-opportunities`, `/api/v4/vegas-config`
-- [ ] `/api/v4/biofuels-mandates`, `/api/v4/trade-tariffs`, `/api/v4/bills-lobbying`, `/api/v4/traceability-risk`, `/api/v4/policy-simulator`
-- [ ] `/api/v4/currency-waterfall`
+- [ ] `dashboard-nextjs/src/app/api/v4/breaking-news/route.ts` (verify/activate - Gemini summarizer, Big-8 refresh)
+- [ ] `dashboard-nextjs/src/app/api/v4/vegas-customers/route.ts` (Glide API customer data - ZERO FAKE DATA)
+- [ ] `dashboard-nextjs/src/app/api/v4/vegas-volume/route.ts` (consumption tracking from Glide)
+- [ ] `dashboard-nextjs/src/app/api/v4/vegas-events/route.ts` (casino events calendar)
+- [ ] `dashboard-nextjs/src/app/api/v4/vegas-opportunities/route.ts` (sales opportunities calculation)
+- [ ] `dashboard-nextjs/src/app/api/v4/vegas-config/route.ts` (Kevin-editable metrics configuration)
+- [ ] `dashboard-nextjs/src/app/api/v4/biofuels-mandates/route.ts` (RFS/RED III tracking, mandate simulator)
+- [ ] `dashboard-nextjs/src/app/api/v4/trade-tariffs/route.ts` (tariff waterfall chart, timeline slider)
+- [ ] `dashboard-nextjs/src/app/api/v4/bills-lobbying/route.ts` (top 10 bills, lobbying heatmap, passage odds)
+- [ ] `dashboard-nextjs/src/app/api/v4/traceability-risk/route.ts` (EU CBAM compliance, risk dial, geo-map)
+- [ ] `dashboard-nextjs/src/app/api/v4/policy-simulator/route.ts` (multi-slider what-if tool)
+- [ ] `dashboard-nextjs/src/app/api/v4/currency-waterfall/route.ts` (5 FX pairs: USD/BRL, USD/ARS, USD/MYR, USD/IDR, USD/CNY)
 
 ### Additional BigQuery Tables (Phases 11-14)
-- [ ] `vegas_customers`, `vegas_events`, `vegas_calculation_config`, `vegas_sales_opportunities`
-- [ ] `legislation_events`, `tariff_data`, `trade_deals`, `all_bills`, `lobbying`
-- [ ] `currency_impact`
+- [ ] `forecasting_data_warehouse.vegas_customers` (customer data from Glide API)
+- [ ] `forecasting_data_warehouse.vegas_events` (casino events calendar)
+- [ ] `forecasting_data_warehouse.vegas_calculation_config` (Kevin-editable metrics: gallons/customer, markup %, etc.)
+- [ ] `forecasting_data_warehouse.vegas_sales_opportunities` (calculated opportunities from events + config)
+- [ ] `forecasting_data_warehouse.legislation_events` (biofuels mandates, trade deals, tariffs)
+- [ ] `forecasting_data_warehouse.tariff_data` (historical and current tariff rates)
+- [ ] `forecasting_data_warehouse.trade_deals` (trade agreement details)
+- [ ] `forecasting_data_warehouse.all_bills` (Congressional bills filtered for soy relevance)
+- [ ] `forecasting_data_warehouse.lobbying` (lobbying spend data)
+- [ ] `forecasting_data_warehouse.currency_impact` (FX impact data: date, pair, close_rate, pct_change, impact_score, source_name)
+
+### Charting Packages (Phase 13)
+- [ ] Install: `recharts` (forward curves, basic charts)
+- [ ] Install: `echarts` + `echarts-for-react` (financial dashboards, waterfalls, candlesticks)
+- [ ] Install: `@nivo/core` + `@nivo/line` + `@nivo/radar` (risk radar, heatmaps)
+- [ ] Configure: Dynamic imports for Next.js SSR compatibility
+
+### Scripts & Jobs (Additional for Phases 11-14)
+- [ ] `scripts/glide_export_customers.py` (Glide API integration for Vegas customers)
+- [ ] `scripts/vegas_events_scraper.py` (casino events scraping)
+- [ ] `scripts/legislative_event_extractor.py` (extract from news/feeds for legislation_events)
+- [ ] `scripts/currency_impact_calculator.py` (calculate FX impact scores for 5 pairs)
 
 ### Archived Files
-- [ ] `scripts/train_distilled_quantile_1m.py` → `archive/train_distilled_quantile_1m.py` (replaced by 90-model version)
+- [ ] `scripts/train_distilled_quantile_1m.py` → `archive/train_distilled_quantile_1m.py` (replaced by train_quantile_1m_90models.py)
 
 ---
 
