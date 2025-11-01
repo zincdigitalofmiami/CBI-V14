@@ -381,7 +381,10 @@
 
 8. **Create validator:**
    - `scripts/1m_schema_validator.py` (unchanged)
-   - Validates: hash match, coverage >= thresholds, abort on mismatch
+   - **CRITICAL OPERATIONAL REQUIREMENT:** Validates: hash match, coverage >= thresholds, **ABORT ON MISMATCH** (non-negotiable)
+   - **Enforcement:** Must run before every prediction call, before every training run, before every deployment
+   - **Failure mode:** If validation fails, predictor job MUST exit with error code, NOT proceed with mismatch
+   - **Rationale:** Rogue NaN or column mismatch will ruin deployment - schema validation is non-negotiable
 
 ### Phase 2: Feature Assembly & 1M Predict with 1W Gate (1.5h)
 **Why Second:** Core prediction pipeline with gate blend post-processing
@@ -428,12 +431,14 @@
 
 4. **Test end-to-end:**
    - Run predictor job once
+   - **CRITICAL:** Schema validator MUST pass before every predict (enforce on every step - abort on mismatch)
    - Verify rows written for D+1-30 (D+1-7 blended with simplified gate weight, D+8-30 pure)
    - Verify gate weight uses simplified linear blend (w = 0.75 default, w = 0.95 with kill-switch)
    - Verify dynamic quantile spread (volatility-based: `spread_pct = volatility_score_1w * 0.15`, not fixed 12%)
    - Verify no redeploy occurred
    - Verify all 3 endpoints called successfully
    - **After BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache (verify cache refresh works)
+   - **Operational requirement:** Rogue NaN or column mismatch will ruin deployment - schema validation is non-negotiable
 
 ### Phase 3: 1W Signal Computation (Offline, No Endpoint) (45min)
 **Why Third:** Compute 1W signals as features + gate input (NOT a separate model)
@@ -502,11 +507,13 @@
    - Query `vegas_sales` ORDER BY `date DESC LIMIT 365`
    - Response: `[{date, sales, region}]`
 
-**Cache Invalidation:**
+**Cache Invalidation (CRITICAL OPERATIONAL REQUIREMENT):**
    - Create `/app/api/revalidate/route.ts` (admin-only, triggered after predictor job writes)
    - After `1m_predictor_job.py` writes to BigQuery, call this endpoint to invalidate cache
    - Uses Next.js `revalidateTag()` or `revalidatePath()` for cache invalidation
+   - **Cloud Scheduler heartbeat**: Configure Cloud Scheduler to ping `/api/revalidate` after predictor job completes (not just on write, but as a heartbeat monitor)
    - **Rationale**: Unified 5min cache + invalidation on write = consistency + freshness
+   - **Operational note**: "Fast dashboard" means *live freshness* - ISR invalidation must be automated and monitored
 
 5. **Create `/app/api/explain/route.ts`:**
    - No cache
