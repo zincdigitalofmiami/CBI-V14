@@ -1,7 +1,7 @@
 # MASTER TRAINING PLAN - CBI-V14
 **Date:** October 22, 2025  
-**Last Updated:** October 30, 2025 - 20:55 UTC (COMPLETE IMPLEMENTATION SCAFFOLD CREATED)
-**Status:** 🚧 COMPLETE REBUILD IN PROGRESS | IMPLEMENTATION SCAFFOLD CREATED | ALL PROMISED FEATURES BEING DELIVERED
+**Last Updated:** October 31, 2025 - Updated with 90-model architecture and simplified gate blend logic
+**Status:** 🎯 READY FOR EXECUTION | 14-Phase Plan Complete | All Technical Fixes Documented
 
 ### 📋 **IMPLEMENTATION SCAFFOLD CREATED**
 **File:** `IMPLEMENTATION_SCAFFOLD.md`  
@@ -22,7 +22,7 @@
 | **3M** | 3157158578716934144 | **2.68%** | 1.340 | 0.9727 | ⚠️ DEPRECATED | AutoML Tabular |
 | **6M** | 3788577320223113216 | **2.51%** | 1.254 | 0.9792 | ⚠️ DEPRECATED | AutoML Tabular |
 
-### 🎯 CURRENT LIVE ARCHITECTURE (2025-01-XX):
+### 🎯 CURRENT LIVE ARCHITECTURE (2025-10-31):
 **1M Core Model (Primary):**
 - **Model Type:** 90 Standalone LightGBM Models (30 horizons × 3 quantiles)
 - **Architecture:** 3 separate Vertex AI endpoints (q10, mean, q90)
@@ -38,11 +38,16 @@
 - **Usage:** Features for 1M model + gate blend (D+1-7 only)
 - **Cost:** ~$5/month (Cloud Run jobs or BigQuery SQL)
 
-**Gate Blend Logic:**
-- D+1-7: Blend 1M forecast with rolled 1W forecast (weight = f(volatility, disagreement))
+**Gate Blend Logic (Simplified - Production Ready):**
+- D+1-7: Blend 1M forecast with rolled 1W forecast
+  - **Weight:** `w = 0.75` (default balanced blend)
+  - **Kill-switch:** `w = 0.95` if volatility > 0.85 OR disagreement > 0.25 (trust 1M)
+  - **Dynamic quantile spread:** `spread_pct = volatility_score_1w * 0.15` (replaces fixed 12%)
 - D+8-30: Pure 1M forecast (no blend)
+- **Note:** Simplified from complex dual sigmoid for maintainability (see FINAL_REVIEW_AND_EXECUTION_PLAN.md)
 
-### 🎯 CRITICAL SERVERLESS ARCHITECTURE DECISION (October 29, 2025 - 17:45 UTC):
+### 🎯 LEGACY: CRITICAL SERVERLESS ARCHITECTURE DECISION (October 29, 2025 - 17:45 UTC) - **SUPERSEDED**
+**Status:** ⚠️ **LEGACY** - This approach was replaced by the 90-model, 3-endpoint architecture. Documented for historical reference only.
 
 **THE PROBLEM:**
 - Batch predictions fail due to quota limits (can only run 1 concurrent job)
@@ -63,7 +68,7 @@
 - Total cost: **$0.60/month** (vs $576/month for always-on endpoints)
 - **Savings: 99.9%**
 
-**CURRENT STATUS (October 29, 2025 - 17:45 UTC):**
+**LEGACY STATUS (October 29, 2025 - 17:45 UTC) - SUPERSEDED:**
 - ✅ Script created: `automl/quick_endpoint_predictions.py`
 - 🚀 RUNNING NOW: Deploying temp_1w_endpoint (PID 50298)
 - ⏳ ETA: 20-40 minutes for all 4 models
@@ -74,7 +79,8 @@
 
 ## 🔥 **ACTIVE TASKS IN PROGRESS** (PRIORITY 1)
 
-### **🚀 SERVERLESS ENDPOINT TRICKERY - RUNNING NOW (October 29, 2025 - 17:45 UTC):**
+### **⚠️ LEGACY: SERVERLESS ENDPOINT TRICKERY (October 29, 2025 - 17:45 UTC) - SUPERSEDED**
+**Status:** This approach has been replaced by the 90-model, 3-endpoint architecture. See FINAL_REVIEW_AND_EXECUTION_PLAN.md for current approach.
 
 **CURRENT DEPLOYMENT STATUS:**
 - ✅ Endpoint created: `temp_1w_endpoint` (ID: 7244082881578926080)
@@ -263,8 +269,8 @@ $1M+ hedge fund quality system:
 - ❌ Back to square one
 - 💰 Money wasted on duplicates and failed deployments
 
-#### **✅ 3M HORIZON TRAINING - COMPLETED**
-- **Status:** COMPLETED (October 29, 2025)
+#### **✅ 3M HORIZON TRAINING - COMPLETED (LEGACY)**
+- **Status:** ✅ **COMPLETED** (October 29, 2025) - **LEGACY MODEL** (deprecated in favor of 1M-only architecture)
 - **Model ID:** 3157158578716934144
 - **Model Name:** soybean_oil_3m_final_v14_20251029_0808
 - **Performance:** MAE 1.340, **MAPE 2.68%**, R² 0.9727
@@ -277,9 +283,10 @@ $1M+ hedge fund quality system:
 - **Models Integrated:** 1W (2.02% MAPE) + 3M (2.68% MAPE) + 6M (2.51% MAPE) ✅
 - **Action Required:** Deploy with updated API routes (see DEPLOYMENT.md)
 
-### **🎯 COMPLETE AUTOMATION SETUP (October 29, 2025 - FINAL IMPLEMENTATION):**
+### **⚠️ LEGACY: COMPLETE AUTOMATION SETUP (October 29, 2025 - FINAL IMPLEMENTATION) - SUPERSEDED**
+**Status:** These phases were completed but approach superseded. See FINAL_REVIEW_AND_EXECUTION_PLAN.md for current 14-phase plan.
 
-**PHASE 1: ENDPOINT TRICKERY SETUP** ✅ COMPLETE (RUNNING NOW)
+**PHASE 1: ENDPOINT TRICKERY SETUP** ✅ **COMPLETED** (October 29, 2025) - **LEGACY APPROACH**
 - ✅ Script created: `automl/quick_endpoint_predictions.py`
 - 🚀 Process running: PID 50298 (started 17:41 UTC)
 - ⏳ ETA: 15-25 minutes remaining
@@ -422,17 +429,18 @@ ALERT_THRESHOLDS = {
 
 ---
 
-## 🏗️ PRODUCTION ARCHITECTURE (AFTER 1M COMPLETES):
+## 🏗️ LEGACY: PRODUCTION ARCHITECTURE (SUPERSEDED)
+**Status:** ⚠️ **LEGACY** - This ensemble approach was replaced by the simplified 1M + 1W architecture. Documented for reference.
 
-### **Layer 1: Base Models (Vertex AI AutoML)**
+### **Layer 1: Base Models (Vertex AI AutoML) - LEGACY**
 ```
 1W Model (2.02% MAPE) ─┐
-1M Model (pending)     ├─→ ENSEMBLE
+1M Model (pending)     ├─→ ENSEMBLE (SUPERSEDED)
 3M Model (2.68% MAPE)  │
 6M Model (2.51% MAPE) ─┘
 ```
 
-### **Layer 2: Ensemble Model**
+### **Layer 2: Ensemble Model - LEGACY (SUPERSEDED)**
 - **Method:** Weighted averaging with performance-based weights
 - **Preliminary Weights** (based on current MAPE):
   - 1W: 33% weight (best performer at 2.02% MAPE)
@@ -465,7 +473,7 @@ ALERT_THRESHOLDS = {
 
 **VERTEX AI TRAINING STATUS: 1W, 3M, 6M COMPLETE | 1M RUNNING**
 
-### ✅ COMPLETED VERTEX AI MODELS:
+### ✅ LEGACY: COMPLETED VERTEX AI MODELS (DEPRECATED):
 - **1W Horizon:** Model 575258986094264320 (cbi_v14_automl_pilot_1w) ✅ COMPLETE
   - **Performance:** MAE 1.008, **MAPE 2.02%**, R² 0.9836
 - **3M Horizon:** Model 3157158578716934144 (soybean_oil_3m_final_v14_20251029_0808) ✅ COMPLETE
@@ -473,7 +481,7 @@ ALERT_THRESHOLDS = {
 - **6M Horizon:** Model 3788577320223113216 (soybean_oil_6m_model_v14_20251028_1737) ✅ COMPLETE
   - **Performance:** MAE 1.254, **MAPE 2.51%**, R² 0.9792
 
-### 🚀 CURRENTLY TRAINING:
+### ⚠️ LEGACY: CURRENTLY TRAINING (SUPERSEDED):
 - **1M Horizon:** Pipeline 7445431996387426304 - RUNNING (launched Oct 29, 11:48 UTC)
 
 ### 💰 BUDGET STATUS:
@@ -483,7 +491,8 @@ ALERT_THRESHOLDS = {
 
 ---
 
-## 🎯 EXECUTIVE SUMMARY - PRODUCTION MODELS VERIFIED (October 27, 2025)
+## ⚠️ LEGACY: EXECUTIVE SUMMARY - PRODUCTION MODELS VERIFIED (October 27, 2025) - SUPERSEDED
+**Status:** Legacy summary. Current architecture: 90-model, 3-endpoint setup. See FINAL_REVIEW_AND_EXECUTION_PLAN.md.
 
 **PRODUCTION STATUS: ✅ INSTITUTIONAL-GRADE MODELS OPERATIONAL**
 

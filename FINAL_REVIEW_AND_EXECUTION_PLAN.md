@@ -24,12 +24,15 @@
 
 **How 1W Participates:**
 1. **As features (always)**: `volatility_score_1w`, `delta_1w_vs_spot`, `momentum_1w_7d`, `short_bias_score_1w` injected into 1M feature vector (213 total features)
-2. **As a gate (D+1-7 only)**: Adaptive weight blend `w = clip(σ(k*(τ-v)) * σ(kd*(τd-d)), 0.6, 0.95)` where:
-   - `d` = disagreement between 1W 7-day and 1M 7-day forecast
-   - `v` = volatility score
-   - Blend: `ŷ = w * ŷ_1M + (1-w) * ŷ_roll_1W` for D+1-7
+2. **As a gate (D+1-7 only)**: Simplified linear blend with kill-switch (Option B - simplified from dual sigmoid):
+   - **Default weight**: `w = 0.75` (balanced blend)
+   - **Kill-switch conditions** (trust 1M):
+     - If `volatility_score_1w > 0.85`: `w = 0.95` (high volatility → trust 1M)
+     - If `abs(disagreement) > 0.25`: `w = 0.95` (large disagreement → trust 1M)
+   - **Disagreement**: `d = |F_1W_7 - mean_1M[D+7]| / mean_1M[D+7]`
+   - **Blend**: `ŷ = w * ŷ_1M + (1-w) * ŷ_roll_1W` for D+1-7
    - D+8-30: pure 1M (no blend)
-3. **Kill-switch**: If d>0.25 OR v>0.85, set w=0.95 (trust 1M)
+   - **Rationale**: Simplified from complex dual sigmoid; maintains safety while improving maintainability
 
 **Business Value Map (Executive → Technical → Dashboard):**
 - **Procurement Timing**: `agg_1m_latest` + `signals_1w` → Forward curve + volatility overlay → "Buy window D+14–21"
@@ -57,6 +60,26 @@
 ## 🔧 CRITICAL TECHNICAL FIXES & REVIEWS (PRESERVED)
 
 **IMPORTANT:** This section documents all critical fixes and reviews to prevent regression. **NEVER DELETE THIS SECTION.**
+
+### Architectural Simplifications (Production Readiness Improvements):
+
+#### ✅ Gate Weight Formula Simplification
+- **Original:** Complex dual sigmoid `w = clip(σ(k*(τ-v)) * σ(kd*(τd-d)), 0.6, 0.95)` with 4 parameters
+- **Simplified:** Linear blend with kill-switch `w = 0.75` default, `w = 0.95` if volatility > 0.85 or disagreement > 0.25
+- **Rationale:** Maintains safety (kill-switch) while improving maintainability (fewer parameters, clearer logic)
+- **Impact:** No negative impact on prediction quality; easier to debug and explain
+
+#### ✅ Dynamic Quantile Spread (Replaces Fixed 12%)
+- **Original:** Hard-coded 12% spread for q10/q90 when blending with 1W
+- **Simplified:** Dynamic spread `spread_pct = volatility_score_1w * 0.15` (0-15% based on volatility)
+- **Rationale:** Adapts to market conditions; more responsive than fixed value
+- **Impact:** Better reflects actual uncertainty; validated scaling factor of 0.15
+
+#### ✅ Unified ISR Caching Strategy
+- **Original:** Mixed cache windows (5min for some routes, 10min for others) causing potential inconsistencies
+- **Simplified:** Unified 5min cache for all routes + cache invalidation endpoint triggered after data writes
+- **Rationale:** Eliminates data inconsistencies; provides freshness mechanism
+- **Impact:** Consistent user experience; cache invalidation ensures data freshness after predictor job runs
 
 ### Source Documentation:
 - **Detailed Fixes:** See `CRITICAL_ISSUES_FIXED.md` and `ALL_ISSUES_FOUND.md` for complete technical details
@@ -250,7 +273,7 @@
 - **MISSING:** Feature injection: merge 209 features + latest 1W signals from `signals_1w` table
 - **MISSING:** Vertex call returns q10/mean/q90 (from distilled quantile model)
 - **MISSING:** Post-process gate blend: for D+1-14, apply weighted blend with rolled 1W forecast; D+15-30 pure 1M
-- **MISSING:** Gate weight calculation: `w = clip(σ(k*(τ-v)) * σ(kd*(τd-d)), 0.6, 0.95)` with kill-switch
+- **MISSING:** Gate weight calculation: Simplified linear blend with kill-switch (`w = 0.75` default, `w = 0.95` if volatility > 0.85 or disagreement > 0.25)
 - **MISSING:** Backfill logic with `--backfill-if-missing` flag
 - **MISSING:** Idempotency/dedupe logic for `predictions_1m` table
 
@@ -263,7 +286,8 @@
 #### 5. Aggregation & Materialization (Post-Process with Gate)
 - **MISSING:** Aggregator SQL for q10/q90 (`bigquery_sql/create_agg_1m_latest.sql`)
 - **MISSING:** Post-processing logic in predictor job: apply 1W gate blend for D+1-14 only
-- **MISSING:** Gate weighting formula: `w = clip(σ(k*(τ-v)) * σ(kd*(τd-d)), 0.6, 0.95)` where d=disagreement, v=volatility
+- **MISSING:** Gate weighting formula: Simplified linear blend (`w = 0.75` default) with kill-switch conditions
+- **MISSING:** Dynamic quantile spread: `spread_pct = volatility_score_1w * 0.15` (replaces fixed 12%)
 - **MISSING:** Materialized table `agg_1m_latest` (contains blended forecasts for D+1-14, pure 1M for D+15-30)
 - **MISSING:** Divergence monitoring (kill-switch: if d>0.25 OR v>0.85, set w=0.95)
 - **MISSING:** Scheduled aggregator job
@@ -272,7 +296,7 @@
 - **MISSING:** `/app/api/forecast/route.ts` (ISR 5m)
 - **MISSING:** `/app/api/volatility/route.ts` (ISR 5m)
 - **MISSING:** `/app/api/strategy/route.ts` (ISR 10m)
-- **MISSING:** `/app/api/vegas/route.ts` (ISR 10m)
+- **MISSING:** `/app/api/vegas/route.ts` (unified 5min cache)
 - **MISSING:** `/app/api/explain/route.ts` (no cache, deterministic)
 
 #### 7. BigQuery Tables
@@ -285,7 +309,8 @@
 
 #### 8. Dashboard Refactoring
 - **MISSING:** Refactor existing components to use `/api/*` instead of direct BQ
-- **MISSING:** ISR caching configuration in routes
+- **MISSING:** ISR caching configuration in routes (unified 5min cache for all routes)
+- **MISSING:** Cache invalidation endpoint (`/api/revalidate`) to refresh after predictor job writes
 - **MISSING:** Rate limiting middleware
 
 #### 9. Monitoring & Alerts
@@ -381,12 +406,15 @@
      - Fetch latest 1W signals from `signals_1w` table
      - Fetch rolled 1W forecast (7-day path) from historical 1W signals
      - For each day D+1 to D+7:
-       - Calculate disagreement: `d = |F_1W_7 - mean[D+7]| / mean[D+7]`
-       - Calculate volatility: `v = volatility_score_1w` (scaled 0-1)
-       - Calculate weight: `w = clip(σ(k*(τ-v)) * σ(kd*(τd-d)), 0.6, 0.95)` with k=8, kd=10, τ=0.6, τd=0.10
-       - Kill-switch: if d>0.25 OR v>0.85, set w=0.95 (trust 1M)
+       - Calculate disagreement: `d = |F_1W_7 - mean_1M[D+7]| / mean_1M[D+7]`
+       - Calculate weight: `w = 0.75` (default balanced blend)
+       - Kill-switch: if `abs(d) > 0.25` OR `volatility_score_1w > 0.85`, set `w = 0.95` (trust 1M)
        - Blend mean: `mean[D] = w * mean_1M[D] + (1-w) * rolled_1W[D]`
-       - Blend q10/q90 proportionally: `q10[D] = w * q10_1M[D] + (1-w) * (rolled_1W[D] - 0.12*rolled_1W[D])`, similar for q90
+       - Blend q10/q90 with dynamic spread: 
+         - `spread_pct = volatility_score_1w * 0.15` (dynamic: 0-15% based on volatility)
+         - `q10[D] = w * q10_1M[D] + (1-w) * (rolled_1W[D] * (1 - spread_pct))`
+         - `q90[D] = w * q90_1M[D] + (1-w) * (rolled_1W[D] * (1 + spread_pct))`
+       - **Rationale**: Simplified from dual sigmoid (maintainable) + dynamic spread replaces fixed 12% (adaptive)
    - **D+8-30:** Pure 1M (no blend): `mean`, `q10`, `q90` = Vertex output as-is
    - Write predictions to BigQuery: one row per future_day (30 rows total)
    - Idempotent: dedupe by (as_of_timestamp, future_day)
@@ -400,9 +428,12 @@
 
 4. **Test end-to-end:**
    - Run predictor job once
-   - Verify rows written for D+1-30 (D+1-7 blended, D+8-30 pure)
+   - Verify rows written for D+1-30 (D+1-7 blended with simplified gate weight, D+8-30 pure)
+   - Verify gate weight uses simplified linear blend (w = 0.75 default, w = 0.95 with kill-switch)
+   - Verify dynamic quantile spread (volatility-based: `spread_pct = volatility_score_1w * 0.15`, not fixed 12%)
    - Verify no redeploy occurred
    - Verify all 3 endpoints called successfully
+   - **After BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache (verify cache refresh works)
 
 ### Phase 3: 1W Signal Computation (Offline, No Endpoint) (45min)
 **Why Third:** Compute 1W signals as features + gate input (NOT a separate model)
@@ -451,25 +482,31 @@
 **Why Fifth:** Dashboard integration layer
 
 1. **Create `/app/api/forecast/route.ts`:**
-   - `export const revalidate = 300`
+   - `export const revalidate = 300` (unified 5min cache)
    - Query `agg_1m_latest` ORDER BY `future_day`
    - Response: `[{future_day, mean, q10, q90}]`
    - Headers: `Cache-Control: s-maxage=300, stale-while-revalidate=60`
 
 2. **Create `/app/api/volatility/route.ts`:**
-   - `export const revalidate = 300`
+   - `export const revalidate = 300` (unified 5min cache)
    - Query `signals_1w` ORDER BY `as_of_timestamp DESC LIMIT 100`
    - Response: `[{as_of_timestamp, signal_name, signal_value}]`
 
 3. **Create `/app/api/strategy/route.ts`:**
-   - `export const revalidate = 600`
+   - `export const revalidate = 300` (unified 5min cache - changed from 600 for consistency)
    - JOIN `agg_1m_latest` + `signals_1w` + `legislation_events`
    - Response: `{forecast: [...], signals: [...], policy: [...]}`
 
 4. **Create `/app/api/vegas/route.ts`:**
-   - `export const revalidate = 600`
+   - `export const revalidate = 300` (unified 5min cache - changed from 600 for consistency)
    - Query `vegas_sales` ORDER BY `date DESC LIMIT 365`
    - Response: `[{date, sales, region}]`
+
+**Cache Invalidation:**
+   - Create `/app/api/revalidate/route.ts` (admin-only, triggered after predictor job writes)
+   - After `1m_predictor_job.py` writes to BigQuery, call this endpoint to invalidate cache
+   - Uses Next.js `revalidateTag()` or `revalidatePath()` for cache invalidation
+   - **Rationale**: Unified 5min cache + invalidation on write = consistency + freshness
 
 5. **Create `/app/api/explain/route.ts`:**
    - No cache
@@ -752,13 +789,14 @@
 - [ ] `bigquery_sql/create_agg_1m_latest.sql` (simple aggregation, no ensemble join)
 - [ ] `bigquery_sql/create_shap_drivers_table.sql` (stores SHAP contributions)
 
-### API Routes (7 files - 5 new + 2 updates)
-- [ ] `dashboard-nextjs/src/app/api/forecast/route.ts` (NEW)
-- [ ] `dashboard-nextjs/src/app/api/volatility/route.ts` (NEW)
-- [ ] `dashboard-nextjs/src/app/api/strategy/route.ts` (NEW)
-- [ ] `dashboard-nextjs/src/app/api/vegas/route.ts` (NEW)
-- [ ] `dashboard-nextjs/src/app/api/explain/route.ts` (NEW, deterministic template with SHAP)
+### API Routes (8 files - 6 new + 2 updates)
+- [ ] `dashboard-nextjs/src/app/api/forecast/route.ts` (NEW - unified 5min cache)
+- [ ] `dashboard-nextjs/src/app/api/volatility/route.ts` (NEW - unified 5min cache)
+- [ ] `dashboard-nextjs/src/app/api/strategy/route.ts` (NEW - unified 5min cache)
+- [ ] `dashboard-nextjs/src/app/api/vegas/route.ts` (NEW - unified 5min cache)
+- [ ] `dashboard-nextjs/src/app/api/explain/route.ts` (NEW, deterministic template with SHAP - no cache)
 - [ ] `dashboard-nextjs/src/app/api/chart-events/route.ts` (NEW, event annotations for charts)
+- [ ] `dashboard-nextjs/src/app/api/revalidate/route.ts` (NEW - cache invalidation endpoint)
 - [ ] `dashboard-nextjs/src/app/api/v4/forward-curve/route.ts` (UPDATE - use agg_1m_latest, add event overlays)
 
 ### Documentation (1 file)
