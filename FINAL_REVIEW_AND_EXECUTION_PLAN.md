@@ -513,7 +513,7 @@
    - Request body: `{conf, delta, shap_china}`
    - Deterministic rules:
      - `if (delta > 15%)` → `"⚠️ 1W DIVERGENCE: Short-term reversal risk"`
-     - `if (shap_china < -0.1)` → `"🇨🇳 China imports drag -12%"`
+     - `if (shap_china < -0.1)` → `"🇨🇳 China imports drag (negative impact)"`
      - `else` → `"📈 Stable: ${conf}% confidence"`
 
 6. **Create helper tables (if needed):**
