@@ -16,18 +16,17 @@ export async function GET(request: NextRequest) {
     
     const historical = await executeBigQueryQuery(historicalQuery)
     
-    // Get forecasts from monthly predictions
+    // Get forecasts from agg_1m_latest (updated to use new table)
     const forecastQuery = `
       SELECT 
-        horizon,
-        target_date as date,
-        predicted_price as price,
-        confidence_lower,
-        confidence_upper,
-        mape,
+        future_day,
+        DATE_ADD(CURRENT_DATE(), INTERVAL future_day DAY) as date,
+        mean as price,
+        q10 as confidence_lower,
+        q90 as confidence_upper,
         'forecast' as type
-      FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
-      ORDER BY target_date ASC
+      FROM \`cbi-v14.forecasting_data_warehouse.agg_1m_latest\`
+      ORDER BY future_day ASC
     `
     
     const forecasts = await executeBigQueryQuery(forecastQuery)
@@ -57,14 +56,13 @@ export async function GET(request: NextRequest) {
         price: parseFloat(current[0].price),
         type: 'current'
       }] : []),
-      // Add forecasts
+      // Add forecasts (from agg_1m_latest)
       ...forecasts.map((row: any) => ({
         date: row.date.value || row.date,
         price: parseFloat(row.price),
-        confidence_lower: parseFloat(row.confidence_lower),
-        confidence_upper: parseFloat(row.confidence_upper),
-        mape: parseFloat(row.mape),
-        horizon: row.horizon,
+        q10: parseFloat(row.confidence_lower),
+        q90: parseFloat(row.confidence_upper),
+        future_day: row.future_day,
         type: 'forecast'
       }))
     ]
@@ -85,12 +83,23 @@ export async function GET(request: NextRequest) {
       
       if (parseFloat(forecast.price) < currentPrice * 0.98) { // 2% drop = buy zone
         buyZones.push({
-          horizon: forecast.horizon,
+          future_day: forecast.future_day,
           date: forecast.date.value || forecast.date,
           price: parseFloat(forecast.price),
           savingsPercent: ((currentPrice - parseFloat(forecast.price)) / currentPrice * 100).toFixed(2)
         })
       }
+    }
+    
+    // Get chart events for overlay (optional)
+    let chartEvents = []
+    try {
+      const eventsResponse = await fetch(`${request.nextUrl.origin}/api/chart-events?lookback_days=90`)
+      if (eventsResponse.ok) {
+        chartEvents = await eventsResponse.json()
+      }
+    } catch (e) {
+      // Chart events may not be available yet
     }
 
     return NextResponse.json({
@@ -98,6 +107,7 @@ export async function GET(request: NextRequest) {
       buyZones,
       currentPrice: currentPrice,
       forecastCount: forecasts.length,
+      chartEvents,  // Event overlays for annotations
       updated_at: new Date().toISOString()
     })
 
