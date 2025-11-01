@@ -398,7 +398,9 @@
 
 2. **Build predictor job (with gate blend) - UPDATED:**
    - `scripts/1m_predictor_job.py` (MODIFY - replace single endpoint call with 3 calls)
-   - Calls feature assembler → validator → **3 Vertex endpoints** (one per quantile)
+   - **CRITICAL FLOW:** Calls feature assembler → **SCHEMA VALIDATOR (ABORT ON MISMATCH)** → **3 Vertex endpoints** (one per quantile)
+   - **Schema validation enforcement:** If validator fails, job MUST exit immediately with error code. Do NOT proceed with prediction.
+   - **Operational requirement:** Schema validation is non-negotiable - rogue NaN or column mismatch will ruin deployment
    - **NEW:** Predict from 3 endpoints:
      - Call `q10_endpoint` → returns [30] array (q10 predictions for D+1 to D+30)
      - Call `mean_endpoint` → returns [30] array (mean predictions for D+1 to D+30)
@@ -422,6 +424,8 @@
    - Write predictions to BigQuery: one row per future_day (30 rows total)
    - Idempotent: dedupe by (as_of_timestamp, future_day)
    - Supports `--backfill-if-missing` flag for 30-day backfill
+   - **After successful BigQuery write:** Call `/api/revalidate` endpoint to invalidate cache (ensure live freshness)
+   - **Cloud Scheduler setup:** Configure heartbeat to verify invalidation after every job completion
 
 3. **Create predictions_1m table:**
    - `bigquery_sql/create_predictions_1m_table.sql`
@@ -482,6 +486,7 @@
 3. **Create aggregation scheduler:**
    - Cloud Scheduler job: hourly (after predictor job)
    - Refreshes `agg_1m_latest`
+   - **After aggregation completes:** Trigger cache invalidation endpoint (ensure dashboard reflects latest aggregated data)
 
 ### Phase 5: API Routes (1h)
 **Why Fifth:** Dashboard integration layer
@@ -509,11 +514,11 @@
 
 **Cache Invalidation (CRITICAL OPERATIONAL REQUIREMENT):**
    - Create `/app/api/revalidate/route.ts` (admin-only, triggered after predictor job writes)
-   - After `1m_predictor_job.py` writes to BigQuery, call this endpoint to invalidate cache
+   - **After `1m_predictor_job.py` writes to BigQuery, MUST call this endpoint to invalidate cache**
    - Uses Next.js `revalidateTag()` or `revalidatePath()` for cache invalidation
-   - **Cloud Scheduler heartbeat**: Configure Cloud Scheduler to ping `/api/revalidate` after predictor job completes (not just on write, but as a heartbeat monitor)
-   - **Rationale**: Unified 5min cache + invalidation on write = consistency + freshness
-   - **Operational note**: "Fast dashboard" means *live freshness* - ISR invalidation must be automated and monitored
+   - **Cloud Scheduler Integration:** Set up heartbeat monitor - Cloud Scheduler pings invalidation endpoint after every predictor job completion
+   - **Failure mode:** If invalidation fails, log error but continue (cache will refresh in 5min anyway, but invalidation ensures live freshness)
+   - **Rationale**: Unified 5min cache + invalidation on write = consistency + freshness. "Fast dashboard" means *live freshness*, not "5 minutes ago this might've been right."
 
 5. **Create `/app/api/explain/route.ts`:**
    - No cache
@@ -872,12 +877,13 @@
 ### During Execution:
 1. ✅ All 3 endpoints exist and have deployed models
 2. ✅ Traffic split = 100% to deployed models on each endpoint
-3. ✅ Schema validator passes before every predict
+3. ✅ **CRITICAL:** Schema validator passes before every predict (ABORT ON MISMATCH - non-negotiable)
 4. ✅ No deploy/redeploy during prediction calls
 5. ✅ Predictions written to `predictions_1m` successfully
-6. ✅ BQML model trains without errors
-7. ✅ API routes return valid JSON with cache headers
-8. ✅ Dashboard renders without errors
+6. ✅ Cache invalidation endpoint called after every BigQuery write (ensure live freshness)
+7. ✅ Cloud Scheduler heartbeat configured to verify invalidation flow
+8. ✅ API routes return valid JSON with cache headers (unified 5min cache)
+9. ✅ Dashboard renders without errors
 
 ### After Execution:
 1. ✅ Health check passes
@@ -893,11 +899,24 @@
 ### Risk: Endpoint Redeployment
 **Mitigation:** Pin endpoint ID in config, validate traffic_split before every predict, remove deploy-on-predict code paths
 
-### Risk: Schema Mismatch
-**Mitigation:** Schema validator with hash + coverage checks, abort on mismatch
+### Risk: Schema Mismatch (CRITICAL)
+**Mitigation:** Schema validator with hash + coverage checks, **ABORT ON MISMATCH** (non-negotiable)
+- Validator runs before every prediction call
+- Validator runs before every training run
+- Validator runs before every deployment
+- Failure mode: Job exits immediately with error code, does NOT proceed
+- **Operational requirement:** Rogue NaN or column mismatch will ruin deployment - enforcement is mandatory
 
 ### Risk: BigQuery Cost Overrun
 **Mitigation:** ISR caching (5m unified), materialized tables, rate limiting, budget alerts
+
+### Risk: Stale Cache (CRITICAL)
+**Mitigation:** Cache invalidation endpoint called after every BigQuery write + Cloud Scheduler heartbeat
+- Predictor job calls `/api/revalidate` after successful write
+- Aggregation job triggers invalidation after completion
+- Cloud Scheduler monitors invalidation flow (heartbeat)
+- Failure mode: Logs error but continues (cache refreshes in 5min, but invalidation ensures live freshness)
+- **Operational requirement:** "Fast dashboard" means *live freshness*, not "5 minutes ago this might've been right."
 
 ### Risk: Empty Tables Day 1
 **Mitigation:** Backfill flag, run predictor job immediately after deployment
