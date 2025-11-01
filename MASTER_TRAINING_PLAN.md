@@ -13,13 +13,34 @@
 
 **Current Focus:** Phase 1 - Core Data Pipeline (fixing 17-day stale Big-8 table, empty predictions table, missing breaking news)
 
-### 📊 VERTEX AI AUTOML PERFORMANCE SUMMARY:
-| Horizon | Model ID | MAPE | MAE | R² | Status |
-|---------|----------|------|-----|-----|---------|
-| **1W** | 575258986094264320 | **2.02%** | 1.008 | 0.9836 | ✅ COMPLETE |
-| **1M** | 274643710967283712 | **TBD** | TBD | TBD | ✅ TRAINED |
-| **3M** | 3157158578716934144 | **2.68%** | 1.340 | 0.9727 | ✅ COMPLETE |
-| **6M** | 3788577320223113216 | **2.51%** | 1.254 | 0.9792 | ✅ COMPLETE |
+### 📊 VERTEX AI MODEL PERFORMANCE SUMMARY:
+| Horizon | Model ID | MAPE | MAE | R² | Status | Architecture |
+|---------|----------|------|-----|-----|---------|--------------|
+| **1W** | 575258986094264320 | **2.02%** | 1.008 | 0.9836 | ✅ COMPLETE | AutoML Tabular |
+| **1M** | (New) 90-Model Quantile | **1.62%** (target) | TBD | TBD | ✅ TO DEPLOY | LightGBM-Quantile (90 models, 3 endpoints) |
+| **1M (Legacy)** | 274643710967283712 | **1.98%** | TBD | 0.983 | ⚠️ DEPRECATED | AutoML Tabular (mean only) |
+| **3M** | 3157158578716934144 | **2.68%** | 1.340 | 0.9727 | ⚠️ DEPRECATED | AutoML Tabular |
+| **6M** | 3788577320223113216 | **2.51%** | 1.254 | 0.9792 | ⚠️ DEPRECATED | AutoML Tabular |
+
+### 🎯 CURRENT LIVE ARCHITECTURE (2025-01-XX):
+**1M Core Model (Primary):**
+- **Model Type:** 90 Standalone LightGBM Models (30 horizons × 3 quantiles)
+- **Architecture:** 3 separate Vertex AI endpoints (q10, mean, q90)
+- **Output:** [30, 3] array (D+1-30, q10/mean/q90)
+- **Features:** 213 total (209 Phase 0/1 + 4 1W signals)
+- **Deployment:** 3 Vertex AI Endpoints (`us-central1`, `n1-standard-2` each)
+- **Cost:** ~$120/month (3 endpoints) OR $40/month (custom container option)
+- **Reference:** See `FINAL_REVIEW_AND_EXECUTION_PLAN.md` for complete architecture details
+
+**1W Signal Layer (Supporting):**
+- **Computation:** Offline (no Vertex endpoint)
+- **Signals:** volatility_score_1w, delta_1w_vs_spot, momentum_1w_7d, short_bias_score_1w
+- **Usage:** Features for 1M model + gate blend (D+1-7 only)
+- **Cost:** ~$5/month (Cloud Run jobs or BigQuery SQL)
+
+**Gate Blend Logic:**
+- D+1-7: Blend 1M forecast with rolled 1W forecast (weight = f(volatility, disagreement))
+- D+8-30: Pure 1M forecast (no blend)
 
 ### 🎯 CRITICAL SERVERLESS ARCHITECTURE DECISION (October 29, 2025 - 17:45 UTC):
 
@@ -381,6 +402,23 @@ ALERT_THRESHOLDS = {
     'cron_failures_daily': 3         # Count
 }
 ```
+
+---
+
+## 📚 REFERENCE ARCHITECTURE
+
+**Complete 14-Phase Execution Plan:**
+- **See:** `FINAL_REVIEW_AND_EXECUTION_PLAN.md` (also referenced as `docs/FINAL_REVIEW_AND_EXECUTION_PLAN_v14_FULL.md`)
+- **Scope:** Full 90-model, 3-endpoint architecture with all 14 phases including:
+  - Phases 1-10: Core model training, deployment, API routes, SHAP integration
+  - Phase 11: Breaking News + Big-8 Refresh
+  - Phase 12: Vegas Intel + Glide Integration
+  - Phase 13: Legislative Dashboard
+  - Phase 14: Currency Waterfall
+- **Critical Fixes:** Documents all 15 technical fixes from code reviews
+- **Tag:** `#tag:final_full_plan_v14` (search in Cursor/Vercel to surface instantly)
+
+**This document contains the complete execution plan with all technical fixes, reviews, and full feature scope.**
 
 ---
 
