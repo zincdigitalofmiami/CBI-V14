@@ -354,7 +354,7 @@ LIMIT 10;
 - Online endpoints cost $144/month PER MODEL = **$576/month** (unaffordable)
 - True serverless (min_replica_count=0) NOT supported for AutoML models
 
-**THE SOLUTION - ENDPOINT TRICKERY:**
+**LEGACY SOLUTION - ENDPOINT COST OPTIMIZATION (Superseded by BQML):**
 1. **Deploy endpoint temporarily** (takes 5-10 minutes)
 2. **Get predictions** via endpoint.predict() (takes <1 minute)
 3. **Save to BigQuery** (predictions.daily_forecasts table)
@@ -378,7 +378,8 @@ LIMIT 10;
 
 ## 🔥 **ACTIVE TASKS IN PROGRESS** (PRIORITY 1)
 
-### **⚠️ LEGACY: SERVERLESS ENDPOINT TRICKERY (October 29, 2025 - 17:45 UTC) - SUPERSEDED**
+### **⚠️ LEGACY: SERVERLESS ENDPOINT STRATEGY (October 29, 2025 - 17:45 UTC) - SUPERSEDED**
+**Note:** This was a cost-optimization approach for Vertex AI endpoints. Now superseded by BQML migration (zero cost, zero complexity).
 **Status:** This approach has been replaced by the 90-model, 3-endpoint architecture. See FINAL_REVIEW_AND_EXECUTION_PLAN.md for current approach.
 
 **CURRENT DEPLOYMENT STATUS:**
@@ -393,7 +394,7 @@ LIMIT 10;
 1. Batch predictions FAILED (quota limits: can only run 1 concurrent job)
 2. Batch predictions FAILED (schema error: "Missing struct property: date")
 3. Always-on endpoints TOO EXPENSIVE ($576/month)
-4. Endpoint trickery = BEST OF BOTH: Real predictions + minimal cost
+4. Endpoint cost optimization = BEST OF BOTH: Real predictions + minimal cost (LEGACY - Superseded by BQML)
 
 **ARCHITECTURE FLOW:**
 ```
@@ -415,7 +416,7 @@ Daily Dashboard Access:
 ```
 
 **IMPLEMENTATION FILES CREATED:**
-- ✅ `automl/quick_endpoint_predictions.py` - Endpoint trickery script (RUNNING NOW)
+- ✅ `automl/quick_endpoint_predictions.py` - Legacy endpoint cost optimization script (LEGACY - Superseded by BQML)
 - ✅ `scripts/monthly_vertex_predictions.sh` - Monthly cron wrapper
 - ✅ `scripts/cleanup_endpoints.py` - Emergency cleanup if script fails
 - ✅ `scripts/hourly_prices.py` - Yahoo Finance + Alpha Vantage updates
@@ -475,7 +476,7 @@ All batch prediction attempts FAILED due to:
 - Job 6515374901661007872 (Earlier attempt): Schema error "Missing struct property: date"
 
 **LESSON LEARNED:**
-Batch predictions are NOT viable for AutoML models with quota limits and schema complications. Endpoint trickery is the ONLY cost-effective solution that actually works.
+**LEGACY NOTE:** Batch predictions had quota limits and schema complications with AutoML. This endpoint approach was cost-effective at the time. Now superseded by BQML (zero cost, zero complexity).
 
 ### **⚡ CURRENTLY WORKING:**
 
@@ -517,7 +518,7 @@ $1M+ hedge fund quality system:
 - Same architecture as Tier-1 firms (temporary endpoints)
 - Total cost: **$10/month** (vs $10,000+/month for Bloomberg terminal + data)
 
-**THE ENDPOINT TRICKERY STRATEGY (Final Architecture):**
+**LEGACY ENDPOINT COST OPTIMIZATION STRATEGY (Superseded by BQML):**
 
 **MONTHLY PROCESS (1st of month @ 2 AM):**
 1. Deploy all 4 models to endpoint 7286867078038945792 (5 min)
@@ -585,7 +586,7 @@ $1M+ hedge fund quality system:
 ### **⚠️ LEGACY: COMPLETE AUTOMATION SETUP (October 29, 2025 - FINAL IMPLEMENTATION) - SUPERSEDED**
 **Status:** These phases were completed but approach superseded. See FINAL_REVIEW_AND_EXECUTION_PLAN.md for current 14-phase plan.
 
-**PHASE 1: ENDPOINT TRICKERY SETUP** ✅ **COMPLETED** (October 29, 2025) - **LEGACY APPROACH**
+**PHASE 1: ENDPOINT COST OPTIMIZATION SETUP** ✅ **COMPLETED** (October 29, 2025) - **LEGACY APPROACH (Superseded by BQML)**
 - ✅ Script created: `automl/quick_endpoint_predictions.py`
 - 🚀 Process running: PID 50298 (started 17:41 UTC)
 - ⏳ ETA: 15-25 minutes remaining
@@ -3472,7 +3473,7 @@ Created complete end-to-end Vertex AI feature importance pipeline:
 
 **Total Spend Today:** ~$0.15 (endpoint deployment attempts)
 **Budget Remaining:** Sufficient for 1M/3M/6M predictions
-**Architecture:** Serverless endpoint trickery ($0.60/month total)
+**LEGACY Architecture:** Serverless endpoint cost optimization ($0.60/month total) - Superseded by BQML ($0/month)
 
 ---
 

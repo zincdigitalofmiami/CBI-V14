@@ -393,7 +393,7 @@
 
 ---
 
-### Phase 1: Train BQML Models (All 4 Horizons with Quantiles) (2h) - CRITICAL FIRST
+### Phase 1: Extract Vertex AI Feature Importance + Train BQML Models (2.5h) - CRITICAL FIRST
 
 **⚠️ PREREQUISITE:** Phase 0 must complete successfully (fresh training dataset with latest data)
 
@@ -408,16 +408,33 @@
 
 **Architecture Decision:** 4 BQML BOOSTED_TREE mean models (1W, 1M, 3M, 6M) + residual quantiles. Zero endpoints, zero deployment risk, zero cost. **ALL 205 FEATURES**, **MAX ACCURACY SETTINGS**.
 
-1. **Create features view (NO LABEL LEAKAGE):**
-   - SQL: `bigquery_sql/create_features_clean.sql`
-   - View: `models_v4.features_1m_clean`
-   - Query: `SELECT * EXCEPT(date, target_1w, target_1m, target_3m, target_6m) FROM training_dataset_super_enriched`
-   - **Critical:** Explicitly exclude ALL target columns to prevent label leakage
-   - Features: **205 columns** ✅ VERIFIED (210 total - 4 targets - 1 date)
-   - This view is used for ALL model training (1W, 1M, 3M, 6M)
-   - **AUDIT CHECKPOINT #1:** After creation, verify column count = 205
+1. **Extract Vertex AI Feature Importance (30 minutes):**
+   - Script: `scripts/extract_vertex_feature_importance.py` (NEW)
+   - Extract from existing Vertex AI models:
+     - 1W: Model ID `575258986094264320` (2.02% MAPE)
+     - 1M: Model ID `274643710967283712` (1.98% MAPE)
+     - 3M: Model ID `3157158578716934144` (2.68% MAPE)
+     - 6M: Model ID `3788577320223113216` (2.51% MAPE)
+   - Method: Use `model.explain_tabular()` with SHAP-style attribution
+   - Export top 50-100 features per horizon to: `config/vertex_feature_importance_1w.json`, etc.
+   - Identify dead features (low/no attribution) to potentially drop
+   - **Output:** Ranked feature lists with attribution scores per horizon
+   - **Use:** Optimize BQML feature selection, validate feature engineering
 
-2. **Create BQML training SQL scripts (4 mean models + residual computation):**
+2. **Create optimized features view (NO LABEL LEAKAGE):**
+   - SQL: `bigquery_sql/create_features_clean.sql`
+   - View: `models_v4.features_optimized` (or `features_1m_clean` if using all 205)
+   - **Option A (Recommended):** Use top 50-100 features from Vertex importance analysis
+     - Query: `SELECT {top_features_from_vertex} FROM training_dataset_super_enriched`
+     - Benefits: Faster training, lower cost, better generalization
+   - **Option B (Fallback):** Use all 205 features
+     - Query: `SELECT * EXCEPT(date, target_1w, target_1m, target_3m, target_6m) FROM training_dataset_super_enriched`
+   - **Critical:** Explicitly exclude ALL target columns to prevent label leakage
+   - Features: **Optimized feature set** (50-100 recommended) OR 205 columns (fallback)
+   - This view is used for ALL model training (1W, 1M, 3M, 6M)
+   - **AUDIT CHECKPOINT #1:** After creation, verify column count matches selected feature set
+
+3. **Create BQML training SQL scripts (4 mean models + residual computation):**
    - `bigquery_sql/train_bqml_1w_mean.sql` (MAX ACCURACY)
    - `bigquery_sql/train_bqml_1m_mean.sql` (MAX ACCURACY)
    - `bigquery_sql/train_bqml_3m_mean.sql` (MAX ACCURACY)
@@ -441,7 +458,7 @@
    WHERE target_1m IS NOT NULL
    ```
 
-3. **Train all models (run SQL in BigQuery console or via Python):**
+4. **Train all models (run SQL in BigQuery console or via Python):**
    - Script: `scripts/train_all_bqml_models.py` (Python wrapper to execute SQL)
    - Models to create: 12 total (1W/1M/3M/6M × mean/q10/q90)
    - Training time: ~2-3 hours total (can run in parallel)
@@ -451,25 +468,30 @@
    SELECT * FROM ML.EVALUATE(MODEL `cbi-v14.models_v4.bqml_1m_mean`)
    ```
 
-4. **No deployment step needed:**
+5. **No deployment step needed:**
    - BQML models live in BigQuery - no endpoints to deploy
    - No traffic splits to configure
    - No container images to build
    - No Vertex AI infrastructure
 
-5. **Create config file:**
+6. **Create config file:**
    - `config/bqml_models_config.json`
    - Fields: `models` dict with model names, horizons, quantiles
    - Example: `{"1m_mean": "cbi-v14.models_v4.bqml_1m_mean", ...}`
    - Mark: `architecture='bqml'`, `model_type='BOOSTED_TREE_REGRESSOR'`
 
-6. **Validate models (test predictions):**
-   - Script: `scripts/validate_bqml_models.py`
+7. **Validate models (test predictions + compare to Vertex):**
+   - Script: `scripts/validate_bqml_models.py` (enhanced to compare with Vertex)
    - For each model: Run `ML.PREDICT` with latest features
-   - Verify output format matches expected schema
-   - Log MAE/RMSE metrics
+   - **NEW:** Compare BQML predictions with Vertex predictions on same inputs
+   - **Validation:** 
+     - Verify output format matches expected schema
+     - Log MAE/RMSE metrics
+     - Compare divergence: Where does BQML differ from Vertex? (analyze misalignment zones)
+     - If BQML fails on rows Vertex nailed, investigate feature transformations
+     - Use Vertex feature importance to validate BQML learned similar patterns
 
-7. **Feature schema export (for validation):**
+8. **Feature schema export (for validation):**
    - Script: `scripts/export_bqml_feature_schema.py`
    - Query: `SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = 'features_1m_clean'`
    - Export to: `config/bqml_feature_schema.json`
