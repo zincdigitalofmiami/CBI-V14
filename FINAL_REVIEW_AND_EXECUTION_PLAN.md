@@ -767,21 +767,24 @@
 
 ## 📋 FILE CREATION CHECKLIST
 
+**Last Updated:** 2025-10-31  
+**Status:** Plan updated with architectural simplifications. Ready for execution.
+
 ### Config Files (4 files)
 - [x] `config/shap_business_labels.json` (feature → business label mapping) - **COMPLETE: 226 features (205 training + 4 1W + examples)**
-- [ ] `config/vertex_1m_config.json` (UPDATED: stores 3 endpoint IDs)
-- [ ] `config/1m_feature_schema.json`
-- [ ] `config/1m_model_manifest.json` (NEW: lists all 90 models)
+- [ ] `config/vertex_1m_config.json` (UPDATED: stores 3 endpoint IDs - q10_endpoint_id, mean_endpoint_id, q90_endpoint_id)
+- [ ] `config/1m_feature_schema.json` (pinned schema with hash + min_coverage, excludes metadata keys starting with `_`)
+- [ ] `config/1m_model_manifest.json` (NEW: lists all 90 models with paths: {quantile}_D{day}.pkl)
 
 ### Python Scripts (8 files)
-- [ ] `scripts/train_quantile_1m_90models.py` (NEW - replaces train_distilled_quantile_1m.py, trains 90 models with optimizations)
-- [ ] `scripts/deploy_quantile_endpoints.py` (NEW - deploys 3 endpoints)
-- [ ] `scripts/health_check.py` (UPDATE - validates all 3 endpoints)
-- [ ] `scripts/1m_feature_assembler.py` (unchanged - with 1W signal injection)
-- [ ] `scripts/1m_schema_validator.py` (unchanged)
-- [ ] `scripts/1m_predictor_job.py` (UPDATE - calls 3 endpoints, combines to [30,3] array, gate blend unchanged)
-- [ ] `scripts/1w_signal_computer.py` (unchanged - offline signal computation, no endpoint)
-- [ ] `scripts/calculate_shap_drivers.py` (UPDATE - works with 3 separate quantile models)
+- [ ] `scripts/train_quantile_1m_90models.py` (NEW - trains 90 models with warm-start, quantile reuse, memory-mapped features, checkpointing)
+- [ ] `scripts/deploy_quantile_endpoints.py` (NEW - deploys 3 separate Vertex AI endpoints: q10, mean, q90)
+- [ ] `scripts/health_check.py` (UPDATE - validates all 3 endpoints, checks traffic splits, tests predictions return [30] arrays)
+- [ ] `scripts/1m_feature_assembler.py` (with 1W signal injection, pivots signals_1w table, handles NaN values, skips metadata keys)
+- [ ] `scripts/1m_schema_validator.py` (validates feature hash, excludes metadata keys, checks min_coverage)
+- [ ] `scripts/1m_predictor_job.py` (UPDATE - calls 3 endpoints, combines to [30,3] array, **simplified gate blend**: w=0.75 default, w=0.95 kill-switch, **dynamic quantile spread**: volatility_score_1w * 0.15, calls /api/revalidate after BigQuery write)
+- [ ] `scripts/1w_signal_computer.py` (offline signal computation, no endpoint, computes volatility/momentum/delta/short_bias, stores rolled_forecast_7d_json)
+- [ ] `scripts/calculate_shap_drivers.py` (UPDATE - works with 3 separate quantile models, computes SHAP on representative horizons D+7, D+14, D+30)
 
 ### BigQuery SQL (4 files)
 - [ ] `bigquery_sql/create_predictions_1m_table.sql` (with q10/mean/q90, gate_weight, blended columns)
@@ -790,14 +793,14 @@
 - [ ] `bigquery_sql/create_shap_drivers_table.sql` (stores SHAP contributions)
 
 ### API Routes (8 files - 6 new + 2 updates)
-- [ ] `dashboard-nextjs/src/app/api/forecast/route.ts` (NEW - unified 5min cache)
-- [ ] `dashboard-nextjs/src/app/api/volatility/route.ts` (NEW - unified 5min cache)
-- [ ] `dashboard-nextjs/src/app/api/strategy/route.ts` (NEW - unified 5min cache)
-- [ ] `dashboard-nextjs/src/app/api/vegas/route.ts` (NEW - unified 5min cache)
-- [ ] `dashboard-nextjs/src/app/api/explain/route.ts` (NEW, deterministic template with SHAP - no cache)
-- [ ] `dashboard-nextjs/src/app/api/chart-events/route.ts` (NEW, event annotations for charts)
-- [ ] `dashboard-nextjs/src/app/api/revalidate/route.ts` (NEW - cache invalidation endpoint)
-- [ ] `dashboard-nextjs/src/app/api/v4/forward-curve/route.ts` (UPDATE - use agg_1m_latest, add event overlays)
+- [ ] `dashboard-nextjs/src/app/api/forecast/route.ts` (NEW - unified 5min cache, reads from agg_1m_latest, returns future_day/mean/q10/q90)
+- [ ] `dashboard-nextjs/src/app/api/volatility/route.ts` (NEW - unified 5min cache, reads from signals_1w, returns latest signals)
+- [ ] `dashboard-nextjs/src/app/api/strategy/route.ts` (NEW - unified 5min cache, joins agg_1m_latest + signals_1w + legislation_events)
+- [ ] `dashboard-nextjs/src/app/api/vegas/route.ts` (NEW - unified 5min cache, reads from vegas_sales table)
+- [ ] `dashboard-nextjs/src/app/api/explain/route.ts` (NEW - no cache, deterministic template with SHAP drivers, format: "Price +X% (D+Y). Driver: ...")
+- [ ] `dashboard-nextjs/src/app/api/chart-events/route.ts` (NEW - event annotations for charts, explains historical price movements with SHAP)
+- [ ] `dashboard-nextjs/src/app/api/revalidate/route.ts` (NEW - admin-only cache invalidation endpoint, called after predictor job writes, uses revalidateTag/revalidatePath)
+- [ ] `dashboard-nextjs/src/app/api/v4/forward-curve/route.ts` (UPDATE - use agg_1m_latest instead of monthly_vertex_predictions, map future_day to dates, include q10/q90 bands, add event overlays)
 
 ### Documentation (1 file)
 - [ ] `docs/OPERATIONAL_RUNBOOK.md`
