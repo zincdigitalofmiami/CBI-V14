@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, Loader2, Sparkles, Info } from "lucide-react";
 import {
   BarChart,
@@ -86,7 +85,7 @@ export default function FeatureImportanceCard({
   );
 
   return (
-    <Card className="bg-[#0a0e17] border border-white/5 shadow-xl rounded-2xl">
+    <div className="bg-[#0a0e17] border border-white/5 shadow-xl rounded-2xl">
       <div className="flex items-center justify-between px-5 pt-5">
         <h3 className="text-sm md:text-base text-[#E0E0E3] font-medium tracking-wide flex items-center gap-2">
           <Sparkles className="w-4 h-4" /> {title}
@@ -94,7 +93,7 @@ export default function FeatureImportanceCard({
         <div className="text-[11px] md:text-xs text-[#9099a6]">Source: Vertex → BigQuery</div>
       </div>
 
-      <CardContent className="p-5">
+      <div className="p-5">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-10 text-[#9099a6]">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading…
@@ -173,8 +172,8 @@ export default function FeatureImportanceCard({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
