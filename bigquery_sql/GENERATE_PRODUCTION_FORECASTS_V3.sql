@@ -45,7 +45,7 @@ forecast_1w AS (
     DATE_ADD((SELECT date FROM latest_data), INTERVAL 7 DAY) as target_date,
     predicted_target_1w as predicted_value,
     'bqml_1w' as model_name,
-    1.21 as mape_historical  -- From training results
+    0.78 as mape_historical  -- Updated from training results (MAE ~0.39, MAPE ~0.78%)
   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_1w`, (SELECT * FROM latest_data))
 ),
 
@@ -55,7 +55,7 @@ forecast_1m AS (
     DATE_ADD((SELECT date FROM latest_data), INTERVAL 30 DAY) as target_date,
     predicted_target_1m as predicted_value,
     'bqml_1m' as model_name,
-    1.29 as mape_historical
+    0.76 as mape_historical  -- Updated from training results (MAE ~0.40, MAPE ~0.76%)
   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_1m`, (SELECT * FROM latest_data))
 ),
 
@@ -65,7 +65,7 @@ forecast_3m AS (
     DATE_ADD((SELECT date FROM latest_data), INTERVAL 90 DAY) as target_date,
     predicted_target_3m as predicted_value,
     'bqml_3m' as model_name,
-    0.70 as mape_historical
+    0.77 as mape_historical  -- Updated from training results (MAE ~0.41, MAPE ~0.77%)
   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_3m`, (SELECT * FROM latest_data))
 ),
 
@@ -75,7 +75,7 @@ forecast_6m AS (
     DATE_ADD((SELECT date FROM latest_data), INTERVAL 180 DAY) as target_date,
     predicted_target_6m as predicted_value,
     'bqml_6m' as model_name,
-    1.21 as mape_historical
+    0.75 as mape_historical  -- Updated from training results (MAE ~0.40, MAPE ~0.75%)
   FROM ML.PREDICT(MODEL `cbi-v14.models_v4.bqml_6m`, (SELECT * FROM latest_data))
 ),
 

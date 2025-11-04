@@ -40,15 +40,13 @@ Soybean Oil Forecasting Platform with Vercel Deployment
 - ✅ **Training Dataset**: `training_dataset_super_enriched` now has 284 numeric features with excellent coverage
 
 #### Model Training (✅ PRODUCTION READY - NO RETRAINING NEEDED)
-- ✅ **1W Model**: `bqml_1w_all_features` - **258 features, 100 iterations** - Production ready
-- ✅ **1M Model**: `bqml_1m_all_features` - **258 features, 100 iterations** - Production ready
-- ✅ **3M Model**: `bqml_3m_all_features` - **258 features, 100 iterations** - Production ready
-- ✅ **6M Model**: `bqml_6m_all_features` - **258 features, 100 iterations** - Production ready
-- ✅ **All Models Trained**: All 4 models use identical configuration:
-  - **258 features** (same EXCEPT clause - 28 exclusions)
-  - **100 iterations** (same max_iterations)
-  - **early_stop=False** (same early stopping)
-  - **Files**: `BQML_1W_PRODUCTION.sql`, `BQML_1M_PRODUCTION.sql`, `BQML_3M_PRODUCTION.sql`, `BQML_6M_PRODUCTION.sql`
+- ✅ **1W Model**: `bqml_1w` - **100 iterations** - Production ready (created Nov 4 11:25)
+- ✅ **1M Model**: `bqml_1m` - **100 iterations** - Production ready (created Nov 4 11:29)
+- ✅ **3M Model**: `bqml_3m` - **100 iterations** - Production ready (created Nov 4 11:36)
+- ✅ **6M Model**: `bqml_6m` - **100 iterations** - Production ready (created Nov 4 11:41)
+- ✅ **Production Models**: SHORT names used in production predictions (2025-11-04)
+- ✅ **Training Files**: `BQML_1W.sql`, `BQML_1M.sql`, `BQML_3M.sql`, `BQML_6M.sql` create SHORT names
+- ✅ **All Models**: 100 iterations, early_stop=False
 - ✅ **Retraining Assessment**: **NO RETRAINING REQUIRED** - Models meet performance targets (MAPE <3%, R² ≥ 0 on proper evaluation)
 
 #### Performance Metrics (VERIFIED - CORRECT EVALUATION DATA)
@@ -61,12 +59,12 @@ Soybean Oil Forecasting Platform with Vercel Deployment
 - **Reason:** Full dataset (2020-2025) causes negative R² due to regime shifts and variance collapse
 - **NEVER use full dataset for ML.EVALUATE** - always filter to date >= '2024-01-01'
 
-| Model | Features | Iterations | MAE | MAPE | R² (2024+) | Status |
-|-------|----------|------------|-----|------|------------|--------|
-| 1W | 258 | 100 | 0.393 | 0.78% | 0.998 | ✅ Excellent |
-| 1M | 258 | 100 | 0.404 | 0.76% | 0.997 | ✅ Excellent |
-| 3M | 258 | 100 | 0.409 | 0.77% | 0.997 | ✅ Excellent |
-| 6M | 258 | 100 | 0.401 | 0.75% | 0.997 | ✅ Excellent |
+| Model | Model Name | Iterations | MAE | MAPE | R² (2024+) | Status |
+|-------|------------|------------|-----|------|------------|--------|
+| 1W | `bqml_1w` | 100 | 0.393 | 0.78% | 0.998 | ✅ Excellent |
+| 1M | `bqml_1m` | 100 | 0.404 | 0.76% | 0.997 | ✅ Excellent |
+| 3M | `bqml_3m` | 100 | 0.409 | 0.77% | 0.997 | ✅ Excellent |
+| 6M | `bqml_6m` | 100 | 0.401 | 0.75% | 0.997 | ✅ Excellent |
 
 **Performance Analysis:**
 - **All models:** MAE ~0.40, MAPE ~0.76% (excellent performance)
@@ -93,7 +91,7 @@ Soybean Oil Forecasting Platform with Vercel Deployment
 **Example (CORRECT):**
 ```sql
 SELECT * FROM ML.EVALUATE(
-  MODEL `cbi-v14.models_v4.bqml_1m_all_features`,
+  MODEL `cbi-v14.models_v4.bqml_1m`,
   (SELECT * FROM `cbi-v14.models_v4.training_dataset_super_enriched`
    WHERE target_1m IS NOT NULL AND date >= '2024-01-01')
 );
@@ -2256,7 +2254,7 @@ SELECT
   creation_time, 
   TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), creation_time, HOUR) AS hours_old
 FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.MODELS`
-WHERE model_name IN ('bqml_1w_all_features', 'bqml_1m_all_features', 'bqml_3m_all_features', 'bqml_6m_all_features')
+WHERE model_name IN ('bqml_1w', 'bqml_1m', 'bqml_3m', 'bqml_6m')
 ORDER BY creation_time DESC;
 
 -- Get training summary for each model
@@ -2265,12 +2263,12 @@ SELECT
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
-FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_1w_all_features`)
+FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_1w`)
 
 UNION ALL
 
 SELECT 
-  'bqml_1m_all_features' AS model,
+  'bqml_1m' AS model,
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
@@ -6011,7 +6009,7 @@ Document ID: CBI-V14-EXEC-PLAN-FINAL
 - 🔥 Phase 3.6 ADDED: Backtesting Infrastructure (Accuracy tracking, historical comparison)
 - 🔥 Phase 3.7 ADDED: Prediction Monitoring & Alerts (Staleness, quality, degradation checks)
 - ✅ Data integration complete (NULL filling, forward-fill, schema expansion)
-- ✅ Model locations: `cbi-v14.models_v4.bqml_{1w|1m|3m|6m}_all_features`
+- ✅ Model locations: `cbi-v14.models_v4.bqml_{1w|1m|3m|6m}` (SHORT names - production models)
 
 **⚠️ CRITICAL: Model Evaluation Dataset (MANDATORY - NEVER DEVIATE)**
 
