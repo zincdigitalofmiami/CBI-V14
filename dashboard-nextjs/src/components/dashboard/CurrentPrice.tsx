@@ -22,12 +22,16 @@ async function fetchCurrentPrice(): Promise<CurrentPriceData> {
   
   const data = await response.json()
   
+  // Check if response has error (503 status but valid JSON)
+  if (data.error || !data.current_price) {
+    throw new Error(data.message || 'Price data unavailable')
+  }
   return {
     current_price: data.current_price,
-    daily_change: data.predicted_change,
-    daily_change_pct: data.predicted_change_pct,
+    daily_change: data.predicted_change || 0,
+    daily_change_pct: data.predicted_change_pct || 0,
     model_confidence: data.confidence_metrics?.r2 ? data.confidence_metrics.r2 * 100 : 92,
-    last_updated: data.timestamp,
+    last_updated: data.timestamp || new Date().toISOString(),
     data_source: 'CBOT'
   }
 }

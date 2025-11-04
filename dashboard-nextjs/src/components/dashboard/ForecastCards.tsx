@@ -55,7 +55,7 @@ async function fetchForecasts(): Promise<ForecastData> {
   }
   
   const forecasts: HorizonForecast[] = results
-    .filter((r: any) => r !== null)
+    .filter((r: any) => r !== null && !r.error && r.current_price && r.prediction)
     .map((item: any) => {
       const horizonInfo = horizonMap[item.horizon] || horizonMap['1w']
       
@@ -64,11 +64,11 @@ async function fetchForecasts(): Promise<ForecastData> {
         business_label: horizonInfo.business_label,
         current_price: item.current_price,
         predicted_price: item.prediction,
-        change_pct: item.predicted_change_pct,
+        change_pct: item.predicted_change_pct || 0,
         confidence: item.confidence_metrics?.r2 ? item.confidence_metrics.r2 * 100 : 85,
-        model_id: item.model_id,
+        model_id: item.model_id || 'TRAINING',
         mape: item.confidence_metrics?.mape_percent || null,
-        recommendation: item.predicted_change_pct > 2 ? 'Buy now' : item.predicted_change_pct < -2 ? 'Wait' : 'Monitor',
+        recommendation: (item.predicted_change_pct || 0) > 2 ? 'Buy now' : (item.predicted_change_pct || 0) < -2 ? 'Wait' : 'Monitor',
         procurement_timeline: horizonInfo.procurement_timeline,
         use_case: horizonInfo.use_case
       }

@@ -26,9 +26,14 @@ async function fetchProcurementSignal(): Promise<ProcurementData> {
   
   const forecast = await response.json()
   
+  // Check if response has error (503 status but valid JSON)
+  if (forecast.error || !forecast.current_price || !forecast.prediction) {
+    throw new Error(forecast.message || 'Market data unavailable')
+  }
+  
   const currentPrice = forecast.current_price
   const predictedPrice = forecast.prediction
-  const changePercent = forecast.predicted_change_pct
+  const changePercent = forecast.predicted_change_pct || 0
   
   // Business logic for signal
   let signal: 'BUY' | 'WAIT' | 'MONITOR' = 'MONITOR'

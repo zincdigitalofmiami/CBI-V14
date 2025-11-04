@@ -37,15 +37,15 @@ export async function GET(request: NextRequest) {
       LIMIT 1
     `
     const priceResult = await executeBigQueryQuery(priceQuery)
-    if (priceResult.length === 0) {
+    if (priceResult.length === 0 || !priceResult[0]?.current_price) {
       return NextResponse.json({
         error: 'No price data available',
-        message: 'Current price not found'
+        message: 'Current price not found - cannot calculate dollar impacts'
       }, { status: 503 })
     }
 
     const features = featuresResult[0]
-    const currentPrice = priceResult[0].current_price || 0
+    const currentPrice = priceResult[0].current_price
 
     // Build drivers using ONLY real feature values from Big-8
     // No random math - use actual feature values scaled to dollar impact

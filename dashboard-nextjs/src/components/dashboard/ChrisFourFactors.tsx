@@ -41,6 +41,11 @@ async function fetchFourFactors(): Promise<FourFactorsData> {
   
   const forecastData = await response.json()
   
+  // Check if response has error
+  if (forecastData.error || !forecastData.current_price) {
+    throw new Error(forecastData.message || 'Market data unavailable')
+  }
+  
   // Get Big 8 signals
   const signalsResponse = await fetch('/api/v4/big-eight-signals')
   if (!signalsResponse.ok) {
@@ -48,6 +53,11 @@ async function fetchFourFactors(): Promise<FourFactorsData> {
   }
   
   const signalsData = await signalsResponse.json()
+  
+  // Check if signals response has error
+  if (signalsData.error || !signalsData.signals) {
+    throw new Error(signalsData.message || 'Signals unavailable')
+  }
   
   // Find specific signals
   const chinaSignal = signalsData.signals.find((s: any) => s.key === 'china_imports')

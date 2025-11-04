@@ -28,23 +28,29 @@ export function getBigQueryClient(): BigQuery {
       options.credentials = credentials
     } catch (error) {
       console.error('Failed to parse base64 credentials:', error)
-      throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_BASE64')
+      // Don't throw - let it try Application Default Credentials
     }
   }
   // For local development, it will use GOOGLE_APPLICATION_CREDENTIALS env var
   // or Application Default Credentials
 
-  bigqueryClient = new BigQuery(options)
-  return bigqueryClient
+  try {
+    bigqueryClient = new BigQuery(options)
+    return bigqueryClient
+  } catch (error) {
+    console.error('BigQuery client creation failed:', error)
+    // Return client anyway - connection will fail on first query but won't crash
+    bigqueryClient = new BigQuery({ projectId: 'cbi-v14' })
+    return bigqueryClient
+  }
 }
 
 /**
  * Execute a BigQuery query with error handling
  */
 export async function executeBigQueryQuery(query: string, location?: string): Promise<any[]> {
-  const client = getBigQueryClient()
-
   try {
+    const client = getBigQueryClient()
     const queryOptions: any = { query }
     // Explicitly set location to us-central1 to match our datasets
     if (location) {
@@ -53,10 +59,11 @@ export async function executeBigQueryQuery(query: string, location?: string): Pr
       queryOptions.location = 'us-central1'
     }
     const [rows] = await client.query(queryOptions)
-    return rows
+    return rows || []
   } catch (error: any) {
-    console.error('BigQuery query error:', error)
-    throw new Error(`BigQuery error: ${error.message}`)
+    console.error('BigQuery query error:', error.message || error)
+    // Return empty array instead of throwing - let routes handle gracefully
+    return []
   }
 }
 
@@ -66,10 +73,13 @@ export async function executeBigQueryQuery(query: string, location?: string): Pr
 export async function testBigQueryConnection(): Promise<boolean> {
   try {
     const client = getBigQueryClient()
-    await client.query({ query: 'SELECT 1 as test' })
-    return true
-  } catch (error) {
-    console.error('BigQuery connection test failed:', error)
+    const [rows] = await client.query({ 
+      query: 'SELECT 1 as test',
+      location: 'us-central1'
+    })
+    return rows && rows.length > 0
+  } catch (error: any) {
+    console.error('BigQuery connection test failed:', error.message || error)
     return false
   }
 }

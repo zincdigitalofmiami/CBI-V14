@@ -34,7 +34,7 @@ async function callVertexAIModel(modelId: string, features: Record<string, any>)
 
 export async function GET(request: NextRequest) {
   try {
-    // Read from monthly_vertex_predictions table
+    // Try daily_forecasts first (current production), fallback to monthly_vertex_predictions
     const forecastQuery = `
       SELECT 
         predicted_price,
@@ -47,20 +47,43 @@ export async function GET(request: NextRequest) {
         target_date,
         created_at,
         DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
-      FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
+      FROM \`cbi-v14.predictions.daily_forecasts\`
       WHERE horizon = '1W'
+        AND prediction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
       ORDER BY created_at DESC
       LIMIT 1
     `
     
-    const forecastResult = await executeBigQueryQuery(forecastQuery)
+    let forecastResult = await executeBigQueryQuery(forecastQuery)
+    
+    // Fallback to monthly table if daily_forecasts is empty
+    if (forecastResult.length === 0) {
+      const monthlyQuery = `
+        SELECT 
+          predicted_price,
+          confidence_lower,
+          confidence_upper,
+          mape,
+          model_id,
+          model_name,
+          prediction_date,
+          target_date,
+          created_at,
+          DATE_DIFF(CURRENT_DATE(), prediction_date, DAY) as days_old
+        FROM \`cbi-v14.predictions.monthly_vertex_predictions\`
+        WHERE horizon = '1W'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      forecastResult = await executeBigQueryQuery(monthlyQuery)
+    }
     
     if (forecastResult.length === 0) {
       return NextResponse.json({
         horizon: '1w',
         error: 'No predictions available',
-        message: 'Monthly prediction job has not run yet',
-        next_run: '1st of next month @ 2 AM'
+        message: 'Models are still training or prediction job has not run yet',
+        status: 'training'
       }, { status: 503 })
     }
 
@@ -76,8 +99,10 @@ export async function GET(request: NextRequest) {
     const priceResult = await executeBigQueryQuery(priceQuery)
     if (!priceResult || priceResult.length === 0 || !priceResult[0]?.current_price) {
       return NextResponse.json({
+        horizon: '1w',
         error: 'No current price data available',
-        message: 'Cannot calculate price change without current price'
+        message: 'Cannot calculate price change without current price',
+        status: 'no_price_data'
       }, { status: 503 })
     }
     const currentPrice = priceResult[0].current_price
@@ -109,10 +134,15 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error: any) {
-    console.error('1W error:', error)
+    console.error('1W forecast error:', error.message || error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { 
+        horizon: '1w',
+        error: 'Forecast service unavailable',
+        message: error.message || 'BigQuery connection or query failed',
+        status: 'error'
+      },
+      { status: 503 }
     )
   }
 }
