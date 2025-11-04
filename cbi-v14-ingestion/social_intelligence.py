@@ -86,19 +86,58 @@ class SocialIntelligence:
         for url in self.social_sources['facebook_sources']:
             try:
                 headers = {'x-api-key': self.api_key}
-                params = {'url': url, 'get_comments': 'true', 'days': '30'}
-                response = requests.get(
-                    "https://api.scrapecreators.com/v1/facebook/post",
-                    headers=headers,
-                    params=params,
-                    timeout=60
-                )
+                all_posts = []
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    posts = data.get('posts', [])
+                # Get ALL posts with CURSOR-based pagination
+                cursor = None
+                page = 1
+                max_pages = 100
+                
+                while page <= max_pages:
+                    params = {
+                        'url': url, 
+                        'count': '100',  # Max per page
+                    }
                     
-                    for post in posts[:10]:  # Latest 10 posts
+                    # Add cursor if we have one from previous page
+                    if cursor:
+                        params['cursor'] = cursor
+                    
+                    # Try profile/posts endpoint with cursor pagination
+                    response = requests.get(
+                        "https://api.scrapecreators.com/v1/facebook/profile/posts",
+                        headers=headers,
+                        params=params,
+                        timeout=60
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        page_posts = data.get('posts', [])
+                        
+                        if len(page_posts) > 0:
+                            all_posts.extend(page_posts)
+                            print(f"  Page {page}: {len(page_posts)} posts (total: {len(all_posts)})")
+                            
+                            # Get cursor for next page
+                            cursor = data.get('cursor')
+                            if cursor and cursor != 'null' and cursor != '':
+                                page += 1
+                                time.sleep(2)  # Rate limiting
+                            else:
+                                print(f"  ✅ No more cursor - reached end of posts")
+                                break  # No more posts
+                        else:
+                            print(f"  ⚠️  No posts returned on page {page}")
+                            break  # No more posts
+                    else:
+                        print(f"  ❌ API returned {response.status_code} on page {page}: {response.text[:200]}")
+                        break
+                
+                print(f"  ✅ Collected {len(all_posts)} total posts for {url}")
+                
+                # Process ALL posts, not just first 10
+                for post in all_posts:
                         content = post.get('text', '').lower()
                         comments_text = ' '.join([c.get('text', '') for c in post.get('comments', [])]).lower()
                         full_text = content + ' ' + comments_text

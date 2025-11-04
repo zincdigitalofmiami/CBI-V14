@@ -101,25 +101,94 @@ scrape_truth_social_post() {
     fi
 }
 
-# Function: Facebook profile posts
+# Function: Facebook profile posts - GET ALL POSTS
 scrape_facebook_profile() {
     local page_url=$1
     local page_name=$(basename "$page_url")
     local output_file="data/facebook/${page_name}_posts.json"
+    local all_posts_file="data/facebook/${page_name}_all_posts.json"
     
     log "Scraping Facebook profile: $page_url"
     
-    curl -sS -m 25 --retry 2 -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
-      -H "x-api-key: $SC_API_KEY" \
-      --data-urlencode "url=$page_url" \
-      -o "$output_file"
+    # Try to get ALL posts with CURSOR-based pagination
+    local all_posts=()
+    local cursor=""
+    local page=1
+    local max_pages=100  # Safety limit
+    local has_more=true
     
-    if [ $? -eq 0 ]; then
+    while [ "$has_more" = true ] && [ $page -le $max_pages ]; do
+        local temp_file="data/facebook/${page_name}_page_${page}.json"
+        
+        log "  Fetching page $page..."
+        
+        # Build curl command with cursor if available
+        local curl_cmd="curl -sS -m 45 --retry 2 -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
+          -H 'x-api-key: $SC_API_KEY' \
+          --data-urlencode 'url=$page_url' \
+          --data-urlencode 'count=100'"
+        
+        if [ -n "$cursor" ]; then
+            curl_cmd="$curl_cmd --data-urlencode 'cursor=$cursor'"
+        fi
+        
+        eval "$curl_cmd -o '$temp_file'"
+        
+        if [ $? -eq 0 ]; then
+            local page_posts=$(jq -r '.posts // []' "$temp_file" 2>/dev/null)
+            local post_count=$(echo "$page_posts" | jq 'length' 2>/dev/null || echo "0")
+            cursor=$(jq -r '.cursor // empty' "$temp_file" 2>/dev/null)
+            
+            if [ "$post_count" -gt 0 ]; then
+                log "    ✅ Page $page: $post_count posts (cursor: ${cursor:0:20}...)"
+                all_posts+=("$temp_file")
+                
+                if [ -z "$cursor" ] || [ "$cursor" = "null" ] || [ "$cursor" = "" ]; then
+                    log "    ⚠️  No more cursor - reached end"
+                    has_more=false
+                else
+                    page=$((page + 1))
+                    sleep 2  # Rate limiting
+                fi
+            else
+                log "    ⚠️  Page $page: No posts returned"
+                has_more=false
+                rm -f "$temp_file"
+            fi
+        else
+            log "    ❌ Page $page: Failed"
+            has_more=false
+            rm -f "$temp_file"
+        fi
+    done
+    
+    # Combine all pages
+    if [ ${#all_posts[@]} -gt 0 ]; then
+        log "  Combining ${#all_posts[@]} pages..."
+        jq -s '{posts: [.[] | .posts // [] | .[]]}' "${all_posts[@]}" > "$all_posts_file" 2>/dev/null
+        mv "$all_posts_file" "$output_file"
+        rm -f "${all_posts[@]}"
+        
+        local total_posts=$(jq '.posts | length' "$output_file" 2>/dev/null || echo "0")
         log "✅ Successfully scraped Facebook profile: $page_name"
-        post_count=$(jq '.posts | length' "$output_file" 2>/dev/null || echo "0")
-        log "   📊 Found $post_count posts"
+        log "   📊 Total posts collected: $total_posts"
     else
-        log "❌ Failed to scrape Facebook profile: $page_name"
+        # Fallback: try single request with max count
+        log "  Fallback: Single request with max parameters..."
+        curl -sS -m 30 --retry 2 -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
+          -H "x-api-key: $SC_API_KEY" \
+          --data-urlencode "url=$page_url" \
+          --data-urlencode "count=1000" \
+          --data-urlencode "limit=1000" \
+          -o "$output_file"
+        
+        if [ $? -eq 0 ]; then
+            local post_count=$(jq '.posts | length' "$output_file" 2>/dev/null || echo "0")
+            log "✅ Successfully scraped Facebook profile: $page_name"
+            log "   📊 Found $post_count posts"
+        else
+            log "❌ Failed to scrape Facebook profile: $page_name"
+        fi
     fi
 }
 

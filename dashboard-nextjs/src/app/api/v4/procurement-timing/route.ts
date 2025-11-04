@@ -186,3 +186,6 @@ function generateRecommendation(data: any): string {
     return `MONITOR: Mixed signals. VIX ${vix.toFixed(1)}, momentum ${data.momentum_5d.toFixed(1)}%. Maintain normal purchasing schedule.`
   }
 }
+
+
+

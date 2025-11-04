@@ -1,0 +1,58 @@
+
+================================================================================
+CBI-V14 DATA INGESTION HEALTH REPORT
+Generated: 2025-11-03 00:48:45
+================================================================================
+
+OVERALL HEALTH SCORE: 28.6%
+
+1. DATA FRESHNESS (4/8 sources fresh)
+================================================================================
+6🟡 RECENT
+6🟡 RECENT
+6🟡 RECENT
+6🟡 RECENT
+6🟠 STALE
+6🟠 STALE
+6🔴 OUTDATED
+6❌ ERROR
+
+
+2. CRON JOB ACTIVITY (2/10 logs active)
+================================================================================
+12🟢 ACTIVE
+12🟢 ACTIVE
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+12❌ MISSING
+
+
+3. DATA QUALITY (0/3 tables good)
+================================================================================
+20🟠 HIGH DUPLICATES
+20❌ ERROR: 400 Unrecognized name: date at
+20❌ ERROR: 400 Unrecognized name: date at
+
+
+4. RECOMMENDATIONS
+================================================================================
+Issues requiring attention:
+• 4 data sources are stale (>7 days old)
+• 8 cron jobs are not running
+• 3 tables have quality issues
+
+CRITICAL MISSING DATA SOURCES (from audit):
+• Baltic Dry Index (shipping costs)
+• Port congestion data (supply chain)
+• Fertilizer prices (production costs)
+• ENSO climate data (weather forecasts)
+• Satellite crop health (yield estimates)
+
+================================================================================
+END OF HEALTH REPORT
+================================================================================

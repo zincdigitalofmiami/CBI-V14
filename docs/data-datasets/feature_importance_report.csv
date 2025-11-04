@@ -1,0 +1,9 @@
+feature_name,feature_type,gradient_boosting_importance,neural_network_attention_weight,permutation_importance_score,shap_value_magnitude,cross_validation_stability,ai_model_compatibility_score,sequence_modeling_suitable,attention_mechanism_compatible,preprocessing_required,neural_net_embedding_dim,economic_meaning
+fed_funds_rate,interest_rate,2.9783,0.375,0.8317,2.9783,,0.75,False,False,StandardScaler,16,Federal funds rate - carry cost determinant
+fed_funds_rate,MACRO,2.9783,0.375,0.8317,2.9783,,0.75,False,False,StandardScaler,16,"Federal Reserve target interest rate - primary US monetary policy tool. Higher rates increase borrowing costs, strengthen USD, typically pressure commodity prices downward through demand destruction."
+fed_funds_rate,interest_rate,2.9783,0.375,0.8317,2.9783,,0.75,False,False,StandardScaler,16,Federal funds rate - carry cost determinant
+crush_margin,derived,0.3928,0.375,0.1097,0.3928,,0.75,False,False,StandardScaler,16,Soybean crush margin - processing profitability
+crush_margin,derived,0.3928,0.375,0.1097,0.3928,,0.75,False,False,StandardScaler,16,Soybean crush margin - processing profitability
+usd_brl_rate,CURRENCY,0.1312,0.375,0.0366,0.1312,,0.75,False,False,StandardScaler,16,"USD/BRL exchange rate - critical for Brazil soybean export competitiveness. Weaker Real (higher rate) makes Brazilian soybeans cheaper globally, increasing supply pressure on US prices."
+dollar_index,MACRO,0.0873,0.375,0.0244,0.1011,0.7775,0.75,False,False,StandardScaler,16,US Dollar Index (DXY) - measures USD strength vs basket of major currencies. Inverse relationship with commodity prices - stronger dollar makes commodities more expensive for foreign buyers.
+usd_cny_rate,CURRENCY,0.0787,0.375,0.022,0.0787,,0.75,False,False,StandardScaler,16,"USD/CNY exchange rate - affects Chinese import demand for soybeans. Stronger Yuan (lower rate) makes US soybeans cheaper for China, world largest importer."

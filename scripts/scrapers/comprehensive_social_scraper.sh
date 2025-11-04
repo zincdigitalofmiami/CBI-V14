@@ -66,10 +66,65 @@ facebook_urls=(
 )
 for url in "${facebook_urls[@]}"; do
   out="data/facebook/$(sanitize "$url")_posts.json"
-  curl -sS --fail-with-body -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
-    -H "x-api-key: $SC_API_KEY" \
-    --data-urlencode "url=$url" \
-    -o "$out"
+  echo "Scraping Facebook: $url"
+  
+  # Try to get ALL posts with CURSOR-based pagination
+  all_posts=()
+  cursor=""
+  page=1
+  max_pages=100
+  
+  while [ $page -le $max_pages ]; do
+    temp_out="data/facebook/$(sanitize "$url")_page_${page}.json"
+    
+    if [ -n "$cursor" ]; then
+      curl -sS --fail-with-body -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
+        -H "x-api-key: $SC_API_KEY" \
+        --data-urlencode "url=$url" \
+        --data-urlencode "count=100" \
+        --data-urlencode "cursor=$cursor" \
+        -o "$temp_out"
+    else
+      curl -sS --fail-with-body -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
+        -H "x-api-key: $SC_API_KEY" \
+        --data-urlencode "url=$url" \
+        --data-urlencode "count=100" \
+        -o "$temp_out"
+    fi
+    
+    post_count=$(jq '.posts | length' "$temp_out" 2>/dev/null || echo "0")
+    cursor=$(jq -r '.cursor // empty' "$temp_out" 2>/dev/null)
+    
+    if [ "$post_count" -gt 0 ]; then
+      echo "  Page $page: $post_count posts"
+      all_posts+=("$temp_out")
+      
+      if [ -z "$cursor" ] || [ "$cursor" = "null" ]; then
+        echo "  No more cursor - done"
+        break
+      fi
+      
+      page=$((page + 1))
+      sleep 2
+    else
+      break
+    fi
+  done
+  
+  # Combine all pages
+  if [ ${#all_posts[@]} -gt 0 ]; then
+    jq -s '{posts: [.[] | .posts // [] | .[]]}' "${all_posts[@]}" > "$out" 2>/dev/null
+    rm -f "${all_posts[@]}"
+    total=$(jq '.posts | length' "$out" 2>/dev/null || echo "0")
+    echo "  ✅ Total: $total posts"
+  else
+    # Fallback single request
+    curl -sS --fail-with-body -G 'https://api.scrapecreators.com/v1/facebook/profile/posts' \
+      -H "x-api-key: $SC_API_KEY" \
+      --data-urlencode "url=$url" \
+      --data-urlencode "count=1000" \
+      -o "$out"
+  fi
 done
 
 ##############################################################################

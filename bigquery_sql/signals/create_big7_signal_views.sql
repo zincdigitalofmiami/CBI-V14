@@ -3,29 +3,32 @@
 -- Implements exact formulas from Signal Scoring Manual
 -- =====================================================
 
--- 1. VIX STRESS (Market Volatility)
--- Formula: vix_current / 20.0 (capped at 3.0)
-CREATE OR REPLACE VIEW `cbi-v14.signals.vw_vix_stress_big7` AS
-SELECT 
+-- 1. VIX STRESS (Market Volatility) - UPDATED FOR COMMODITY CONTEXT
+-- Formula: Uses actual VIX levels appropriate for soybean futures
+-- Based on historical analysis: Avg=21.12, Q75=24.33, P95=33.57
+CREATE OR REPLACE VIEW `cbi-v14.signals.vw_vix_stress_big8` AS
+SELECT
     date,
     close as vix_current,
-    LEAST(close / 20.0, 3.0) as vix_stress_score,
-    CASE 
-        WHEN close / 20.0 > 2.0 THEN 'EXTREME_VOLATILITY'
-        WHEN close / 20.0 > 1.5 THEN 'HIGH_VOLATILITY' 
-        WHEN close / 20.0 > 1.0 THEN 'ELEVATED_VOLATILITY'
-        WHEN close / 20.0 > 0.5 THEN 'NORMAL_VOLATILITY'
-        ELSE 'LOW_VOLATILITY'
+    -- Commodity-appropriate thresholds (not VIX/20 stress score)
+    CASE
+        WHEN close > 35 THEN 'CRISIS_VOLATILITY'      -- > P95, extreme events
+        WHEN close > 25 THEN 'HIGH_VOLATILITY'        -- > Q75, significant stress
+        WHEN close > 18 THEN 'ELEVATED_VOLATILITY'    -- > Q25, above normal
+        ELSE 'NORMAL_VOLATILITY'                      -- Normal commodity VIX levels
     END as volatility_regime,
-    close / 20.0 > 1.5 as crisis_flag,
+    -- Crisis flag based on commodity context
+    close > 35 as crisis_flag,
+    -- Stress score normalized for commodities (0-1 scale)
+    LEAST(close / 40.0, 1.0) as vix_stress_score,
     CURRENT_TIMESTAMP() as updated_at
 FROM `cbi-v14.forecasting_data_warehouse.vix_daily`
 WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
 ORDER BY date DESC;
 
--- 2. HARVEST PACE (Supply Fundamentals)  
+-- 2. HARVEST PACE (Supply Fundamentals)
 -- Formula: brazil_production_vs_trend * 0.7 + argentina_production_vs_trend * 0.3 (floored at 0.5)
-CREATE OR REPLACE VIEW `cbi-v14.signals.vw_harvest_pace_big7` AS
+CREATE OR REPLACE VIEW `cbi-v14.signals.vw_harvest_pace_big8` AS
 WITH brazil_conditions AS (
     SELECT 
         DATE(date) as date,

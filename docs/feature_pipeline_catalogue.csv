@@ -1,9 +1,0 @@
-script,view,dataset,feature_family,notes
-prepare_all_training_data.py,models.vw_big7_training_data,models,core_daily_joins,Base price+macro+weather+social
-create_correlation_features.py,models.vw_correlation_features,models,technical,Rolling correlations 30d to 120d
-add_cross_asset_lead_lag.py,models.vw_cross_asset_lead_lag,models,cross_asset,Lead/Lag features vs crude/palm/USD
-create_crush_margins.py,models.vw_crush_margins,models,fundamental,Soy crush margin and spreads
-add_event_driven_features.py,models.vw_event_driven_features,models,event_driven,Policy/news/event dummy variables
-add_market_regime_signals.py,signals.vw_biofuel_policy_intensity,signals,policy,Biofuel mandate intensity index
-create_big8_aggregation.py,neural.vw_big_eight_signals,neural,big8_aggregation,Aggregates top 8 macro signals
-create_seasonality_features.py,models.vw_seasonality_features,models,seasonality,Fourier & harvest cycle decomposition

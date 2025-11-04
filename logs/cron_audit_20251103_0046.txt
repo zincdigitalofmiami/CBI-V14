@@ -1,0 +1,182 @@
+
+================================================================================
+CBI-V14 COMPREHENSIVE CRON & DATA INGESTION AUDIT REPORT
+Generated: 2025-11-03 00:46:55
+================================================================================
+
+1. CURRENT CRON SCHEDULE
+================================================================================
+1. Hourly
+   Script: hourly_prices.py
+   Target: Commodity prices (ZL, ZS, ZC, ZM) + VIX
+   Command: cd /Users/zincdigital/CBI-V14/scripts && /Library/Frameworks/Python.framework/Versions/3.12/bin/pyth...
+
+2. Daily at 6:00
+   Script: daily_weather.py
+   Target: Weather data (19 stations)
+   Command: cd /Users/zincdigital/CBI-V14/scripts && /Library/Frameworks/Python.framework/Versions/3.12/bin/pyth...
+
+3. Daily at 9:00
+   Script: production_web_scraper.py
+   Target: News & market data scraping
+   Command: cd /Users/zincdigital/CBI-V14 && /usr/bin/python3 /Users/zincdigital/CBI-V14/scripts/production_web_...
+
+4. Daily at 16:00
+   Script: production_web_scraper.py
+   Target: News & market data scraping
+   Command: cd /Users/zincdigital/CBI-V14 && /usr/bin/python3 /Users/zincdigital/CBI-V14/scripts/production_web_...
+
+
+2. DATA SOURCE STATUS
+================================================================================
+📊 Soybean Oil Prices
+   Table: forecasting_data_warehouse.soybean_oil_prices
+   Frequency: Hourly
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+📊 Weather Data
+   Table: forecasting_data_warehouse.weather_data
+   Frequency: Daily
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: timestamp at [5:29]
+
+Locati
+   Status: Error
+
+📊 Social Sentiment
+   Table: forecasting_data_warehouse.social_sentiment
+   Frequency: Variable
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+📊 Trump Policy Intelligence
+   Table: forecasting_data_warehouse.trump_policy_intelligence
+   Frequency: Daily
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+📊 CFTC COT Data
+   Table: forecasting_data_warehouse.cftc_cot
+   Frequency: Weekly
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+📊 Economic Indicators
+   Table: forecasting_data_warehouse.economic_indicators
+   Frequency: Daily
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+📊 Currency Data
+   Table: forecasting_data_warehouse.currency_data
+   Frequency: Daily
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: timestamp at [5:29]
+
+Locati
+   Status: Error
+
+📊 News Intelligence
+   Table: forecasting_data_warehouse.news_intelligence
+   Frequency: Hourly
+   Records: 0
+   Date Range: Error: 400 Unrecognized name: date at [4:29]
+
+Location: u
+   Status: Error
+
+
+3. ISSUES IDENTIFIED
+================================================================================
+
+OVERLAPS & CONFLICTS:
+✅ No scheduling overlaps detected
+
+MISSING CRITICAL DATA SOURCES:
+❌ USDA Export Sales (weekly)
+❌ Baltic Dry Index (daily)
+❌ Port Congestion Data (daily)
+❌ Fertilizer Prices (monthly)
+❌ Satellite Crop Health (weekly)
+❌ ENSO Climate Data (monthly)
+❌ EIA Biofuel Production (weekly)
+❌ USDA Harvest Progress (weekly)
+
+FREQUENCY CONCERNS:
+⚠️  News scraping only twice daily - missing breaking news
+⚠️  Weather only at 6 AM - missing severe weather alerts
+⚠️  No weekend data collection for some sources
+⚠️  VIX data from Alpha Vantage may have API limits
+
+
+4. LOG FILE AUDIT
+================================================================================
+✅ prices.log
+   Size: 0.19 MB
+   Last Modified: 2025-11-03 00:00
+   Recent Errors: 0
+
+✅ weather.log
+   Size: 0.03 MB
+   Last Modified: 2025-11-02 06:01
+   Recent Errors: 0
+
+❓ scraper_morning.log
+   Size: 0.00 MB
+   Last Modified: Never
+   Recent Errors: -1
+
+❓ scraper_afternoon.log
+   Size: 0.00 MB
+   Last Modified: Never
+   Recent Errors: -1
+
+
+5. RECOMMENDATIONS
+================================================================================
+
+IMMEDIATE (This Week):
+🔥 Add weekend data collection for critical sources
+🔥 Implement hourly news scraping for breaking developments
+🔥 Add data freshness monitoring alerts
+🔥 Create data quality dashboards
+
+SHORT TERM (1-2 Weeks):
+📅 Add missing data sources (USDA exports, Baltic index, etc.)
+📅 Implement API rate limit monitoring
+📅 Add automated data gap detection
+📅 Create data source health monitoring
+
+LONG TERM (1-3 Months):
+🚀 Implement real-time data streaming
+🚀 Add predictive data freshness alerts
+🚀 Create automated data source failover
+🚀 Build comprehensive data lineage tracking
+
+
+================================================================================
+AUDIT SUMMARY
+================================================================================
+• Cron Jobs: 4 active
+• Data Sources: 8 total
+• Missing Sources: 8
+• Log Files: 4 monitored
+
+RECOMMENDATION: Add weekend collection and implement missing critical sources
+================================================================================
