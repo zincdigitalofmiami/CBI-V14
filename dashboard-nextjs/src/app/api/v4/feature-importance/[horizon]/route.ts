@@ -3,9 +3,10 @@ import { getBigQueryClient } from "@/lib/bigquery";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { horizon: string } }
+  { params }: { params: Promise<{ horizon: string }> }
 ) {
-  const h = (params.horizon || "").toUpperCase();
+  const resolvedParams = await params;
+  const h = (resolvedParams.horizon || "").toUpperCase();
   
   if (!["1W", "1M", "3M", "6M"].includes(h)) {
     return NextResponse.json(
