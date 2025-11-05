@@ -149,20 +149,20 @@ SELECT * FROM ML.EVALUATE(
 - ✅ **Vegas Intel Page LIVE**: https://cbi-dashboard.vercel.app/vegas
 - ✅ **Build Status**: SUCCESS (Next.js 15.5.6)
 - ✅ **Components**: 5 major components (Sales Overview, Event Upsell, Customer Matrix, Event Multipliers, Margin Alerts)
-- ✅ **API Routes**: 5 Vegas-specific endpoints - ALL WORKING WITH REAL DATA
-- ✅ **Data Integration**: BigQuery tables populated (3 customers, 3 events, 2 alerts, 3 opportunities)
-- ✅ **UI/UX**: Dark theme, responsive, all components rendering with data
-- ✅ **Verification**: All API endpoints tested and returning correct data
+- ✅ **API Routes**: 5 Vegas-specific endpoints - ALL WORKING (returning empty states correctly)
+- ✅ **Data Policy**: NO FAKE DATA - All sample data removed, tables dropped, empty states working
+- ⏳ **Data Integration**: AWAITING real data sources (Glide API blocked on authentication)
+- ✅ **UI/UX**: Dark theme, responsive, empty states displaying correctly
+- ✅ **Verification**: All API endpoints tested - returning empty arrays/zeros correctly (no data = no fake data)
 
 **Next Steps (PRIORITY ORDER):**
 1. ✅ **Phase 3 COMPLETE**: Predictions generated (one-time)
 2. ✅ **Model Assessment COMPLETE**: No retraining required - models production-ready
-3. ✅ **Vegas Intel Page COMPLETE**: All 5 components live with REAL DATA
-4. ✅ **Data Integration COMPLETE**: All APIs working, BigQuery tables populated
+3. ✅ **Vegas Intel Page STRUCTURE COMPLETE**: All 5 components and APIs deployed (awaiting real data)
+4. 🔥 **CRITICAL: Connect REAL Data Sources** - Fix Glide API OR manual data export
 5. 🔥 **Phase 3.5: Daily Prediction Automation** - Cloud Scheduler + Cloud Function
 6. 🔥 **Phase 3.6: Backtesting Infrastructure** - Compare predictions vs actuals, track accuracy
 7. 🔥 **Phase 3.7: Prediction Monitoring** - Alerts for stale/failed predictions, quality checks
-8. ⏳ **Glide API Authentication** (Optional): Fix for automatic data sync
 
 ---
 
@@ -6014,7 +6014,9 @@ Document ID: CBI-V14-EXEC-PLAN-FINAL
 - ✅ **RETRAINING ASSESSMENT**: **NO RETRAINING REQUIRED** - Models production-ready (MAPE <3%, meet all targets)
 - ✅ **PERFORMANCE VERIFIED**: All models performing excellently (MAE ~0.40, MAPE ~0.76%, R² ≥ 0 on proper eval)
 - ✅ Phase 3 COMPLETE: One-time predictions generated
-- ✅ **VEGAS INTEL DEPLOYED**: All 5 components live at https://cbi-dashboard.vercel.app/vegas
+- ✅ **VEGAS INTEL STRUCTURE DEPLOYED**: All 5 components live, empty states working correctly
+- ✅ **NO FAKE DATA POLICY ENFORCED**: All sample data removed, tables dropped, API routes cleaned
+- 🔥 **CRITICAL**: Connect REAL data sources (Glide API fix or manual export)
 - 🔥 Phase 3.5 ADDED: Daily Prediction Automation (Cloud Scheduler + Cloud Function)
 - 🔥 Phase 3.6 ADDED: Backtesting Infrastructure (Accuracy tracking, historical comparison)
 - 🔥 Phase 3.7 ADDED: Prediction Monitoring & Alerts (Staleness, quality, degradation checks)
@@ -6201,24 +6203,28 @@ Route (app)                                  Size  First Load JS
 - **Browser Compatibility:** Chrome, Safari, Firefox ✅
 - **Responsive Design:** Mobile, Tablet, Desktop ✅
 
-### Current Status - FULLY OPERATIONAL ✅
+### Current Status - STRUCTURE COMPLETE, AWAITING REAL DATA ✅
 
-1. **Data Integration:** ✅ All BigQuery tables populated with sample data
-   - `vegas_customers`: 3 rows (Caesars, MGM, Wynn)
-   - `vegas_events`: 3 rows (F1, NYE, UFC)
-   - `vegas_margin_alerts`: 2 rows (HIGH, MEDIUM severity)
-   - `vegas_upsell_opportunities`: 3 rows with full messaging strategies
-2. **API Endpoints:** ✅ All 5 APIs working and returning real data
-3. **Components:** ✅ All 5 components rendering with data
+1. **Data Integration:** ⏳ AWAITING REAL DATA SOURCES
+   - `vegas_customers`: DROPPED (had fake data)
+   - `vegas_events`: DROPPED (had fake data)
+   - `vegas_margin_alerts`: DROPPED (had fake data)
+   - `vegas_upsell_opportunities`: DROPPED (had fake data)
+   - `vegas_fryers`: 0 rows (empty, correct)
+   - **NO FAKE DATA POLICY:** ✅ ENFORCED - All sample data removed
+2. **API Endpoints:** ✅ All 5 APIs working and returning empty states correctly
+3. **Components:** ✅ All 5 components rendering empty states correctly
 4. **Action Handlers:** ⏳ Download and AI Message buttons have TODO placeholder handlers (for future implementation)
+5. **Data Sources:** ⏳ Glide API blocked on 404/401 authentication errors - NEEDS FIX
 
-### Next Steps
+### Next Steps - REAL DATA ONLY
 
-**Immediate:**
-1. ✅ **DEPLOYED** - Vegas Intel page live on Vercel
-2. ⏳ **Resolve Glide API** - Fix 400/401 authentication errors
-3. ⏳ **Populate Data** - Run `ingest_glide_vegas_data.py` once Glide API is working
-4. ⏳ **Test with Real Data** - Verify calculations and UI with actual data
+**Critical - NO FAKE DATA ALLOWED:**
+1. ✅ **DEPLOYED** - Vegas Intel structure live on Vercel (empty states working)
+2. ✅ **FAKE DATA REMOVED** - All sample data deleted from BigQuery and code
+3. 🔥 **FIX GLIDE API** - Resolve 404/401 authentication errors OR use manual export
+4. 🔥 **CONNECT REAL DATA** - Only use actual Glide data or Chris Stacy's real customer data
+5. ⏳ **Verify Calculations** - Once REAL data connected, verify all calculations are accurate
 
 **Short-term:**
 1. Implement download functionality for customer lists
