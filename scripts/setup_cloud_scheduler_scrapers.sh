@@ -140,3 +140,4 @@ echo "  2. Test jobs: gcloud scheduler jobs run JOB_NAME --location=$REGION"
 echo "  3. Monitor logs: gcloud scheduler jobs describe JOB_NAME --location=$REGION"
 echo ""
 
+

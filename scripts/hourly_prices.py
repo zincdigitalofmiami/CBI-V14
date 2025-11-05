@@ -171,7 +171,7 @@ def save_to_bigquery(prices):
 
     try:
         client = bigquery.Client(project=PROJECT_ID)
-        table_id = f"{PROJECT_ID}.market_data.hourly_prices"
+        table_id = f"{PROJECT_ID}.forecasting_data_warehouse.hourly_prices"
 
         df = pd.DataFrame(prices)
 

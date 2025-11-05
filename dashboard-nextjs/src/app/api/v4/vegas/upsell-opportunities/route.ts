@@ -39,99 +39,33 @@ export async function GET(request: Request) {
     const upsellPctValue = upsellPct !== null ? upsellPct : 'NULL'
     const pricePerGalValue = pricePerGal !== null ? pricePerGal : 'NULL'
 
-    // Query for upsell opportunities with REAL FRYER DATA ONLY (READ ONLY from Glide)
-    // Only calculates if Kevin provides all required inputs
+    // Query REAL EVENT OPPORTUNITIES from proximity-based scoring system
     const query = `
-      WITH restaurant_fryer_capacity AS (
-        SELECT 
-          r.glide_rowID as restaurant_id,
-          r.MHXYO as restaurant_name,
-          r.U0Jf2 as oil_type,
-          r.s8tNr as status,
-          r.Po4Zg as delivery_freq,
-          COUNT(f.glide_rowID) as fryer_count,
-          ROUND(SUM(f.xhrM0), 2) as total_capacity_lbs,
-          COALESCE(c.oil_multiplier, 1.0) as cuisine_multiplier,
-          c.cuisine_type
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
-        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
-          ON r.glide_rowID = f.\`2uBBn\`
-        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_cuisine_multipliers\` c
-          ON r.glide_rowID = c.glide_rowID
-        WHERE r.s8tNr = 'Open'
-        GROUP BY r.glide_rowID, r.MHXYO, r.U0Jf2, r.s8tNr, r.Po4Zg, c.oil_multiplier, c.cuisine_type
-        HAVING fryer_count > 0
-      )
       SELECT 
-        restaurant_id as id,
+        CONCAT(event_id, '_', restaurant_id) as id,
         restaurant_name as venue_name,
-        NULL as event_name,
-        NULL as event_date,
-        NULL as event_duration_days,
-        NULL as expected_attendance,
-        total_capacity_lbs,
-        fryer_count,
-        -- Base weekly gallons: only calculate if TPM provided, WITH CUISINE MULTIPLIER
-        CASE 
-          WHEN ${tpm !== null ? `true` : `false`} THEN ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier, 2)
-          ELSE NULL
-        END as base_weekly_gallons,
-        -- Event surge: only calculate if TPM, event_days, and multiplier provided, WITH CUISINE MULTIPLIER
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null ? `true` : `false`} 
-          THEN ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue}, 0)
-          ELSE NULL
-        END as event_surge_gallons,
-        -- Upsell potential: only calculate if surge and upsell % provided, WITH CUISINE MULTIPLIER
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null ? `true` : `false`}
-          THEN ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue} * ${upsellPctValue}, 0)
-          ELSE NULL
-        END as upsell_gallons,
-        -- Revenue opportunity: only calculate if upsell and price provided, WITH CUISINE MULTIPLIER
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null && pricePerGal !== null ? `true` : `false`}
-          THEN ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue} * ${upsellPctValue} * ${pricePerGalValue}, 0)
-          ELSE NULL
-        END as revenue_usd,
-        -- Urgency based on fryer count only (real data)
-        CASE 
-          WHEN fryer_count >= 5 THEN 'IMMEDIATE ACTION'
-          WHEN fryer_count >= 3 THEN 'HIGH PRIORITY'
-          ELSE 'MONITOR'
-        END as urgency,
-        NULL as messaging_strategy_target,
-        -- Monthly forecast message (WITH CUISINE MULTIPLIER)
-        CASE 
-          WHEN ${tpm !== null ? `true` : `false`}
-          THEN CONCAT(CAST(fryer_count as STRING), ' fryers, ', CAST(ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier, 0) as STRING), ' gal/week baseline (', cuisine_type, ' ×', CAST(ROUND(cuisine_multiplier, 1) as STRING), ')')
-          ELSE CONCAT(CAST(fryer_count as STRING), ' fryers')
-        END as messaging_strategy_monthly_forecast,
-        -- Event surge message (WITH CUISINE MULTIPLIER)
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null ? `true` : `false`}
-          THEN CONCAT('Event surge: +', CAST(ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue}, 0) as STRING), ' gal. Upsell: ', CAST(ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue} * ${upsellPctValue}, 0) as STRING), ' gal (', CAST(ROUND(${upsellPctValue} * 100, 0) as STRING), '%)')
-          ELSE NULL
-        END as messaging_strategy_message,
-        NULL as messaging_strategy_timing,
-        -- ROI value prop (only if all inputs provided including ZL cost and tanker cost, WITH CUISINE MULTIPLIER)
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null && pricePerGal !== null && actualZlCost !== null && actualZlCost !== undefined && tankerCost !== null ? `true` : `false`}
-          THEN CONCAT('ROI: ', CAST(ROUND((ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue} * ${upsellPctValue} * ${pricePerGalValue}, 0)) / NULLIF(ROUND((total_capacity_lbs * ${tpmValue}) / 7.6 * cuisine_multiplier * (${eventDaysValue}/7.0) * ${eventMultiplierValue} * ${upsellPctValue}, 0) * ${actualZlCost} + ${tankerCost}, 0), 1) as STRING), 'x')
-          ELSE NULL
-        END as messaging_strategy_value_prop,
-        -- Calculation available flag
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null && pricePerGal !== null ? `true` : `false`} THEN true
-          ELSE false
-        END as calculation_available
-      FROM restaurant_fryer_capacity
-      WHERE fryer_count > 0
-      ORDER BY 
-        CASE 
-          WHEN ${tpm !== null && eventDays !== null && eventMultiplier !== null && upsellPct !== null && pricePerGal !== null ? `true` : `false`} THEN revenue_usd
-          ELSE fryer_count
-        END DESC
+        event_name,
+        event_date,
+        3 as event_duration_days,  -- Default 3 days for events
+        expected_attendance,
+        event_surge_gallons as oil_demand_surge_gal,
+        revenue_opportunity as revenue_usd,
+        urgency_classification as urgency,
+        opportunity_score_display,
+        opportunity_score,
+        distance_km,
+        days_until,
+        analysis_bullets,
+        -- Messaging strategy
+        restaurant_name as messaging_strategy_target,
+        CONCAT(event_name, ' on ', FORMAT_DATE('%B %d, %Y', event_date)) as messaging_strategy_monthly_forecast,
+        CONCAT('Expected surge: +', CAST(event_surge_gallons as STRING), ' gallons. Revenue opportunity: $', FORMAT("%'d", CAST(revenue_opportunity as INT64))) as messaging_strategy_message,
+        CONCAT('Contact ', CAST(days_until - 7 as STRING), ' days before event') as messaging_strategy_timing,
+        CONCAT('$', FORMAT("%'d", CAST(revenue_opportunity as INT64)), ' incremental revenue') as messaging_strategy_value_prop,
+        true as calculation_available
+      FROM \`cbi-v14.forecasting_data_warehouse.vegas_top_opportunities\`
+      WHERE days_until >= 0 AND days_until <= 90
+      ORDER BY opportunity_score DESC
       LIMIT 20
     `
     
@@ -142,7 +76,7 @@ export async function GET(request: Request) {
       return NextResponse.json([])
     }
 
-    // Transform to match component interface - REAL DATA ONLY, NULL for missing inputs
+    // Transform to match component interface - REAL EVENT OPPORTUNITIES WITH SCORES
     const opportunities = results.map((row: any) => ({
       id: row.id,
       venue_name: row.venue_name,
@@ -150,10 +84,15 @@ export async function GET(request: Request) {
       event_date: row.event_date?.value || row.event_date || null,
       event_duration_days: row.event_duration_days || null,
       expected_attendance: row.expected_attendance || null,
-      oil_demand_surge_gal: row.event_surge_gallons !== null && row.event_surge_gallons !== undefined ? parseInt(row.event_surge_gallons) : null,
-      revenue_opportunity: row.revenue_usd !== null && row.revenue_usd !== undefined ? parseInt(row.revenue_usd) : null,
+      oil_demand_surge_gal: row.oil_demand_surge_gal || null,
+      revenue_opportunity: row.revenue_usd || null,
       urgency: row.urgency,
       calculation_available: row.calculation_available || false,
+      opportunity_score: row.opportunity_score || null,
+      opportunity_score_display: row.opportunity_score_display || null,
+      distance_km: row.distance_km || null,
+      days_until: row.days_until || null,
+      analysis_bullets: row.analysis_bullets || [],
       messaging_strategy: {
         target: row.messaging_strategy_target || null,
         monthly_forecast: row.messaging_strategy_monthly_forecast || null,

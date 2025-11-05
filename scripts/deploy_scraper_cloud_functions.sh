@@ -154,3 +154,4 @@ echo "  3. Monitor execution:"
 echo "     gcloud functions logs read run-comprehensive-scraper --region=$REGION --gen2"
 echo ""
 
+

@@ -5,6 +5,7 @@ import { CustomerRelationshipMatrix } from '@/components/vegas/CustomerRelations
 import { EventVolumeMultipliers } from '@/components/vegas/EventVolumeMultipliers'
 import { MarginProtectionAlerts } from '@/components/vegas/MarginProtectionAlerts'
 import { SalesIntelligenceOverview } from '@/components/vegas/SalesIntelligenceOverview'
+import { VegasHeatMap } from '@/components/vegas/VegasHeatMap'
 
 export default function VegasIntelPage() {
   return (
@@ -33,6 +34,9 @@ export default function VegasIntelPage() {
 
             {/* Sales Intelligence Overview */}
             <SalesIntelligenceOverview />
+
+            {/* Geographic Heat Map - Full Width */}
+            <VegasHeatMap />
 
             {/* AI-Powered Event-Driven Oil Demand Forecasting - Full Width */}
             <EventDrivenUpsell />

@@ -1,0 +1,42 @@
+# Auto-organize markdown files on push
+# This workflow automatically categorizes and organizes MD files
+
+name: Auto-Organize Documentation
+
+on:
+  push:
+    paths:
+      - '*.md'
+  workflow_dispatch:
+
+jobs:
+  organize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Run document organizer (dry-run)
+        run: |
+          python scripts/auto_organize_docs.py
+      
+      - name: Comment on PR with organization suggestions
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 Document organization check complete. Review the logs for any files that should be reorganized.'
+            })
+

@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
 import { executeBigQueryQuery } from '@/lib/bigquery'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get query parameters for Kevin inputs (all optional)
+    const { searchParams } = new URL(request.url)
+    const tpm = searchParams.get('tpm') ? parseFloat(searchParams.get('tpm')!) : null
+
+    // Build query with conditional calculations based on provided inputs
+    const tpmValue = tpm !== null ? tpm : 4  // Default TPM = 4
+
     // Query for customer relationship data with REAL FRYER CAPACITY (READ ONLY from Glide)
     const query = `
       WITH restaurant_metrics AS (
@@ -12,7 +19,7 @@ export async function GET() {
           r.U0Jf2 as account_type,
           COUNT(f.glide_rowID) as fryer_count,
           -- Apply cuisine multiplier to weekly gallons
-          ROUND((SUM(f.xhrM0) * 4) / 7.6 * COALESCE(c.oil_multiplier, 1.0), 2) as weekly_gallons,
+          ROUND((SUM(f.xhrM0) * ${tpmValue}) / 7.6 * COALESCE(c.oil_multiplier, 1.0), 2) as weekly_gallons,
           c.cuisine_type,
           COALESCE(c.oil_multiplier, 1.0) as cuisine_multiplier,
           -- Relationship score based on fryer count (proxy for account size)

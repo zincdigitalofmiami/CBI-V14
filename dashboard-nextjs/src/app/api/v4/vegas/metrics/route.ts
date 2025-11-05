@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server'
 import { executeBigQueryQuery } from '@/lib/bigquery'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get query parameters for Kevin inputs (all optional)
+    const { searchParams } = new URL(request.url)
+    const tpm = searchParams.get('tpm') ? parseFloat(searchParams.get('tpm')!) : null
+    const eventDays = searchParams.get('event_days') ? parseFloat(searchParams.get('event_days')!) : null
+    const eventMultiplier = searchParams.get('event_multiplier') ? parseFloat(searchParams.get('event_multiplier')!) : null
+    const upsellPct = searchParams.get('upsell_pct') ? parseFloat(searchParams.get('upsell_pct')!) : null
+    const pricePerGal = searchParams.get('price_per_gal') ? parseFloat(searchParams.get('price_per_gal')!) : null
+
+    // Build query with conditional calculations based on provided inputs
+    const tpmValue = tpm !== null ? tpm : 4  // Default TPM = 4
+    const eventDaysValue = eventDays !== null ? eventDays : 3  // Default 3 days
+    const eventMultiplierValue = eventMultiplier !== null ? eventMultiplier : null
+    const upsellPctValue = upsellPct !== null ? upsellPct : null
+    const pricePerGalValue = pricePerGal !== null ? pricePerGal : null
+
     // Aggregate metrics from real Glide tables (READ ONLY)
-    // Uses proper fryer math: (capacity_lbs × TPM) / 7.6 lbs/gal
+    // Uses proper fryer math: (capacity_lbs × TPM × cuisine_multiplier) / 7.6 lbs/gal
     const query = `
       WITH fryer_metrics AS (
         SELECT 
@@ -12,8 +27,8 @@ export async function GET() {
           COUNT(DISTINCT CASE WHEN r.s8tNr = 'Open' THEN r.glide_rowID END) as active_customers,
           COUNT(f.glide_rowID) as total_fryers,
           SUM(f.xhrM0) as total_capacity_lbs,
-          -- Base weekly gallons: (capacity × 4 TPM) / 7.6 lbs/gal × cuisine_multiplier
-          ROUND(SUM((f.xhrM0 * 4) / 7.6 * COALESCE(c.oil_multiplier, 1.0)), 0) as weekly_base_gallons
+          -- Base weekly gallons: (capacity × TPM × cuisine_multiplier) / 7.6 lbs/gal
+          ROUND(SUM((f.xhrM0 * ${tpmValue}) / 7.6 * COALESCE(c.oil_multiplier, 1.0)), 0) as weekly_base_gallons
         FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
         LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
           ON r.glide_rowID = f.\`2uBBn\`
@@ -22,8 +37,13 @@ export async function GET() {
       ),
       revenue_calc AS (
         SELECT 
-          -- Event surge: weekly_base × (3 days / 7) × 2.0x multiplier × 68% upsell × $8.20/gal
-          CAST(ROUND(weekly_base_gallons * (3.0/7.0) * 2.0 * 0.68 * 8.20, 0) as INT64) as revenue_potential
+          -- Event surge: weekly_base × (event_days / 7) × event_multiplier × upsell_pct × price_per_gal
+          -- Only calculate if all required inputs provided
+          CASE 
+            WHEN ${eventMultiplier !== null && upsellPct !== null && pricePerGal !== null ? `true` : `false`}
+            THEN CAST(ROUND(weekly_base_gallons * (${eventDaysValue}/7.0) * ${eventMultiplierValue !== null ? eventMultiplierValue : 'NULL'} * ${upsellPctValue !== null ? upsellPctValue : 'NULL'} * ${pricePerGalValue !== null ? pricePerGalValue : 'NULL'}, 0) as INT64)
+            ELSE NULL
+          END as revenue_potential
         FROM fryer_metrics
       )
       SELECT 
@@ -53,7 +73,7 @@ export async function GET() {
       total_customers: metrics.total_customers,
       active_opportunities: metrics.active_opportunities,
       upcoming_events: metrics.upcoming_events,
-      estimated_revenue_potential: metrics.estimated_revenue_potential,
+      estimated_revenue_potential: metrics.estimated_revenue_potential !== null && metrics.estimated_revenue_potential !== undefined ? parseInt(metrics.estimated_revenue_potential) : null,
       margin_risk_alerts: metrics.margin_risk_alerts
     })
   } catch (error: any) {

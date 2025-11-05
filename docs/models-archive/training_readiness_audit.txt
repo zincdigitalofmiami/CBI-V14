@@ -1,5 +1,0 @@
-TRAINING READINESS AUDIT
-Time: 2025-11-03 16:27:00.420474
-Errors: 13
-Warnings: 7
-Passed: 18

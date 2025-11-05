@@ -334,3 +334,4 @@ if __name__ == "__main__":
     report_path = checker.generate_health_report()
     print(f"\n📋 Full report saved to: {report_path}")
 
+

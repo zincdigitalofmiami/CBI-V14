@@ -1,8 +1,38 @@
 import { NextResponse } from 'next/server'
 import { executeBigQueryQuery } from '@/lib/bigquery'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get query parameters for Kevin inputs (all optional)
+    const { searchParams } = new URL(request.url)
+    const tpm = searchParams.get('tpm') ? parseFloat(searchParams.get('tpm')!) : null
+    const pricePerGal = searchParams.get('price_per_gal') ? parseFloat(searchParams.get('price_per_gal')!) : null
+    const zlCost = searchParams.get('zl_cost') ? parseFloat(searchParams.get('zl_cost')!) : null
+
+    // Get ZL cost from Dashboard forecast if not provided
+    let actualZlCost = zlCost
+    if (!actualZlCost) {
+      try {
+        const zlQuery = `
+          SELECT close as zl_cost
+          FROM \`cbi-v14.forecasting_data_warehouse.soybean_oil_prices\`
+          ORDER BY time DESC
+          LIMIT 1
+        `
+        const zlResult = await executeBigQueryQuery(zlQuery)
+        if (zlResult && zlResult.length > 0 && zlResult[0]?.zl_cost) {
+          actualZlCost = zlResult[0].zl_cost
+        }
+      } catch (e) {
+        // ZL cost not available, will return NULL for calculations requiring it
+      }
+    }
+
+    // Build query with conditional calculations based on provided inputs
+    const tpmValue = tpm !== null ? tpm : 4  // Default TPM = 4
+    const pricePerGalValue = pricePerGal !== null ? pricePerGal : null
+    const zlCostValue = actualZlCost !== null && actualZlCost !== undefined ? actualZlCost : null
+
     // Query for margin alerts based on REAL FRYER CAPACITY (READ ONLY from Glide)
     // High-volume accounts (many fryers) = higher margin risk if pricing slips
     const query = `
@@ -13,7 +43,7 @@ export async function GET() {
           r.U0Jf2 as oil_type,
           COUNT(f.glide_rowID) as fryer_count,
           -- Apply cuisine multiplier to weekly gallons
-          ROUND((SUM(f.xhrM0) * 4) / 7.6 * COALESCE(c.oil_multiplier, 1.0), 2) as weekly_gallons,
+          ROUND((SUM(f.xhrM0) * ${tpmValue}) / 7.6 * COALESCE(c.oil_multiplier, 1.0), 2) as weekly_gallons,
           COALESCE(c.oil_multiplier, 1.0) as cuisine_multiplier,
           -- Calculate margin risk based on volume
           CASE 
@@ -22,9 +52,18 @@ export async function GET() {
             ELSE 'LOW'                                       -- Small accounts
           END as severity,
           -- Risk amount = weekly gallons × margin per gallon × 4 weeks (WITH CUISINE MULTIPLIER)
-          ROUND((SUM(f.xhrM0) * 4) / 7.6 * COALESCE(c.oil_multiplier, 1.0) * 0.70 * 4, 0) as risk_amount_monthly,
-          -- Current margin estimate (price $8.20 - cost $7.50 = $0.70 = 8.5% margin)
-          ROUND(((8.20 - 7.50) / 8.20) * 100, 1) as current_margin_pct
+          -- Only calculate if price and cost provided
+          CASE 
+            WHEN ${pricePerGal !== null && zlCostValue !== null ? `true` : `false`}
+            THEN ROUND((SUM(f.xhrM0) * ${tpmValue}) / 7.6 * COALESCE(c.oil_multiplier, 1.0) * (${pricePerGalValue !== null ? pricePerGalValue : 'NULL'} - ${zlCostValue !== null ? zlCostValue : 'NULL'}) * 4, 0)
+            ELSE NULL
+          END as risk_amount_monthly,
+          -- Current margin estimate (only if price and cost provided)
+          CASE 
+            WHEN ${pricePerGal !== null && zlCostValue !== null ? `true` : `false`}
+            THEN ROUND(((${pricePerGalValue !== null ? pricePerGalValue : 'NULL'} - ${zlCostValue !== null ? zlCostValue : 'NULL'}) / ${pricePerGalValue !== null ? pricePerGalValue : 'NULL'}) * 100, 1)
+            ELSE NULL
+          END as current_margin_pct
         FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
         LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
           ON r.glide_rowID = f.\`2uBBn\`
@@ -40,7 +79,10 @@ export async function GET() {
         'Volume Risk' as alert_type,
         severity,
         current_margin_pct as current_margin,
-        CAST(risk_amount_monthly as INT64) as risk_amount,
+        CASE 
+          WHEN risk_amount_monthly IS NOT NULL THEN CAST(risk_amount_monthly as INT64)
+          ELSE NULL
+        END as risk_amount,
         CASE 
           WHEN severity = 'HIGH' THEN 'Lock pricing now - high volume account'
           WHEN severity = 'MEDIUM' THEN 'Review margin protection options'
@@ -58,7 +100,10 @@ export async function GET() {
           WHEN 'MEDIUM' THEN 2
           ELSE 3
         END,
-        risk_amount_monthly DESC
+        CASE 
+          WHEN ${pricePerGal !== null && zlCostValue !== null ? `true` : `false`} THEN risk_amount_monthly
+          ELSE fryer_count
+        END DESC
       LIMIT 20
     `
     
@@ -73,8 +118,8 @@ export async function GET() {
       customer_name: row.customer_name,
       alert_type: row.alert_type,
       severity: row.severity,
-      current_margin: row.current_margin,
-      risk_amount: row.risk_amount,
+      current_margin: row.current_margin !== null && row.current_margin !== undefined ? parseFloat(row.current_margin) : null,
+      risk_amount: row.risk_amount !== null && row.risk_amount !== undefined ? parseInt(row.risk_amount) : null,
       recommended_action: row.recommended_action,
       urgency: row.urgency
     }))

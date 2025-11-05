@@ -13,7 +13,12 @@ interface UpsellOpportunity {
   expected_attendance: number
   oil_demand_surge_gal: number
   revenue_opportunity: number
-  urgency: 'IMMEDIATE ACTION' | 'HIGH PRIORITY' | 'MONITOR'
+  urgency: 'IMMEDIATE ACTION' | 'HIGH PRIORITY' | 'MODERATE' | 'MONITOR'
+  opportunity_score: number
+  opportunity_score_display: string
+  distance_km: number
+  days_until: number
+  analysis_bullets: string[]
   messaging_strategy: {
     target: string
     monthly_forecast: string
@@ -56,9 +61,35 @@ export function EventDrivenUpsell() {
     console.log('Download list for event:', eventId)
   }
 
-  const handleAIMessage = (eventId: string) => {
-    // TODO: Implement AI message generation
-    console.log('Generate AI message for event:', eventId)
+  const [generatedMessages, setGeneratedMessages] = useState<Record<string, string>>({})
+  const [generatingMessage, setGeneratingMessage] = useState<string | null>(null)
+
+  const handleAIMessage = async (opportunityId: string) => {
+    const opportunity = opportunitiesList.find(opp => opp.id === opportunityId)
+    if (!opportunity) return
+    
+    setGeneratingMessage(opportunityId)
+    
+    try {
+      const response = await fetch('/api/v4/vegas/generate-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opportunity }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.message) {
+        setGeneratedMessages(prev => ({
+          ...prev,
+          [opportunityId]: data.message
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to generate message:', error)
+    } finally {
+      setGeneratingMessage(null)
+    }
   }
 
   return (
@@ -95,7 +126,7 @@ export function EventDrivenUpsell() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-base font-semibold text-text-primary">
-                          {opp.venue_name} - {opp.event_name}
+                          {opp.event_name} - {opp.venue_name}
                         </h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           opp.urgency === 'IMMEDIATE ACTION' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
@@ -109,32 +140,80 @@ export function EventDrivenUpsell() {
                         <Calendar className="w-4 h-4" />
                         <span>{new Date(opp.event_date).toLocaleDateString()}</span>
                         <span>·</span>
-                        <span>{opp.event_duration_days} {opp.event_duration_days === 1 ? 'day' : 'days'}</span>
+                        <span>{opp.distance_km?.toFixed(1) || '?'} km away</span>
+                        <span>·</span>
+                        <span>{opp.days_until} days</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-text-tertiary mb-1">Revenue Opportunity</div>
-                      <div className="text-lg font-semibold text-bull-500">
-                        +${opp.revenue_opportunity.toLocaleString()}
+                      <div className="text-3xl font-bold text-bull-500 mb-1">
+                        {opp.opportunity_score_display || '+0%'}
+                      </div>
+                      <div className="text-sm text-text-tertiary">opportunity</div>
+                      <div className="text-lg font-semibold text-text-primary mt-2">
+                        ${opp.revenue_opportunity?.toLocaleString() || '0'}
                       </div>
                     </div>
                   </div>
 
+                  {/* Analysis Bullets */}
+                  {opp.analysis_bullets && opp.analysis_bullets.length > 0 && (
+                    <div className="space-y-2 mb-4">
+                      {opp.analysis_bullets.map((bullet, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <span className="text-accent-blue mt-1 text-xs">✓</span>
+                          <p className="text-sm text-text-secondary">{bullet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   {/* Key Metrics */}
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                       <div className="text-xs text-text-tertiary mb-1">Expected Attendance</div>
                       <div className="text-base font-semibold text-text-primary">
-                        {opp.expected_attendance.toLocaleString()}
+                        {opp.expected_attendance?.toLocaleString() || 'N/A'}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-text-tertiary mb-1">Oil Demand Surge</div>
                       <div className="text-base font-semibold text-bull-500">
-                        +{opp.oil_demand_surge_gal} gal/day
+                        +{opp.oil_demand_surge_gal || 0} gal
                       </div>
                     </div>
                   </div>
+
+                  {/* AI Generated Message */}
+                  {generatedMessages[opp.id] && (
+                    <div className="bg-background-secondary border border-border-primary rounded-lg p-4 mb-4">
+                      <div className="flex items-start gap-2 mb-2">
+                        <Brain className="w-5 h-5 text-purple-400" />
+                        <div className="text-sm font-semibold text-text-primary">AI-Generated Outreach</div>
+                      </div>
+                      <div className="text-sm text-text-secondary whitespace-pre-line font-mono bg-background-tertiary p-3 rounded border border-border-secondary">
+                        {generatedMessages[opp.id]}
+                      </div>
+                      <div className="flex items-center justify-end gap-2 mt-3">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(generatedMessages[opp.id])}
+                          className="px-3 py-1 text-xs bg-accent-blue/20 hover:bg-accent-blue/30 text-accent-blue border border-accent-blue/30 rounded transition-colors"
+                        >
+                          Copy to Clipboard
+                        </button>
+                        <button
+                          onClick={() => setGeneratedMessages(prev => {
+                            const newMessages = { ...prev }
+                            delete newMessages[opp.id]
+                            return newMessages
+                          })}
+                          className="px-3 py-1 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-end space-x-3">
@@ -143,20 +222,21 @@ export function EventDrivenUpsell() {
                       className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-colors text-sm font-medium"
                     >
                       <Download className="w-4 h-4" />
-                      <span>Download List</span>
+                      <span>Download</span>
                     </button>
                     <button
                       onClick={() => handleAIMessage(opp.id)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg transition-colors text-sm font-medium"
+                      disabled={generatingMessage === opp.id}
+                      className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       <Brain className="w-4 h-4" />
-                      <span>AI Message</span>
+                      <span>{generatingMessage === opp.id ? 'Generating...' : 'AI gently'}</span>
                     </button>
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : opp.id)}
                       className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      {isExpanded ? 'Hide Strategy' : 'Show Strategy'}
+                      {isExpanded ? 'Hide' : 'Enhance'}
                     </button>
                   </div>
                 </div>

@@ -55,3 +55,4 @@ def emergency_update_zl_prices():
 if __name__ == '__main__':
     emergency_update_zl_prices()
 
+
