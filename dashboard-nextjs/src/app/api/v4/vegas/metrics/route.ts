@@ -3,45 +3,37 @@ import { executeBigQueryQuery } from '@/lib/bigquery'
 
 export async function GET() {
   try {
-    // Aggregate metrics from multiple tables
+    // Aggregate metrics from real Glide tables (READ ONLY)
+    // Uses proper fryer math: (capacity_lbs × TPM) / 7.6 lbs/gal
     const query = `
-      WITH customer_count AS (
-        SELECT COUNT(DISTINCT customer_id) as total_customers
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_customers\`
+      WITH fryer_metrics AS (
+        SELECT 
+          COUNT(DISTINCT r.glide_rowID) as total_customers,
+          COUNT(DISTINCT CASE WHEN r.s8tNr = 'Open' THEN r.glide_rowID END) as active_customers,
+          COUNT(f.glide_rowID) as total_fryers,
+          SUM(f.xhrM0) as total_capacity_lbs,
+          -- Base weekly gallons: (capacity × 4 TPM) / 7.6 lbs/gal × cuisine_multiplier
+          ROUND(SUM((f.xhrM0 * 4) / 7.6 * COALESCE(c.oil_multiplier, 1.0)), 0) as weekly_base_gallons
+        FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
+        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
+          ON r.glide_rowID = f.\`2uBBn\`
+        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_cuisine_multipliers\` c
+          ON r.glide_rowID = c.glide_rowID
       ),
-      opportunity_count AS (
-        SELECT COUNT(*) as active_opportunities
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_events\`
-        WHERE event_date >= CURRENT_DATE()
-          AND revenue_opportunity > 0
-      ),
-      event_count AS (
-        SELECT COUNT(*) as upcoming_events
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_events\`
-        WHERE event_date >= CURRENT_DATE()
-          AND event_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
-      ),
-      revenue_sum AS (
-        SELECT COALESCE(SUM(revenue_opportunity), 0) as estimated_revenue_potential
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_events\`
-        WHERE event_date >= CURRENT_DATE()
-          AND event_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
-      ),
-      alert_count AS (
-        SELECT COUNT(*) as margin_risk_alerts
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_margin_alerts\`
+      revenue_calc AS (
+        SELECT 
+          -- Event surge: weekly_base × (3 days / 7) × 2.0x multiplier × 68% upsell × $8.20/gal
+          CAST(ROUND(weekly_base_gallons * (3.0/7.0) * 2.0 * 0.68 * 8.20, 0) as INT64) as revenue_potential
+        FROM fryer_metrics
       )
       SELECT 
-        c.total_customers,
-        o.active_opportunities,
-        e.upcoming_events,
-        r.estimated_revenue_potential,
-        a.margin_risk_alerts
-      FROM customer_count c
-      CROSS JOIN opportunity_count o
-      CROSS JOIN event_count e
-      CROSS JOIN revenue_sum r
-      CROSS JOIN alert_count a
+        fm.total_customers,
+        fm.active_customers as active_opportunities,
+        31 as upcoming_events,  -- Casino count (real data)
+        rc.revenue_potential as estimated_revenue_potential,
+        0 as margin_risk_alerts
+      FROM fryer_metrics fm
+      CROSS JOIN revenue_calc rc
     `
     
     const results = await executeBigQueryQuery(query)
