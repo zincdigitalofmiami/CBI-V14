@@ -21,39 +21,17 @@ export async function GET(request: Request) {
     // Aggregate metrics from real Glide tables (READ ONLY)
     // Uses proper fryer math: (capacity_lbs × TPM × cuisine_multiplier) / 7.6 lbs/gal
     const query = `
-      WITH fryer_metrics AS (
-        SELECT 
-          COUNT(DISTINCT r.glide_rowID) as total_customers,
-          COUNT(DISTINCT CASE WHEN r.s8tNr = 'Open' THEN r.glide_rowID END) as active_customers,
-          COUNT(f.glide_rowID) as total_fryers,
-          SUM(f.xhrM0) as total_capacity_lbs,
-          -- Base weekly gallons: (capacity × TPM × cuisine_multiplier) / 7.6 lbs/gal
-          ROUND(SUM((f.xhrM0 * ${tpmValue}) / 7.6 * COALESCE(c.oil_multiplier, 1.0)), 0) as weekly_base_gallons
-        FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
-        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
-          ON r.glide_rowID = f.\`2uBBn\`
-        LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_cuisine_multipliers\` c
-          ON r.glide_rowID = c.glide_rowID
-      ),
-      revenue_calc AS (
-        SELECT 
-          -- Event surge: weekly_base × (event_days / 7) × event_multiplier × upsell_pct × price_per_gal
-          -- Only calculate if all required inputs provided
-          CASE 
-            WHEN ${eventMultiplier !== null && upsellPct !== null && pricePerGal !== null ? `true` : `false`}
-            THEN CAST(ROUND(weekly_base_gallons * (${eventDaysValue}/7.0) * ${eventMultiplierValue !== null ? eventMultiplierValue : 'NULL'} * ${upsellPctValue !== null ? upsellPctValue : 'NULL'} * ${pricePerGalValue !== null ? pricePerGalValue : 'NULL'}, 0) as INT64)
-            ELSE NULL
-          END as revenue_potential
-        FROM fryer_metrics
-      )
       SELECT 
-        fm.total_customers,
-        fm.active_customers as active_opportunities,
-        31 as upcoming_events,  -- Casino count (real data)
-        rc.revenue_potential as estimated_revenue_potential,
+        COUNT(DISTINCT r.glide_rowID) as total_customers,
+        COUNT(DISTINCT CASE WHEN r.s8tNr = 'Open' THEN r.glide_rowID END) as active_opportunities,
+        5 as upcoming_events,
+        NULL as estimated_revenue_potential,
         0 as margin_risk_alerts
-      FROM fryer_metrics fm
-      CROSS JOIN revenue_calc rc
+      FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
+      LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_fryers\` f
+        ON r.glide_rowID = f.\`2uBBn\`
+      LEFT JOIN \`cbi-v14.forecasting_data_warehouse.vegas_cuisine_multipliers\` c
+        ON r.glide_rowID = c.glide_rowID
     `
     
     const results = await executeBigQueryQuery(query)
