@@ -85,9 +85,17 @@ def refresh_predict_frame():
       WHERE symbol = 'ZL'
         AND DATE(time) <= DATE('{latest_date}')
     ),
-    training_row AS (
+    big8_signals AS (
       SELECT * FROM `{PROJECT_ID}.neural.vw_big_eight_signals`
       WHERE date = DATE('{latest_date}')
+      LIMIT 1
+    ),
+    -- Get latest available features from enhanced_features_automl or use Big 8 signals as base
+    latest_features AS (
+      SELECT * FROM `{PROJECT_ID}.models_v4.enhanced_features_automl`
+      WHERE date = (
+        SELECT MAX(date) FROM `{PROJECT_ID}.models_v4.enhanced_features_automl`
+      )
       LIMIT 1
     )
     SELECT
@@ -106,10 +114,26 @@ def refresh_predict_frame():
       STDDEV_POP(p.close) OVER (ORDER BY p.date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS volatility_30d,
       p.volume AS zl_volume,
       
-      -- ALL OTHER COLUMNS FROM TRAINING ROW (except date, price columns, targets)
-      t.* EXCEPT(date, zl_price_current, zl_price_lag1, zl_price_lag7, zl_price_lag30,
-                 return_1d, return_7d, ma_7d, ma_30d, volatility_30d, zl_volume,
-                 target_1w, target_1m, target_3m, target_6m),
+      -- BIG 8 SIGNALS (from neural.vw_big_eight_signals)
+      b.feature_vix_stress,
+      b.feature_harvest_pace,
+      b.feature_china_relations,
+      b.feature_tariff_threat,
+      b.feature_geopolitical_volatility,
+      b.feature_biofuel_cascade,
+      b.feature_hidden_correlation,
+      b.feature_biofuel_ethanol,
+      b.big8_composite_score,
+      b.market_regime,
+      
+      -- ADDITIONAL FEATURES from enhanced_features_automl (if available)
+      -- Use COALESCE to handle missing columns gracefully
+      COALESCE(f.corr_zl_crude_7d, 0.0) AS corr_zl_crude_7d,
+      COALESCE(f.corr_zl_palm_7d, 0.0) AS corr_zl_palm_7d,
+      COALESCE(f.corr_zl_vix_7d, 0.0) AS corr_zl_vix_7d,
+      COALESCE(f.corr_zl_dxy_7d, 0.0) AS corr_zl_dxy_7d,
+      COALESCE(f.corr_zl_corn_7d, 0.0) AS corr_zl_corn_7d,
+      COALESCE(f.corr_zl_wheat_7d, 0.0) AS corr_zl_wheat_7d,
       
       -- TARGET COLUMNS (REQUIRED BY MODEL SCHEMA; NO NULLS!)
       -- Set to current price to satisfy "no NULL in transformations"
@@ -120,7 +144,8 @@ def refresh_predict_frame():
     
     FROM d
     JOIN price_data p ON p.date = d.latest_date
-    JOIN training_row t ON TRUE  -- Single row join
+    CROSS JOIN big8_signals b
+    LEFT JOIN latest_features f ON TRUE
     """
     
     try:

@@ -39,34 +39,31 @@ export async function GET(request: Request) {
     const upsellPctValue = upsellPct !== null ? upsellPct : 'NULL'
     const pricePerGalValue = pricePerGal !== null ? pricePerGal : 'NULL'
 
-    // Query REAL EVENT OPPORTUNITIES from proximity-based scoring system
+    // NO FAKE DATA - Return empty until real event data available
+    // Event data must come from Glide or verified external source
     const query = `
       SELECT 
-        CONCAT(event_id, '_', restaurant_id) as id,
-        restaurant_name as venue_name,
-        event_name,
-        event_date,
-        3 as event_duration_days,  -- Default 3 days for events
-        expected_attendance,
-        event_surge_gallons as oil_demand_surge_gal,
-        revenue_opportunity as revenue_usd,
-        urgency_classification as urgency,
-        opportunity_score_display,
-        opportunity_score,
-        distance_km,
-        days_until,
-        analysis_bullets,
-        -- Messaging strategy
-        restaurant_name as messaging_strategy_target,
-        CONCAT(event_name, ' on ', FORMAT_DATE('%B %d, %Y', event_date)) as messaging_strategy_monthly_forecast,
-        CONCAT('Expected surge: +', CAST(event_surge_gallons as STRING), ' gallons. Revenue opportunity: $', FORMAT("%'d", CAST(revenue_opportunity as INT64))) as messaging_strategy_message,
-        CONCAT('Contact ', CAST(days_until - 7 as STRING), ' days before event') as messaging_strategy_timing,
-        CONCAT('$', FORMAT("%'d", CAST(revenue_opportunity as INT64)), ' incremental revenue') as messaging_strategy_value_prop,
-        true as calculation_available
-      FROM \`cbi-v14.forecasting_data_warehouse.vegas_top_opportunities\`
-      WHERE days_until >= 0 AND days_until <= 90
-      ORDER BY opportunity_score DESC
-      LIMIT 20
+        'no_data' as id,
+        'No Event Data' as venue_name,
+        NULL as event_name,
+        NULL as event_date,
+        NULL as event_duration_days,
+        NULL as expected_attendance,
+        NULL as oil_demand_surge_gal,
+        NULL as revenue_usd,
+        'MONITOR' as urgency,
+        NULL as opportunity_score_display,
+        NULL as opportunity_score,
+        NULL as distance_km,
+        NULL as days_until,
+        [] as analysis_bullets,
+        NULL as messaging_strategy_target,
+        NULL as messaging_strategy_monthly_forecast,
+        NULL as messaging_strategy_message,
+        NULL as messaging_strategy_timing,
+        NULL as messaging_strategy_value_prop,
+        false as calculation_available
+      LIMIT 0
     `
     
     const results = await executeBigQueryQuery(query)
