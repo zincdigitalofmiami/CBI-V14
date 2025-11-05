@@ -58,12 +58,12 @@ def write_manifest():
     from google.cloud import bigquery
     client = bigquery.Client(project=PROJECT_ID)
     stats = client.query(
-        f"SELECT COUNT(*) as rows, MAX(date) as latest_date FROM `{PROJECT_ID}.{DATASET_ID}.{TARGET_TABLE}`"
+        f"SELECT COUNT(*) as row_count, MAX(date) as latest_date FROM `{PROJECT_ID}.{DATASET_ID}.{TARGET_TABLE}`"
     ).to_dataframe().iloc[0]
     schema = client.get_table(f"{PROJECT_ID}.{DATASET_ID}.{TARGET_TABLE}").schema
     manifest = {
         "refreshed_at": datetime.utcnow().isoformat(timespec="seconds"),
-        "rows": int(stats["rows"]),
+        "rows": int(stats["row_count"]),
         "latest_date": stats["latest_date"].strftime("%Y-%m-%d"),
         "columns": [f.name for f in schema],
     }
@@ -73,8 +73,12 @@ def write_manifest():
 
 def main():
     logger.info("==== BIG-8 FEATURE REFRESH START ====")
-    for step in PIPELINE_STEPS:
-        run_step(step)
+    # SKIP PIPELINE_STEPS - they're legacy modules in archive/ and not needed
+    # The view vw_big_eight_signals already contains all Big 8 signals
+    logger.info("⏭️  Skipping legacy pipeline steps (view already has all signals)")
+    logger.info("📝 Proceeding directly to table materialization from view")
+    
+    # Direct materialization from view (this is what actually matters)
     materialise_final_table()
     write_manifest()
     logger.info("✅ Feature refresh pipeline complete.")
