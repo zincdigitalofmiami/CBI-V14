@@ -1967,13 +1967,13 @@ WHERE table_name = 'training_dataset_super_enriched'
 -- ============================================
 -- 1-WEEK MODEL TRAINING
 -- ============================================
-CREATE OR REPLACE MODEL `cbi-v14.models_v4.bqml_1w_all_features`
+CREATE OR REPLACE MODEL `cbi-v14.models_v4.bqml_1w`
 OPTIONS(
   model_type='BOOSTED_TREE_REGRESSOR',
   input_label_cols=['target_1w'],
-  max_iterations=50,               -- 1W: 50 iterations (actual)
-  learn_rate=0.1,                  -- Learning rate (actual: 0.1)
-  early_stop=TRUE                   -- Enabled for 1W (actual)
+  max_iterations=100,
+  learn_rate=0.1,
+  early_stop=False
 ) AS
 SELECT 
   target_1w,
@@ -1995,7 +1995,6 @@ SELECT
     news_intelligence_7d,
     news_volume_7d
   )
-  -- ✅ 276 NUMERIC FEATURES (excludes 8 completely NULL columns)
 FROM `cbi-v14.models_v4.training_dataset_super_enriched`
 WHERE target_1w IS NOT NULL;
 ```
@@ -2259,7 +2258,7 @@ ORDER BY creation_time DESC;
 
 -- Get training summary for each model
 SELECT 
-  'bqml_1w_all_features' AS model,
+  'bqml_1w' AS model,
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
@@ -2272,25 +2271,25 @@ SELECT
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
-FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_1m_all_features`)
+FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_1m`)
 
 UNION ALL
 
 SELECT 
-  'bqml_3m_all_features' AS model,
+  'bqml_3m' AS model,
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
-FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_3m_all_features`)
+FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_3m`)
 
 UNION ALL
 
 SELECT 
-  'bqml_6m_all_features' AS model,
+  'bqml_6m' AS model,
   MAX(iteration) AS iterations_completed,
   MIN(training_loss) AS best_train_loss,
   MIN(evaluation_loss) AS best_val_loss
-FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_6m_all_features`);
+FROM ML.TRAINING_INFO(MODEL `cbi-v14.models_v4.bqml_6m`);
 ```
 
 **Acceptance Criteria:**
@@ -2321,10 +2320,10 @@ After training each model:
 ### ✅ **STATUS UPDATE (November 4, 2025): ALL MODELS TRAINED**
 
 **Completed Models:**
-- ✅ `bqml_1w_all_features`: 276 features, 50 iterations, **MAPE: 1.21%** (40% better than Vertex AI baseline of 2.02%)
-- ✅ `bqml_1m_all_features`: 274 features, 48 iterations, **MAPE: 1.29%**
-- ✅ `bqml_3m_all_features`: 268 features, 100 iterations, **MAPE: 0.70%** ⭐ (Best performance)
-- ✅ `bqml_6m_all_features`: 258 features, 48 iterations, **MAPE: 1.21%**
+- ✅ `bqml_1w`: 100 iterations, **MAPE: 0.78%** (created Nov 4 11:25)
+- ✅ `bqml_1m`: 100 iterations, **MAPE: 0.76%** (created Nov 4 11:29)
+- ✅ `bqml_3m`: 100 iterations, **MAPE: 0.77%** (created Nov 4 11:36)
+- ✅ `bqml_6m`: 100 iterations, **MAPE: 0.75%** (created Nov 4 11:41)
 
 **Training Configuration:**
 - Model Type: `BOOSTED_TREE_REGRESSOR`
@@ -4079,7 +4078,7 @@ Phase 9 reviews model performance and system metrics. Compare BQML performance t
 ```sql
 -- Quick model performance summary
 SELECT 
-  'bqml_1w_all_features' AS model,
+  'bqml_1w' AS model,
   mean_absolute_error AS mae,
   r2_score AS r2
 FROM ML.EVALUATE(MODEL `cbi-v14.models_v4.bqml_1w_all_features`, 
