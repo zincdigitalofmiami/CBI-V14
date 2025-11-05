@@ -28,12 +28,12 @@ export async function GET() {
     const customers = results.map((row: any) => ({
       id: row.id,
       name: row.name,
-      account_type: row.account_type || 'Other',
-      relationship_score: row.relationship_score || 0,
-      current_volume: row.current_volume || 0,
-      last_order_date: row.last_order_date?.value || row.last_order_date || new Date().toISOString(),
-      growth_potential: row.growth_potential || 'MEDIUM',
-      next_action: row.next_action || 'Monitor relationship'
+      account_type: row.account_type,
+      relationship_score: row.relationship_score,
+      current_volume: row.current_volume,
+      last_order_date: row.last_order_date?.value || row.last_order_date,
+      growth_potential: row.growth_potential,
+      next_action: row.next_action
     }))
 
     return NextResponse.json(customers)

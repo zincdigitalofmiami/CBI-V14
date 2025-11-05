@@ -35,12 +35,12 @@ export async function GET() {
     const alerts = results.map((row: any) => ({
       id: row.id,
       customer_name: row.customer_name,
-      alert_type: row.alert_type || 'Contract Risk',
-      severity: row.severity || 'MEDIUM',
-      current_margin: row.current_margin || 0,
-      risk_amount: row.risk_amount || 0,
-      recommended_action: row.recommended_action || 'Review pricing strategy',
-      urgency: row.urgency || 'THIS_WEEK'
+      alert_type: row.alert_type,
+      severity: row.severity,
+      current_margin: row.current_margin,
+      risk_amount: row.risk_amount,
+      recommended_action: row.recommended_action,
+      urgency: row.urgency
     }))
 
     return NextResponse.json(alerts)

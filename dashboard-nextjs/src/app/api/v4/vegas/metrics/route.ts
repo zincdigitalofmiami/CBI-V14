@@ -58,11 +58,11 @@ export async function GET() {
 
     const metrics = results[0]
     return NextResponse.json({
-      total_customers: metrics.total_customers || 0,
-      active_opportunities: metrics.active_opportunities || 0,
-      upcoming_events: metrics.upcoming_events || 0,
-      estimated_revenue_potential: metrics.estimated_revenue_potential || 0,
-      margin_risk_alerts: metrics.margin_risk_alerts || 0
+      total_customers: metrics.total_customers,
+      active_opportunities: metrics.active_opportunities,
+      upcoming_events: metrics.upcoming_events,
+      estimated_revenue_potential: metrics.estimated_revenue_potential,
+      margin_risk_alerts: metrics.margin_risk_alerts
     })
   } catch (error: any) {
     // Tables don't exist yet - return zeros

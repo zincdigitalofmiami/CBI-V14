@@ -31,13 +31,13 @@ export async function GET() {
     const events = results.map((row: any) => ({
       id: row.id,
       name: row.name,
-      type: row.type || 'Other',
+      type: row.type,
       date: row.date?.value || row.date,
-      location: row.location || 'Las Vegas, NV',
-      volume_multiplier: row.volume_multiplier || 1.0,
-      affected_customers: 3,  // Default for sample data
-      revenue_impact: row.revenue_impact || 0,
-      days_until: row.days_until || 0
+      location: row.location,
+      volume_multiplier: row.volume_multiplier,
+      affected_customers: row.expected_attendance,  // Use actual attendance data
+      revenue_impact: row.revenue_impact,
+      days_until: row.days_until
     }))
 
     return NextResponse.json(events)

@@ -38,23 +38,23 @@ export async function GET() {
       return NextResponse.json([])
     }
 
-    // Transform to match component interface
+    // Transform to match component interface - NO FAKE DATA
     const opportunities = results.map((row: any) => ({
       id: row.id,
       venue_name: row.venue_name,
       event_name: row.event_name,
       event_date: row.event_date?.value || row.event_date,
-      event_duration_days: row.event_duration_days || 1,
-      expected_attendance: row.expected_attendance || 0,
-      oil_demand_surge_gal: row.oil_demand_surge_gal || 0,
-      revenue_opportunity: row.revenue_opportunity || 0,
-      urgency: row.urgency || 'MONITOR',
+      event_duration_days: row.event_duration_days,
+      expected_attendance: row.expected_attendance,
+      oil_demand_surge_gal: row.oil_demand_surge_gal,
+      revenue_opportunity: row.revenue_opportunity,
+      urgency: row.urgency,
       messaging_strategy: {
-        target: row.messaging_strategy_target || 'Las Vegas area restaurants',
-        monthly_forecast: row.messaging_strategy_monthly_forecast || 'Check dashboard for monthly forecast',
-        message: row.messaging_strategy_message || `${row.venue_name} - ${row.event_name} bringing increased demand. Increase oil delivery to meet surge.`,
-        timing: row.messaging_strategy_timing || 'Send TODAY',
-        value_prop: row.messaging_strategy_value_prop || 'Avoid stockouts during peak demand. We\'ll adjust delivery schedule automatically.'
+        target: row.messaging_strategy_target,
+        monthly_forecast: row.messaging_strategy_monthly_forecast,
+        message: row.messaging_strategy_message,
+        timing: row.messaging_strategy_timing,
+        value_prop: row.messaging_strategy_value_prop
       }
     }))
 
