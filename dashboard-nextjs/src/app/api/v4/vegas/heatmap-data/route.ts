@@ -13,14 +13,14 @@ export async function GET() {
           'event' as type,
           ANY_VALUE(event_name) as name
         FROM \`cbi-v14.forecasting_data_warehouse.event_restaurant_impact\`
-        WHERE lat IS NOT NULL AND lng IS NOT NULL
+        WHERE event_lat IS NOT NULL AND event_lng IS NOT NULL
         GROUP BY lat, lng
       ),
       restaurant_points AS (
         SELECT 
           r.lat,
           r.lng,
-          COUNT(DISTINCT e.event_id) as weight,
+          CAST(COUNT(DISTINCT e.event_id) as FLOAT64) as weight,
           'restaurant' as type,
           r.MHXYO as name
         FROM \`cbi-v14.forecasting_data_warehouse.vegas_restaurants\` r
@@ -37,6 +37,7 @@ export async function GET() {
       FROM restaurant_points
       WHERE weight > 0
       ORDER BY weight DESC
+      LIMIT 200
     `
     
     const results = await executeBigQueryQuery(query)
