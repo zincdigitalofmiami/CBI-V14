@@ -12,7 +12,6 @@ import os
 import logging
 from datetime import datetime, date
 from google.cloud import bigquery
-from google.cloud import functions_v1
 from google.cloud.exceptions import NotFound
 
 # Configure logging
