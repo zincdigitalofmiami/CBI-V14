@@ -84,18 +84,11 @@ def refresh_predict_frame():
       FROM `{PROJECT_ID}.forecasting_data_warehouse.soybean_oil_prices`
       WHERE symbol = 'ZL'
         AND DATE(time) <= DATE('{latest_date}')
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY DATE(time) ORDER BY time DESC) = 1
     ),
     big8_signals AS (
       SELECT * FROM `{PROJECT_ID}.neural.vw_big_eight_signals`
       WHERE date = DATE('{latest_date}')
-      LIMIT 1
-    ),
-    -- Get latest available features from enhanced_features_automl or use Big 8 signals as base
-    latest_features AS (
-      SELECT * FROM `{PROJECT_ID}.models_v4.enhanced_features_automl`
-      WHERE date = (
-        SELECT MAX(date) FROM `{PROJECT_ID}.models_v4.enhanced_features_automl`
-      )
       LIMIT 1
     )
     SELECT
@@ -126,14 +119,6 @@ def refresh_predict_frame():
       b.big8_composite_score,
       b.market_regime,
       
-      -- ADDITIONAL FEATURES from enhanced_features_automl (if available)
-      -- Use COALESCE to handle missing columns gracefully
-      COALESCE(f.corr_zl_crude_7d, 0.0) AS corr_zl_crude_7d,
-      COALESCE(f.corr_zl_palm_7d, 0.0) AS corr_zl_palm_7d,
-      COALESCE(f.corr_zl_vix_7d, 0.0) AS corr_zl_vix_7d,
-      COALESCE(f.corr_zl_dxy_7d, 0.0) AS corr_zl_dxy_7d,
-      COALESCE(f.corr_zl_corn_7d, 0.0) AS corr_zl_corn_7d,
-      COALESCE(f.corr_zl_wheat_7d, 0.0) AS corr_zl_wheat_7d,
       
       -- TARGET COLUMNS (REQUIRED BY MODEL SCHEMA; NO NULLS!)
       -- Set to current price to satisfy "no NULL in transformations"
@@ -145,7 +130,6 @@ def refresh_predict_frame():
     FROM d
     JOIN price_data p ON p.date = d.latest_date
     CROSS JOIN big8_signals b
-    LEFT JOIN latest_features f ON TRUE
     """
     
     try:
