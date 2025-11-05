@@ -7,7 +7,7 @@ Early warning system for market sentiment shifts
 
 import pandas as pd
 import requests
-from google.cloud import bigquery
+from google.cloud import bigquery, secretmanager
 import json
 import time
 from datetime import datetime
@@ -27,7 +27,19 @@ class SocialIntelligence:
         self.client = bigquery.Client(project=PROJECT_ID)
         self.social_sources = self._build_social_matrix()
         self.keywords = self._build_sentiment_keywords()
-        self.api_key = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+        self.api_key = self._get_api_key()
+    
+    def _get_api_key(self):
+        """Fetch API key from Secret Manager (with fallback)"""
+        try:
+            secret_client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{PROJECT_ID}/secrets/scrapecreators-api-key/versions/latest"
+            response = secret_client.access_secret_version(request={"name": name})
+            return response.payload.data.decode("UTF-8")
+        except Exception as e:
+            print(f"⚠️  Secret Manager failed: {e}, using fallback")
+            # Temporary fallback - remove after migration
+            return "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
         
     def _build_social_matrix(self):
         """Social intelligence source matrix"""
