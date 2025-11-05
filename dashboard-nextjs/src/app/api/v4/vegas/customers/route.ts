@@ -4,19 +4,18 @@ import { executeBigQueryQuery } from '@/lib/bigquery'
 export async function GET() {
   try {
     // Query for customer relationship data
-    // TODO: Update table name when customer/CRM table is created
     const query = `
       SELECT 
         customer_id as id,
         customer_name as name,
         account_type,
         relationship_score,
-        current_volume,
+        current_volume_gal as current_volume,
         last_order_date,
         growth_potential,
-        next_action_recommendation as next_action
+        next_action
       FROM \`cbi-v14.forecasting_data_warehouse.vegas_customers\`
-      ORDER BY relationship_score DESC, current_volume DESC
+      ORDER BY relationship_score DESC, current_volume_gal DESC
       LIMIT 50
     `
     

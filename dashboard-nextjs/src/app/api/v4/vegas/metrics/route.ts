@@ -30,7 +30,6 @@ export async function GET() {
       alert_count AS (
         SELECT COUNT(*) as margin_risk_alerts
         FROM \`cbi-v14.forecasting_data_warehouse.vegas_margin_alerts\`
-        WHERE alert_status = 'ACTIVE'
       )
       SELECT 
         c.total_customers,
