@@ -3,11 +3,10 @@ import { executeBigQueryQuery } from '@/lib/bigquery'
 
 export async function GET() {
   try {
-    // Query for event-driven upsell opportunities
-    // TODO: Update table name when Vegas events table is created
+    // Query for event-driven upsell opportunities from vegas_upsell_opportunities table
     const query = `
       SELECT 
-        event_id as id,
+        id,
         venue_name,
         event_name,
         event_date,
@@ -16,15 +15,19 @@ export async function GET() {
         oil_demand_surge_gal,
         revenue_opportunity,
         urgency,
-        target_restaurants as messaging_target,
-        monthly_forecast_text,
-        ai_message,
-        timing_recommendation,
-        value_proposition
-      FROM \`cbi-v14.forecasting_data_warehouse.vegas_events\`
-      WHERE event_date >= CURRENT_DATE()
-        AND revenue_opportunity > 0
-      ORDER BY event_date ASC, revenue_opportunity DESC
+        messaging_strategy_target,
+        messaging_strategy_monthly_forecast,
+        messaging_strategy_message,
+        messaging_strategy_timing,
+        messaging_strategy_value_prop
+      FROM \`cbi-v14.forecasting_data_warehouse.vegas_upsell_opportunities\`
+      ORDER BY 
+        CASE urgency
+          WHEN 'IMMEDIATE ACTION' THEN 1
+          WHEN 'HIGH PRIORITY' THEN 2
+          ELSE 3
+        END,
+        revenue_opportunity DESC
       LIMIT 20
     `
     
@@ -47,11 +50,11 @@ export async function GET() {
       revenue_opportunity: row.revenue_opportunity || 0,
       urgency: row.urgency || 'MONITOR',
       messaging_strategy: {
-        target: row.messaging_target || 'Las Vegas area restaurants',
-        monthly_forecast: row.monthly_forecast_text || 'Check dashboard for monthly forecast',
-        message: row.ai_message || `${row.venue_name} - ${row.event_name} bringing increased demand. Increase oil delivery to meet surge.`,
-        timing: row.timing_recommendation || 'Send TODAY',
-        value_prop: row.value_proposition || 'Avoid stockouts during peak demand. We\'ll adjust delivery schedule automatically.'
+        target: row.messaging_strategy_target || 'Las Vegas area restaurants',
+        monthly_forecast: row.messaging_strategy_monthly_forecast || 'Check dashboard for monthly forecast',
+        message: row.messaging_strategy_message || `${row.venue_name} - ${row.event_name} bringing increased demand. Increase oil delivery to meet surge.`,
+        timing: row.messaging_strategy_timing || 'Send TODAY',
+        value_prop: row.messaging_strategy_value_prop || 'Avoid stockouts during peak demand. We\'ll adjust delivery schedule automatically.'
       }
     }))
 
