@@ -15,12 +15,12 @@ export async function GET() {
         recommended_action,
         urgency
       FROM \`cbi-v14.forecasting_data_warehouse.vegas_margin_alerts\`
-      WHERE alert_status = 'ACTIVE'
       ORDER BY 
         CASE severity
           WHEN 'CRITICAL' THEN 1
           WHEN 'HIGH' THEN 2
-          ELSE 3
+          WHEN 'MEDIUM' THEN 3
+          ELSE 4
         END,
         risk_amount_usd DESC
       LIMIT 20
