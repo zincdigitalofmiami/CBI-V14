@@ -5,29 +5,43 @@ ROOT LOCATION (External Drive):
   /Volumes/Satechi Hub/Projects/CBI-V14/
   (Symlinked to ~/Documents/GitHub/CBI-V14 and aliased as `cbi` in ~/.zshrc)
 
-MODELS (DO NOT RENAME):
-  cbi-v14.models_v4.bqml_1w
-  cbi-v14.models_v4.bqml_1m
-  cbi-v14.models_v4.bqml_3m
-  cbi-v14.models_v4.bqml_6m
+BQML MODELS (DO NOT RENAME) - 5 Horizons:
+  cbi-v14.models_v4.bqml_1w   (MAPE 0.7-1.3%, R² > 0.95)
+  cbi-v14.models_v4.bqml_1m   (MAPE 0.7-1.3%, R² > 0.95)
+  cbi-v14.models_v4.bqml_3m   (MAPE 0.7-1.3%, R² > 0.95)
+  cbi-v14.models_v4.bqml_6m   (MAPE 0.7-1.3%, R² > 0.95)
+  cbi-v14.models_v4.bqml_12m  (MAPE 0.7-1.3%, R² > 0.95)
 
-DATASETS (PRODUCTION TRAINING TABLES):
-  cbi-v14.models_v4.production_training_data_1w
-  cbi-v14.models_v4.production_training_data_1m
-  cbi-v14.models_v4.production_training_data_3m
-  cbi-v14.models_v4.production_training_data_6m
+DATASETS (PRODUCTION TRAINING TABLES) - 5 Horizons + Trump Table:
+  cbi-v14.models_v4.production_training_data_1w   (290+ features)
+  cbi-v14.models_v4.production_training_data_1m   (290+ features)
+  cbi-v14.models_v4.production_training_data_3m   (290+ features)
+  cbi-v14.models_v4.production_training_data_6m   (290+ features)
+  cbi-v14.models_v4.production_training_data_12m  (290+ features)
+  cbi-v14.models_v4.trump_rich_2023_2025          (42 features, 782 rows)
 
 KEY FILES:
+  active-plans/MASTER_EXECUTION_PLAN.md          (7-day institutional system plan)
   config/bigquery/bigquery-sql/TRUMP_RICH_DART_V1.sql
   config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/
+  scripts/data_quality_checks.py                 (validate before exports)
+  scripts/export_training_data.py                (export to Parquet)
   scripts/status_check.sh
-  scripts/run_ultimate_consolidation.sh
   vertex-ai/deployment/train_local_deploy_vertex.py
+  vertex-ai/deployment/export_savedmodel.py
+  vertex-ai/deployment/upload_to_vertex.py
+  vertex-ai/deployment/create_endpoint.py
 
-TOP COMMANDS:
-  ./scripts/status_check.sh
-  ./scripts/run_ultimate_consolidation.sh
-  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/TRUMP_RICH_DART_V1.sql
+TOP COMMANDS (Day 1 - Foundation):
+  python3 scripts/data_quality_checks.py          # Validate before export
+  python3 scripts/export_training_data.py         # Export to Parquet
+  ./scripts/status_check.sh                       # System status
+  
+BQML TRAINING (Production):
+  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/TRAIN_BQML_1W_PRODUCTION.sql
+  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/TRAIN_BQML_1M_PRODUCTION.sql
+  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/TRAIN_BQML_3M_PRODUCTION.sql
+  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/TRAIN_BQML_6M_PRODUCTION.sql
 
 INGESTION SCRIPTS (examples):
   src/ingestion/ingest_epa_rin_prices.py
@@ -47,18 +61,34 @@ DO NOT USE:
   Any *_ARCHIVED tables
   Any *_backup tables
 
-PERFORMANCE TARGETS:
-  MAPE < 2%, R² > 0.95 across all horizons
+PERFORMANCE TARGETS (7-Day Plan):
+  Ensemble MAPE: < 1.5% (walk-forward validated)
+  Regime detection: > 95% accuracy
+  Volatility forecast: < 0.5% MAE
+  SHAP coverage: > 80% variance explained
+  BQML Production: MAPE 0.7-1.3%, R² > 0.95
 
 FAST PATHS:
+  Main Plan       → active-plans/MASTER_EXECUTION_PLAN.md (7-day institutional system)
   Documentation   → START_HERE.md, docs/handoffs/, docs/reference/
-  SQL & Features  → config/bigquery/
-  Source Code     → src/
-  Automation      → scripts/
-  Vertex AI       → vertex-ai/
+  SQL & Features  → config/bigquery/bigquery-sql/
+  Source Code     → src/ (ingestion, prediction, training, utils)
+  Automation      → scripts/ (Python and shell utilities)
+  Vertex AI       → vertex-ai/ (deployment, training, evaluation)
+  Dashboard       → dashboard-nextjs/ (Next.js, deployed on Vercel)
+
+CURRENT FOCUS (November 12, 2025):
+  • Local M4 Mac training (TensorFlow Metal GPU)
+  • 7-day institutional system build
+  • Regime-aware ensemble with SHAP explainability
+  • Track 1: BQML production (5 horizons, live)
+  • Track 2: Neural pipeline (local baseline → Vertex AI deployment)
 
 REMINDERS:
-  • Repository lives on the external drive (Satechi Hub).
-  • Use `./setup_new_machine.sh` on a fresh Apple Silicon Mac.
-  • `TrainingData/exports/` is the landing zone for BigQuery exports.
-  • `Logs/` tracks training, ingestion, and deployment runs.
+  • Repository lives on the external drive (Satechi Hub)
+  • Symlink: ~/Documents/GitHub/CBI-V14 → /Volumes/Satechi Hub/Projects/CBI-V14
+  • Use `./setup_new_machine.sh` on a fresh Apple Silicon Mac
+  • TrainingData/exports/ is the landing zone for BigQuery exports
+  • Models/ stores local/vertex-ai/bqml trained artifacts
+  • Logs/ tracks training, ingestion, and deployment runs
+  • All 5 horizons: 1w, 1m, 3m, 6m, 12m
