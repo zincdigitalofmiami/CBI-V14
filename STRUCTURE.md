@@ -33,11 +33,15 @@ This document describes the fully organized structure of the CBI-V14 project aft
 ```
 /Volumes/Satechi Hub/Projects/CBI-V14/
 │
-├── 📁 active-plans/              # Current working plans (Vertex AI focus)
+├── 📁 active-plans/              # Current working plans (8 strategic files)
+│   ├── MASTER_EXECUTION_PLAN.md              # PRIMARY - 7-day institutional system
 │   ├── VERTEX_AI_TRUMP_ERA_PLAN.md
 │   ├── TRUMP_ERA_EXECUTION_PLAN.md
 │   ├── MAC_TRAINING_SETUP_PLAN.md
-│   └── MAC_TRAINING_EXPANDED_STRATEGY.md
+│   ├── MAC_TRAINING_EXPANDED_STRATEGY.md
+│   ├── BASELINE_STRATEGY.md
+│   ├── PHASE_1_PRODUCTION_GAPS.md
+│   └── REGIME_BASED_TRAINING_STRATEGY.md
 │
 ├── 📁 archive/                   # Historical snapshots and legacy packages
 │   └── [date-based archives]
@@ -54,13 +58,13 @@ This document describes the fully organized structure of the CBI-V14 project aft
 ├── 📁 data/                      # Local cache / temporary datasets
 │
 ├── 📁 docs/                      # Documentation library
-│   ├── analysis/
-│   ├── audits/
-│   ├── handoffs/
-│   ├── operations/
-│   ├── plans/
-│   ├── reference/
-│   └── vegas-intel/
+│   ├── analysis/                # Data & model analysis reports
+│   ├── audits/                  # Verification & audit reports
+│   ├── handoffs/                # Session handoffs & summaries
+│   ├── operations/              # Operational documentation
+│   ├── plans/                   # Historical planning documents
+│   ├── reference/               # Reference guides & architecture docs
+│   └── vegas-intel/             # Vegas intelligence documentation
 │
 ├── 📁 legacy/                    # All legacy work & deprecated assets
 │   ├── bqml-work/              # BQML specific files (including sql/)
@@ -85,11 +89,11 @@ This document describes the fully organized structure of the CBI-V14 project aft
 │   └── exports/
 │
 ├── 📁 vertex-ai/                 # Vertex AI implementation
-│   ├── data/
-│   ├── deployment/
-│   ├── evaluation/
-│   ├── prediction/
-│   └── training/
+│   ├── data/                    # Data validation & audit scripts
+│   ├── deployment/              # Model deployment pipeline (4 scripts)
+│   ├── evaluation/              # Model explainability
+│   ├── prediction/              # Prediction generation
+│   └── training/                # Training scripts (Day 2+)
 │
 ├── cloudbuild.yaml
 ├── fix_satechi_permissions.sh
