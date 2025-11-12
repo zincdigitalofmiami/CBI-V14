@@ -39,11 +39,8 @@ def export_savedmodel(
     try:
         print(f"📦 Loading model from: {model_path}")
         
-        # Load model
-        if model_path.endswith('.h5'):
-            model = tf.keras.models.load_model(model_path)
-        else:
-            model = tf.keras.models.load_model(model_path)
+        # Load model (supports both .h5 and SavedModel formats)
+        model = tf.keras.models.load_model(model_path)
         
         print(f"✅ Model loaded: {model.summary()}")
         
