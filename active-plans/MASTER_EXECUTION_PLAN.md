@@ -24,12 +24,13 @@ Train the most accurate ZL (soybean oil) forecasting models possible using local
 - **Cost**: ~$0.12 per training run
 
 **Track 2: Local Neural Pipeline → Vertex AI (In Progress)**
-- **Hardware**: Apple M4 Mac mini + TensorFlow Metal
+- **Hardware**: Apple M4 Mac mini (16GB unified memory) + TensorFlow Metal
 - **Environment**: `vertex-metal-312` (Python 3.12.6)
-- **Models**: Multi-architecture baselines → best performers deployed
+- **Models**: 60-70 models (sequential training, memory-managed)
 - **Location**: `vertex-ai/` + `src/training/`
-- **Status**: Environment ready, scaffolding next
-- **Cost**: Free locally, pay only for Vertex AI inference
+- **Status**: Environment ready, Day 1 execution starting
+- **Cost**: Free locally, ~$10-15 optional cloud (FinBERT fine-tuning)
+- **Constraints**: Sequential training only, FP16 mixed precision mandatory, external SSD for all artifacts
 
 ---
 
@@ -118,18 +119,18 @@ Create separate exports for:
 
 ## Success Metrics
 
-### Baseline Requirements
-| Metric | Target | Notes |
-|--------|--------|-------|
-| Ensemble MAPE | < 1.5% | Walk-forward validated across 60 periods |
-| Regime detection | > 95% accuracy | Tested on historical regime shifts |
-| Volatility forecast | < 0.5% MAE | 90% confidence bands accurate |
-| SHAP coverage | > 80% variance | Top factors explain majority |
-| Correlation alerts | Real-time | Triggers on historical breakdowns |
-| News impact | NLP operational | Predicts $/cwt from headlines |
-| Backtesting | 3+ strategies tested | Shows historical ROI |
-| A/B testing | Shadow mode ready | Safe deployment framework |
-| Daily monitoring | Automated | Alerts working for all failure modes |
+### Baseline Requirements (Realistic for M4 16GB)
+| Metric | Target | Hardware Constraint | Notes |
+|--------|--------|---------------------|-------|
+| Ensemble MAPE | < 1.5% | Sequential training | Walk-forward validated, 60-70 models |
+| Regime detection | > 95% accuracy | LightGBM CPU | Crisis/bull/bear/normal classifier |
+| Volatility forecast | < 0.5% MAE | Small models | GARCH + 1 neural model |
+| SHAP coverage | > 80% variance | Batch inference | Factor attribution |
+| Model count | 60-70 | FP16 sequential | Trees first, nets second, meta last |
+| NLP | Inference-only | Pre-trained FinBERT | Fine-tuning requires cloud |
+| Memory management | Mandatory | 16GB unified | FP16, session cleanup, external SSD |
+| Training strategy | Sequential | One GPU job at a time | Prevent thermal throttling |
+| Batch sizes | Optimized | LSTM ≤32, TCN ≤32, Attention ≤16 | Memory-constrained |
 
 ### Promotion Criteria (Vertex AI)
 A model qualifies for Vertex AI deployment if:
@@ -237,59 +238,84 @@ A model qualifies for Vertex AI deployment if:
 
 ### Day 2: Baselines + Volatility (7 hours)
 
-**Setup (15min)**: GPU Optimization
-- Enable Metal GPU in all training scripts
-- Set mixed precision (2x speedup)
-- Configure data pipeline prefetching
+**Setup (15min)**: GPU Optimization + Memory Management
+- Enable Metal GPU with FP16 mixed precision (MANDATORY for 16GB RAM)
+- Configure gradient checkpointing and memory cleanup
+- Set batch sizes: Trees unlimited, LSTM ≤64, attention ≤16
+- External SSD for all checkpoints/logs
 
-**Track A (2h)**: Statistical Baselines
-- Train ARIMA/Prophet on all 5 horizons
+**Track A (2h)**: Statistical Baselines (CPU, sequential)
+- ARIMA/Prophet on 1w, 1m, 3m (Day 2)
+- Complete 6m, 12m on Day 4 (stagger to avoid heat)
 - Log to MLflow: MAPE, R², residuals
+- Count: 10-12 statistical models
 
-**Track B (2h)**: Tree-Based Baselines  
-- Train LightGBM/XGBoost DART on all 5 horizons
-- Compare to current BQML performance
+**Track B (2h)**: Tree-Based Baselines (CPU, 8-10 threads)
+- LightGBM DART: 3-4 configs per horizon, 1w/1m/3m first
+- XGBoost DART: 2 configs per horizon
+- Complete 6m/12m on Day 4
+- Count: 8-10 tree models (Day 2), 4-6 more (Day 4)
 
-**Track C (1.5h)**: Simple Neural Baselines
-- Train 1-layer LSTM on all 5 horizons (GPU accelerated)
+**Track C (1.5h)**: Simple Neural Baselines (GPU, sequential)
+- 1-layer LSTM, 1-layer GRU, Feedforward Dense
+- Train 1w, 1m only on Day 2 (test Metal performance)
+- Complete 3m/6m/12m on Day 3-4
+- Clear Keras session after each model (memory management)
+- Count: 6 simple neural (Day 2), 9 more (Days 3-4)
 
-**Track D (1.5h)**: Volatility Forecasting
-- Train volatility prediction model (separate from price)
-- Required for confidence intervals + hedging decisions
+**Track D (1h)**: Volatility Forecasting
+- GARCH (statsmodels, fast)
+- 1 neural volatility model (lightweight)
+- Count: 2 volatility models
 
 **Scripts Created**:
-- `src/training/baselines/statistical.py`
-- `src/training/baselines/tree_models.py`
-- `src/training/baselines/neural_baseline.py`
+- `src/training/baselines/statistical.py` (with caching)
+- `src/training/baselines/tree_models.py` (with memory limits)
+- `src/training/baselines/neural_baseline.py` (FP16, session cleanup)
 - `src/training/baselines/volatility_model.py`
 
-**Deliverable**: 20 baseline models trained (4 types × 5 horizons), volatility forecasts available
+**Deliverable**: 20 baseline models started (complete remainder Days 3-4), volatility forecasts available
+
+**Memory Management**: Clear sessions, one GPU job at a time, monitor Activity Monitor
 
 ---
 
 ### Day 3: Advanced Models + Regime Detection + Backtesting (11 hours)
 
-**Morning (5h)**: Advanced Neural Architectures
-- Train 20+ variants: 2-layer LSTM, GRU, Attention, TCN, CNN-LSTM
-- Use Keras Tuner for hyperparameter optimization
-- All GPU-accelerated
-- **Start FinBERT fine-tuning overnight** (runs while you sleep)
+**Morning (5h)**: Advanced Neural Architectures (REALISTIC for 16GB)
+- **Core architectures** (train 10-15 total, not 20-30):
+  - 2-layer LSTM (2-3 variants, units 64-128)
+  - 2-layer GRU (2-3 variants)
+  - TCN (1-2 variants, kernel_size 3-5)
+  - CNN-LSTM hybrid (1-2 variants)
+  - Optional: 1-2 TINY attention (heads ≤4, d_model ≤256, seq_len ≤256)
+- **Cut:** Heavy Transformers, multi-head attention >4, bidirectional LSTM
+- **Strategy:** Train SEQUENTIALLY, clear Keras sessions, FP16 mixed precision
+- **Batch sizes:** LSTM ≤32, TCN ≤32, attention ≤16
+- **Focus:** 1w, 1m, 3m horizons (complete 6m/12m Day 4)
+- Use Keras Tuner with RandomSearch (not Bayesian - too slow)
+- Count: 10-12 advanced models
 
 **Afternoon (6h)**: Critical Infrastructure
-- **Regime classifier** (3h) - detect crisis/bull/bear/normal automatically
-- **Train regime-specific models** (2h) - specialized models per regime
-- **Walk-forward validation** (2h) - 60-iteration true out-of-sample test
-- **Backtesting engine** (2h) - validate procurement strategies
-- Document which models/strategies actually work
+- **Regime classifier** (1h) - LightGBM, detect crisis/bull/bear/normal
+- **Regime-specific models** (3h) - TOP 2-3 architectures per regime (not all)
+  - Crisis regime: 2-layer LSTM + GRU (most important for risk)
+  - Bull/Bear/Normal: 1 architecture each
+  - Count: 8-10 regime models (not 20)
+- **Walk-forward validation** (2h) - 60-iteration out-of-sample test
+- **Backtesting engine** (2h) - procurement strategy validation
+- Document winners
 
 **Scripts Created**:
-- `src/training/baselines/neural_advanced.py`
-- `src/training/regime_classifier.py` - automatic regime detection
-- `src/training/regime_models.py` - crisis/bull/bear/normal specialists
+- `src/training/baselines/neural_advanced.py` (FP16, memory cleanup)
+- `src/training/regime_classifier.py` - LightGBM classifier
+- `src/training/regime_models.py` - selective regime specialists
 - `src/training/walk_forward_validation.py`
 - `src/analysis/backtesting_engine.py`
 
-**Deliverable**: 40+ models trained, regime detection working, true MAPE known, strategies validated
+**Deliverable**: 20-25 models trained (realistic for 16GB), regime detection working, true MAPE known, strategies validated
+
+**Overnight**: Let best models train overnight (2-layer LSTM for 6m/12m)
 
 ---
 
@@ -319,27 +345,35 @@ A model qualifies for Vertex AI deployment if:
 
 ---
 
-### Day 5: Ensemble + Uncertainty + NLP (11 hours)
+### Day 5: Ensemble + Uncertainty + NLP (9 hours - REVISED)
 
 **Morning (5h)**: Regime-Aware Ensemble
 - `config/bigquery/bigquery-sql/ensemble_meta_learner.sql` - dynamic model blending
 - **Regime-aware weighting** - crisis = weight 1W more, calm = weight 6M more
-- Train ensemble on historical predictions with regime context
+- Train LightGBM meta-learner on OOF predictions + regime context
 - **Integrate regime classifier** - automatic model switching
+- Count: 5 ensemble models (1 per horizon)
 
-**Afternoon (6h)**: Uncertainty + NLP + Volatility
-- **Uncertainty quantification** (2h) - conformal prediction (MAPIE) for 90% confidence bands
+**Afternoon (4h)**: Uncertainty + NLP (INFERENCE-ONLY)
+- **Uncertainty quantification** (2h) - MAPIE conformal prediction for 90% confidence bands
 - **Volatility integration** (1h) - combine volatility forecasts with price forecasts
-- **News impact NLP** (3h) - integrate fine-tuned FinBERT (finished overnight)
-- **Correlation monitoring dashboard** (1h) - real-time correlation breakdown alerts
+- **News impact NLP** (1h) - PRE-TRAINED FinBERT inference only (NOT fine-tuned)
+  - Use ProsusAI/finbert out-of-box
+  - Inference on 551 articles (batch 16, seq_len 128)
+  - Generate sentiment features for predictions
+  - **Skip:** Fine-tuning (too heavy for 16GB RAM)
+  - **Optional:** Fine-tune on Colab Pro (2-hour session, $10)
 
 **Scripts Created**:
-- `src/prediction/ensemble_predictor.py` - regime-aware ensemble
-- `src/prediction/uncertainty_quantification.py`
-- `src/prediction/news_impact_model.py`
+- `src/prediction/ensemble_predictor.py` - LightGBM meta-learner
+- `src/prediction/uncertainty_quantification.py` - MAPIE
+- `src/prediction/news_impact_model.py` - FinBERT inference wrapper
 - `config/bigquery/bigquery-sql/ensemble_meta_learner.sql`
+- `scripts/correlation_monitoring.py`
 
-**Deliverable**: Ensemble beating individuals, confidence intervals shown, NLP predicting news impact, correlation monitoring live
+**Deliverable**: Ensemble beating individuals, confidence intervals shown, NLP sentiment features (inference-only), correlation monitoring live
+
+**Memory Management**: Keep FinBERT in inference mode only, batch size ≤16
 
 ---
 
@@ -391,22 +425,24 @@ A model qualifies for Vertex AI deployment if:
 
 ## Complete Feature Set (End of Day 7)
 
-| Feature | Implementation | Status |
-|---------|---------------|--------|
-| **Baseline models** | 40+ models trained (statistical, tree, neural, regime-specific) | ✅ |
-| **Ensemble meta-learner** | Regime-aware dynamic blending | ✅ |
-| **Regime detection** | Automatic crisis/bull/bear/normal classification | ✅ |
-| **Daily validation** | Predictions vs actuals with decomposition | ✅ |
-| **Performance alerts** | Email if MAPE > 3% or regime failure | ✅ |
-| **SHAP explainability** | Factor attribution per prediction | ✅ |
-| **Feature drift tracking** | Detect importance changes over time | ✅ |
-| **Volatility forecasting** | Separate volatility model for uncertainty | ✅ |
-| **Uncertainty quantification** | Conformal prediction, 90% confidence bands | ✅ |
-| **Correlation monitoring** | Real-time soy-palm/crude breakdown alerts | ✅ |
-| **News impact NLP** | FinBERT predicting $/cwt from headlines | ✅ |
-| **Backtesting engine** | Validate procurement strategies | ✅ |
-| **A/B testing** | Shadow mode for safe model deployments | ✅ |
-| **Walk-forward validation** | 60-iteration out-of-sample testing | ✅ |
+| Feature | Implementation | Hardware Realistic | Status |
+|---------|---------------|-------------------|--------|
+| **Baseline models** | 60-70 models (statistical, tree, neural, regime) | ✅ 16GB capable | ✅ |
+| **Ensemble meta-learner** | LightGBM regime-aware blending | ✅ Lightweight | ✅ |
+| **Regime detection** | LightGBM crisis/bull/bear/normal classifier | ✅ CPU-friendly | ✅ |
+| **Daily validation** | Predictions vs actuals with decomposition | ✅ No GPU needed | ✅ |
+| **Performance alerts** | Email if MAPE > 3% or regime failure | ✅ Scripts only | ✅ |
+| **SHAP explainability** | Factor attribution per prediction | ✅ Batch inference | ✅ |
+| **Feature drift tracking** | Detect importance changes over time | ✅ Lightweight | ✅ |
+| **Volatility forecasting** | GARCH + 1 neural model | ✅ Small models | ✅ |
+| **Uncertainty quantification** | MAPIE conformal prediction, 90% bands | ✅ Post-processing | ✅ |
+| **Correlation monitoring** | Real-time soy-palm/crude breakdown alerts | ✅ Scripts only | ✅ |
+| **News impact NLP** | FinBERT inference (pre-trained, NOT fine-tuned) | ✅ Inference-only | ✅ |
+| **Backtesting engine** | Validate procurement strategies | ✅ Python only | ✅ |
+| **A/B testing** | Shadow mode for safe model deployments | ✅ Logging only | ✅ |
+| **Walk-forward validation** | 60-iteration out-of-sample testing | ✅ Sequential | ✅ |
+
+**Optional (Cloud): FinBERT fine-tuning** - 2-hour Colab Pro session ($10), download weights for local inference
 
 ---
 
@@ -489,6 +525,75 @@ A model qualifies for Vertex AI deployment if:
 - 🚨 No news impact NLP → **Day 5**
 - 🚨 No backtesting engine → **Day 3**
 - 🚨 No A/B testing framework → **Day 6**
+
+---
+
+**Review Cadence**: Update this file weekly or after major milestones.
+
+
+---
+
+## Hardware Constraints & Optimization (M4 Mac Mini 16GB)
+
+### Critical Limits
+- **Unified Memory**: 16GB total (shared CPU+GPU)
+- **Training Strategy**: SEQUENTIAL only (one GPU job at a time)
+- **Storage**: 1TB external SSD (all data, checkpoints, logs)
+- **Thermal Management**: Desk fan recommended, monitor Activity Monitor
+
+### Memory Optimization (MANDATORY)
+- **Mixed Precision**: FP16/bfloat16 everywhere (2x memory savings)
+- **Batch Sizes**: Trees unlimited, LSTM ≤64, TCN ≤32, Attention ≤16
+- **Sequence Length**: ≤256 default, ≤512 only for "hero" runs
+- **Session Cleanup**: `tf.keras.backend.clear_session()` after each model
+- **Gradient Accumulation**: Use for small batches (2-4 steps)
+- **Checkpointing**: External SSD only (never internal drive)
+
+### Training Schedule (Prevent Thermal Throttling)
+- **One heavy job at a time**: Never overlap GPU models
+- **Trees first**: LightGBM/XGBoost finish fast, no thermal issues
+- **Nets second**: LSTM/GRU/TCN overnight for heavy horizons
+- **Meta last**: Ensemble after all base models complete
+- **Monitor**: `powermetrics` or Activity Monitor GPU history
+- **If throttling**: Drop batch size or pause for cooldown
+
+### Data Pipeline Optimization
+- **Cache features ONCE**: Polars or DuckDB to generate, save as Parquet
+- **Reuse across models**: All models read from same cached Parquet
+- **External SSD**: All training data, never load into internal drive
+- **Memory limit**: Keep datasets < 1.5GB in memory, stream if larger
+
+### What to Skip on 16GB RAM
+- ❌ Heavy Transformers (>8 heads, d_model >512)
+- ❌ FinBERT fine-tuning locally (use Colab Pro for 2 hours)
+- ❌ Parallel deep nets (will swap and thrash)
+- ❌ Bidirectional LSTM for all horizons (2x memory - do 1-2 only)
+- ❌ Full attention mechanisms (stick to 2-4 heads max)
+
+### What Works Great on 16GB RAM
+- ✅ All statistical models (CPU-only, low memory)
+- ✅ All tree models (CPU-efficient, fast)
+- ✅ 1-2 layer LSTM/GRU (Metal GPU, FP16)
+- ✅ TCN (efficient architecture)
+- ✅ Regime classifier (LightGBM, trivial)
+- ✅ Ensemble meta-learner (LightGBM, minutes)
+- ✅ SHAP/MAPIE/backtesting (post-processing, no GPU)
+- ✅ FinBERT inference (pre-trained weights, batch ≤16)
+
+### Realistic Model Count (7 Days on 16GB)
+- Statistical: 10-12 models ✅
+- Trees: 12-16 models ✅
+- Simple neural: 12-15 models ✅
+- Advanced neural: 10-12 models ✅
+- Regime-specific: 8-10 models ✅
+- Volatility: 2 models ✅
+- Ensemble: 5 models ✅
+- **Total: 60-70 models** (achievable with discipline)
+
+### External Workarounds (Optional)
+- **FinBERT fine-tuning**: Colab Pro (2 hours, $10)
+- **Heavy Transformers**: Kaggle free GPU (30 hrs/week) or Vertex AI Workbench ($5-10)
+- **Alternative**: Use inference-only, skip fine-tuning entirely
 
 ---
 
