@@ -31,7 +31,7 @@ def export_savedmodel(
     Args:
         model_path: Path to saved Keras model (.h5 or SavedModel)
         output_path: Directory where SavedModel will be exported
-        horizon: Prediction horizon (1w, 1m, 3m, 6m)
+        horizon: Prediction horizon (1w, 1m, 3m, 6m, 12m)
     
     Returns:
         True if export successful, False otherwise
@@ -91,7 +91,7 @@ def main():
     parser.add_argument(
         "--horizon",
         default="1m",
-        choices=["1w", "1m", "3m", "6m"],
+        choices=["1w", "1m", "3m", "6m", "12m"],
         help="Prediction horizon (default: 1m)"
     )
     

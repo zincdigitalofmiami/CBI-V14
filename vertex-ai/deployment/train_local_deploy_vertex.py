@@ -8,7 +8,7 @@ This script orchestrates the complete workflow:
 3. Upload to Vertex AI Model Registry
 4. Deploy endpoint for predictions
 
-Supports all 4 horizons: 1w, 1m, 3m, 6m
+Supports all 5 horizons: 1w, 1m, 3m, 6m, 12m
 """
 
 import os
@@ -47,7 +47,7 @@ def train_local_deploy_vertex(
     Complete workflow: Train locally, export, upload, deploy.
     
     Args:
-        horizon: Prediction horizon (1w, 1m, 3m, 6m)
+        horizon: Prediction horizon (1w, 1m, 3m, 6m, 12m)
         model_path: Path to trained model (if skip_training=True)
         skip_training: Skip training step (use existing model)
         skip_export: Skip SavedModel export step
@@ -171,7 +171,7 @@ def main():
     parser.add_argument(
         "--horizon",
         required=True,
-        choices=["1w", "1m", "3m", "6m"],
+        choices=["1w", "1m", "3m", "6m", "12m"],
         help="Prediction horizon"
     )
     parser.add_argument(
