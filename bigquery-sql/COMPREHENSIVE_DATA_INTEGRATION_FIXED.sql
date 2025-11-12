@@ -349,7 +349,11 @@ SELECT * FROM currency_pivoted ORDER BY date;
 -- Only update columns that exist in target table
 -- ============================================
 
-MERGE `cbi-v14.models_v4.training_dataset_super_enriched` AS target
+-- NOTE: This SQL targets production_training_data_* tables
+-- Update each horizon table separately (1w, 1m, 3m, 6m)
+-- For now, updating production_training_data_1m as example
+
+MERGE `cbi-v14.models_v4.production_training_data_1m` AS target
 USING (
   WITH 
   -- News data
@@ -418,11 +422,48 @@ USING (
       usd_ars_rate,
       usd_myr_rate
     FROM `cbi-v14.models_v4.currency_complete`
+  ),
+  
+  -- NEW: RIN prices data
+  rin AS (
+    SELECT 
+      date,
+      rin_d4_price,
+      rin_d5_price,
+      rin_d6_price
+    FROM `cbi-v14.models_v4.rin_prices_daily`
+  ),
+  
+  -- NEW: RFS mandates data
+  rfs AS (
+    SELECT 
+      date,
+      rfs_mandate_biodiesel,
+      rfs_mandate_advanced,
+      rfs_mandate_total
+    FROM `cbi-v14.models_v4.rfs_mandates_daily`
+  ),
+  
+  -- NEW: Freight logistics data
+  freight AS (
+    SELECT 
+      date,
+      baltic_dry_index
+    FROM `cbi-v14.models_v4.freight_logistics_daily`
+  ),
+  
+  -- NEW: Argentina port logistics data
+  argentina_port AS (
+    SELECT 
+      date,
+      argentina_vessel_queue_count,
+      argentina_port_throughput_teu
+    FROM `cbi-v14.models_v4.argentina_port_logistics_daily`
   )
   
   -- Combine all data sources
   SELECT 
-    COALESCE(news.date, cftc.date, palm.date, social.date, trump.date, usda.date, currency.date) as date,
+    COALESCE(news.date, cftc.date, palm.date, social.date, trump.date, usda.date, currency.date, rin.date, rfs.date, freight.date, argentina_port.date) as date,
     
     -- News features
     news.news_article_count, news.news_avg_score, news.news_sentiment_avg,
@@ -449,9 +490,27 @@ USING (
     -- USDA features
     usda.soybean_weekly_sales, usda.soybean_oil_weekly_sales, usda.soybean_meal_weekly_sales,
     usda.china_soybean_sales,
+    usda.china_weekly_cancellations_mt,
     
     -- Currency features
-    currency.usd_cny_rate_new, currency.usd_brl_rate_new, currency.usd_ars_rate, currency.usd_myr_rate
+    currency.usd_cny_rate_new, currency.usd_brl_rate_new, currency.usd_ars_rate, currency.usd_myr_rate,
+    
+    -- NEW: RIN prices features
+    rin.rin_d4_price,
+    rin.rin_d5_price,
+    rin.rin_d6_price,
+    
+    -- NEW: RFS mandate features
+    rfs.rfs_mandate_biodiesel,
+    rfs.rfs_mandate_advanced,
+    rfs.rfs_mandate_total,
+    
+    -- NEW: Freight logistics features
+    freight.baltic_dry_index,
+    
+    -- NEW: Argentina port logistics features
+    argentina_port.argentina_vessel_queue_count,
+    argentina_port.argentina_port_throughput_teu
     
   FROM news
   FULL OUTER JOIN cftc USING(date)
@@ -460,7 +519,11 @@ USING (
   FULL OUTER JOIN trump USING(date)
   FULL OUTER JOIN usda USING(date)
   FULL OUTER JOIN currency USING(date)
-  WHERE COALESCE(news.date, cftc.date, palm.date, social.date, trump.date, usda.date, currency.date) IS NOT NULL
+  FULL OUTER JOIN rin USING(date)
+  FULL OUTER JOIN rfs USING(date)
+  FULL OUTER JOIN freight USING(date)
+  FULL OUTER JOIN argentina_port USING(date)
+  WHERE COALESCE(news.date, cftc.date, palm.date, social.date, trump.date, usda.date, currency.date, rin.date, rfs.date, freight.date, argentina_port.date) IS NOT NULL
   
 ) AS source ON target.date = source.date
 WHEN MATCHED THEN UPDATE SET
@@ -482,7 +545,27 @@ WHEN MATCHED THEN UPDATE SET
   
   -- Currency updates  
   usd_cny_rate = COALESCE(target.usd_cny_rate, source.usd_cny_rate_new),
-  usd_brl_rate = COALESCE(target.usd_brl_rate, source.usd_brl_rate_new);
+  usd_brl_rate = COALESCE(target.usd_brl_rate, source.usd_brl_rate_new),
+  
+  -- NEW: RIN prices updates
+  rin_d4_price = COALESCE(target.rin_d4_price, source.rin_d4_price),
+  rin_d5_price = COALESCE(target.rin_d5_price, source.rin_d5_price),
+  rin_d6_price = COALESCE(target.rin_d6_price, source.rin_d6_price),
+  
+  -- NEW: RFS mandates updates
+  rfs_mandate_biodiesel = COALESCE(target.rfs_mandate_biodiesel, source.rfs_mandate_biodiesel),
+  rfs_mandate_advanced = COALESCE(target.rfs_mandate_advanced, source.rfs_mandate_advanced),
+  rfs_mandate_total = COALESCE(target.rfs_mandate_total, source.rfs_mandate_total),
+  
+  -- NEW: Freight logistics updates
+  baltic_dry_index = COALESCE(target.baltic_dry_index, source.baltic_dry_index),
+  
+  -- NEW: Argentina port logistics updates
+  argentina_vessel_queue_count = COALESCE(target.argentina_vessel_queue_count, source.argentina_vessel_queue_count),
+  argentina_port_throughput_teu = COALESCE(target.argentina_port_throughput_teu, source.argentina_port_throughput_teu),
+  
+  -- NEW: China weekly cancellations update
+  china_weekly_cancellations_mt = COALESCE(target.china_weekly_cancellations_mt, source.china_weekly_cancellations_mt);
 
 -- ============================================
 -- FINAL VERIFICATION: CHECK ALL IMPROVEMENTS

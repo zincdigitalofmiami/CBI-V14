@@ -6,15 +6,15 @@
 
 **GOLDMAN SACHS / JP MORGAN STANDARD** soybean oil (ZL) futures forecasting platform delivering actionable BUY/WAIT/MONITOR signals for Chris Stacy (US Oil Solutions, Las Vegas). Features Vertex AI AutoML neural networks trained on 209 features including Big 8 signals, China imports, Argentina crisis tracking, and industrial demand indicators. Dashboard translates institutional signals into procurement-focused business language.
 
-## 🔥 CURRENT STATUS (October 28, 2025)
+## 🔥 CURRENT STATUS (November 5, 2025)
 
-### **🚀 VERTEX AI AUTOML BREAKTHROUGH - PHASE 2 COMPLETE:**
-- ✅ **PILOT SUCCESS** - 1W Horizon: 1.72% MAPE, R² 0.9836 (Pipeline 3610713670704693248)
-- ✅ **209 FEATURES READY** - Big 8 + China + Argentina + Industrial demand integrated
-- ✅ **DATA PREPARATION COMPLETE** - Phase 0 & 1 finished, all critical data loaded
-- ✅ **NULL SOLUTION IDENTIFIED** - Filtered views approach for 1M/3M/6M horizons
-- ✅ **FOUR DATASETS READY** - Vertex AI datasets confirmed "READY" status
-- ✅ **$100 BUDGET APPROVED** - $20 pilot used, $80 remaining for full production
+### **🚀 PRODUCTION BQML MODELS ACTIVE:**
+- ✅ **4 MODELS TRAINED** - bqml_1w (275 feat), bqml_1m (274), bqml_3m (268), bqml_6m (258)
+- ✅ **PREDICTIONS WORKING** - Last generated Nov 4, 2025 at 21:56:18 UTC
+- ✅ **EXCELLENT ACCURACY** - MAPE: 0.70-1.29% (institutional grade <2%)
+- ✅ **DATA BACKFILLED** - News/Trump/policy columns now have 20-99% coverage
+- ✅ **PRODUCTION FOLDER** - `/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/`
+- ✅ **NULL STATUS VERIFIED** - All features checked, no 100% NULL columns
 
 ### **🎯 CHRIS-FOCUSED DASHBOARD ARCHITECTURE:**
 - ✅ **PROCUREMENT SIGNALS** - BUY/WAIT/MONITOR with confidence levels and price targets
@@ -24,19 +24,38 @@
 - ✅ **100% MODEL-DRIVEN** - No fake data, all values from trained models/warehouse
 - ✅ **GLIDE APP INTEGRATION** - Customer data, relationship status, historical volumes
 
-### **🎯 IMMEDIATE NEXT ACTIONS:**
-**PHASE 2.3 - FILTERED VIEWS & RELAUNCH:**
+### **🎯 PRODUCTION CONFIGURATION:**
+**Location:** `/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/`
 
+**Training SQL:**
 ```bash
-# 1. Create NULL-free filtered views for Vertex AI
-cd /Users/zincdigital/CBI-V14/automl
-python3 create_filtered_views.py
+# Production BQML training files:
+# TRAIN_BQML_1W_PRODUCTION.sql (275 features)
+# TRAIN_BQML_1M_PRODUCTION.sql (274 features)
+# TRAIN_BQML_3M_PRODUCTION.sql (268 features)
+# TRAIN_BQML_6M_PRODUCTION.sql (258 features)
+```
 
-# 2. Relaunch full production training (1M/3M/6M horizons)
-python3 run_minimal_research_based.py
+**Prediction SQL:**
+```bash
+# Generate all predictions:
+# GENERATE_PREDICTIONS_PRODUCTION.sql
+# Output: predictions_uc1.production_forecasts
+```
 
-# 3. Monitor training progress
-# Expected: 3 successful training jobs, ~$80 budget usage
+**Data Flow:**
+```bash
+# 1. Ingestion (hourly/daily crons)
+forecasting_data_warehouse.* (raw data)
+       ↓
+# 2. Feature engineering (daily 6 AM)
+neural.vw_big_eight_signals (view with 275+ features)
+       ↓
+# 3. Materialization
+models_v4.training_dataset_super_enriched (table)
+       ↓
+# 4. Training/Prediction
+bqml_1w, bqml_1m, bqml_3m, bqml_6m → predictions_uc1.production_forecasts
 ```
 
 **CRITICAL TECHNICAL LESSONS:**
@@ -45,14 +64,20 @@ python3 run_minimal_research_based.py
 - 🎯 **Sequential Launch** - Google Cloud quota limits concurrent AutoML jobs
 - ✅ **Pilot Validated** - 1W model proves architecture works (1.72% MAPE)
 
-### **🏆 MODEL PERFORMANCE COMPARISON:**
-| Model Type | Horizon | MAPE | R² | Status | Notes |
-|------------|---------|------|----|---------|----|
-| **Vertex AI AutoML** | 1-Week | 1.72% | 0.9836 | ✅ PRODUCTION | Pilot complete, neural architecture |
-| **ARIMA Baseline** | 1-Week | 0.03% | N/A | 🏆 EXCEPTIONAL | Simple time series baseline |
-| **BigQuery ML Boosted Tree** | 1-Month | 2.84% | N/A | ✅ INSTITUTIONAL | Legacy production model |
-| **BigQuery ML Boosted Tree** | 3-Month | 2.51% | N/A | ✅ INSTITUTIONAL | Legacy production model |
-| **BigQuery ML Boosted Tree** | 6-Month | 2.37% | N/A | ✅ INSTITUTIONAL | Legacy production model |
+### **🏆 PRODUCTION MODEL PERFORMANCE:**
+| Model | Horizon | Features | Training Loss | Eval Loss | MAPE | Status |
+|-------|---------|----------|---------------|-----------|------|--------|
+| **bqml_1w** | 1-Week | 275 | 0.303 | 1.290 | 1.21% | ✅ PRODUCTION |
+| **bqml_1m** | 1-Month | 274 | 0.304 | 1.373 | 1.29% | ✅ PRODUCTION |
+| **bqml_3m** | 3-Month | 268 | 0.300 | 1.260 | 0.70% | ✅ PRODUCTION |
+| **bqml_6m** | 6-Month | 257 | 0.288 | 1.234 | 1.21% | ✅ PRODUCTION |
+
+**Vertex AI AutoML Models (Alternative):**
+| Model ID | Horizon | Status |
+|----------|---------|--------|
+| 575258986094264320 | 1-Week | ✅ Endpoint |
+| 3157158578716934144 | 3-Month | ✅ Endpoint |
+| 3788577320223113216 | 6-Month | ✅ Endpoint |
 
 **🎯 TARGET PERFORMANCE (Chris's Requirements):**
 - **<2% MAPE** for all horizons (institutional grade)

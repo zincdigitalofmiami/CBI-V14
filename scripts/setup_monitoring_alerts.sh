@@ -221,3 +221,9 @@ echo "📊 View job execution tracking:"
 echo "   bq query --use_legacy_sql=false 'SELECT * FROM \`cbi-v14.forecasting_data_warehouse.job_execution_tracking\` ORDER BY execution_time DESC LIMIT 100'"
 echo ""
 
+
+
+
+
+
+

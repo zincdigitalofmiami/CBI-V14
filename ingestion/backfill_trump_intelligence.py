@@ -247,11 +247,11 @@ class TrumpIntelligenceBackfillPipeline:
         """Run Trump intelligence backfill for his PREVIOUS PRESIDENTIAL TERM"""
         logger.info("🇺🇸 Starting Trump policy intelligence backfill...")
         
-        # CORRECTED: Target Trump's previous presidency for agricultural policy data
-        # Trump's previous term: Jan 20, 2017 - Jan 20, 2021 (key agricultural/trade war period)
-        # Focus on peak trade war period: 2018-2020
-        start_date = '2018-01-01'  # Peak agricultural/trade policy period
-        end_date = '2020-12-31'    # End of key policy period
+        # CORRECTED: Truth Social launched Feb 2022, so backfill from launch to present
+        # Target gap: Oct 2023 - Apr 2025 (18-month gap in existing data)
+        # But we can backfill full history: Feb 2022 - Apr 2025 (when current data starts)
+        start_date = '2022-02-15'  # Truth Social launch (Feb 2022)
+        end_date = '2025-04-02'    # Day before current data starts (Apr 3, 2025)
         
         results = {
             'start_time': datetime.now().isoformat(),

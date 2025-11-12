@@ -141,3 +141,9 @@ echo "  3. Monitor logs: gcloud scheduler jobs describe JOB_NAME --location=$REG
 echo ""
 
 
+
+
+
+
+
+

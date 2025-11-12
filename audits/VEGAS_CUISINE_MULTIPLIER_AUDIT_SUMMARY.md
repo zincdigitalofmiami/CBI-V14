@@ -22,3 +22,9 @@
 3. Replace all fake multipliers (2.0, 3.4, 2.5, 1.8, 1.3) with real multipliers
 4. Remove all hardcoded event multipliers
 
+
+
+
+
+
+

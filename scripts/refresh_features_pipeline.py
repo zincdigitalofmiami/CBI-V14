@@ -45,13 +45,11 @@ def run_step(module_name: str):
 
 
 def materialise_final_table():
-    """Create or replace the static training table from final view."""
-    logger.info("📝 Materialising %s.%s.%s", PROJECT_ID, DATASET_ID, TARGET_TABLE)
-    query = f"""
-    CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.{TARGET_TABLE}` AS
-    SELECT * FROM `{PROJECT_ID}.neural.vw_big_eight_signals`  -- final enriched view
-    """
-    subprocess.run(["bq", "query", "--use_legacy_sql=false", query], check=True)
+    """DO NOT MATERIALIZE - Keep production_training_data tables intact!"""
+    logger.info("⏭️  SKIPPING materialization - production_training_data_* tables are managed separately")
+    logger.info("✅ Production datasets: production_training_data_1w/1m/3m/6m (290 features each)")
+    # DO NOT overwrite production_training_data tables - they have 290 features!
+    # training_dataset_super_enriched is DEPRECATED (11 columns only)
 
 
 def write_manifest():

@@ -117,3 +117,9 @@ FROM event_restaurant_pairs
 WHERE distance_km < 10.0  -- Only events within 10km
 ORDER BY combined_impact_score DESC;
 
+
+
+
+
+
+

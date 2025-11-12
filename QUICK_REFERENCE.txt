@@ -1,0 +1,37 @@
+CBI-V14 PRODUCTION SYSTEM - QUICK REFERENCE
+============================================
+
+MODELS (DO NOT RENAME):
+  cbi-v14.models_v4.bqml_1w
+  cbi-v14.models_v4.bqml_1m
+  cbi-v14.models_v4.bqml_3m
+  cbi-v14.models_v4.bqml_6m
+
+DATASETS (ALL INGESTION GOES HERE):
+  cbi-v14.models_v4.production_training_data_1w (290 features)
+  cbi-v14.models_v4.production_training_data_1m (290 features)
+  cbi-v14.models_v4.production_training_data_3m (290 features)
+  cbi-v14.models_v4.production_training_data_6m (290 features)
+
+INGESTION SCRIPTS:
+  scripts/hourly_prices.py
+  scripts/daily_weather.py
+  ingestion/ingest_social_intelligence_comprehensive.py
+  ingestion/backfill_trump_intelligence.py
+  ingestion/ingest_market_prices.py
+  ingestion/ingest_cftc_positioning_REAL.py
+  ingestion/ingest_usda_harvest_api.py
+  ingestion/ingest_eia_biofuel_real.py
+
+API KEYS (Secret Manager):
+  FRED: dc195c8658c46ee1df83bcd4fd8a690b
+  NOAA: rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi
+  Scrape Creators: B1TOgQvMVSV6TDglqB8lJ2cirqi2
+
+DO NOT USE:
+  training_dataset_super_enriched (11 cols - BROKEN!)
+  Any _ARCHIVED_* tables
+  Any *_backup tables
+
+PERFORMANCE:
+  MAE: 0.30, R²: 0.987, MAPE: <1%

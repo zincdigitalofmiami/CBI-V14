@@ -1,0 +1,192 @@
+
+================================================================================
+COMPREHENSIVE DATA INVENTORY
+2025-11-07 14:07:53
+Project: cbi-v14
+================================================================================
+
+
+================================================================================
+DATASET: forecasting_data_warehouse
+================================================================================
+
+Error analyzing forecasting_data_warehouse: 400 Unrecognized name: table_name at [3:9]
+
+Location: us-central1
+Job ID: abc5765a-0c7f-48f3-ae1a-a5661284a46d
+
+
+================================================================================
+DATASET: models_v4
+================================================================================
+
+Error analyzing models_v4: 400 Unrecognized name: table_name at [3:9]
+
+Location: us-central1
+Job ID: 657f451d-04e9-4596-a954-85f6d9d80df3
+
+
+================================================================================
+DATASET: neural
+================================================================================
+
+Error analyzing neural: 400 Unrecognized name: table_name at [3:9]
+
+Location: us-central1
+Job ID: ff839438-8eff-4b80-bb10-569b46ea4bf5
+
+
+================================================================================
+DATASET: staging
+================================================================================
+
+Error analyzing staging: 400 Unrecognized name: table_name at [3:9]
+
+Location: us-central1
+Job ID: 27882ed3-b60d-4f6a-b7b0-85e57bf187e0
+
+
+
+================================================================================
+FEATURE POTENTIAL ANALYSIS
+================================================================================
+
+forecasting_data_warehouse:
+  Tables: 56
+  Total Columns: 738
+models_v4:
+  Tables: 65
+  Total Columns: 8372
+neural:
+  Tables: 0
+  Total Columns: 0
+staging:
+  Tables: 9
+  Total Columns: 103
+
+TOTAL RAW FEATURE POTENTIAL: 9213 columns
+Vertex AI Limit: 1,000 columns
+Feature Selection Ratio: 9213/1000 = 9.2x (need to select top features)
+
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Total Datasets Analyzed: 4
+Total Tables with Data: 0
+Total Rows Available: 0
+
+Time Series Tables Found: 0
+
+================================================================================
+NEXT STEPS:
+================================================================================
+
+1. Review time series tables - identify which have 50+ years of data
+2. Design feature consolidation strategy
+3. Determine how to join disparate time series (daily, weekly, monthly)
+4. Design feature engineering pipeline
+5. Implement feature selection (reduce to 1,000 columns for Vertex AI)
+6. Create Trump-era filtered training datasets
+    
+        trump_policy_intelligence        215
+                         cftc_cot         78
+                   biofuel_policy         30
+               biofuel_production         24
+                usda_export_sales         12
+     ice_enforcement_intelligence          4
+
+
+TIME SERIES ANALYSIS FOR staging:
+--------------------------------------------------------------------------------
+
+comprehensive_social_intelligence:
+  Rows: 23,914
+  Date Range: 2025-10-14 to 2025-11-07
+  Distinct Dates: 5
+
+usda_harvest_progress:
+  Rows: 1,950
+  Date Range: 2025-03-16 to 2025-07-20
+  Distinct Dates: 19
+
+weather_data_midwest_openmeteo:
+  Rows: 495
+  Date Range: 2025-09-20 to 2025-11-03
+  Distinct Dates: 45
+
+trump_policy_intelligence:
+  Rows: 215
+  Date Range: 2025-04-03 00:00:00+00:00 to 2025-10-13 12:00:00+00:00
+  Distinct Dates: 86
+
+cftc_cot:
+  Rows: 78
+  Date Range: 2024-08-06 to 2025-09-23
+  Distinct Dates: 60
+
+biofuel_policy:
+  Rows: 30
+  Date Range: 2023-01-01 to 2025-01-01
+  Distinct Dates: 3
+
+biofuel_production:
+  Rows: 24
+  Date Range: 2023-11-30 to 2025-10-20
+  Distinct Dates: 24
+
+usda_export_sales:
+  Rows: 12
+  Date Range: 2024-11-25 to 2025-10-21
+  Distinct Dates: 12
+
+ice_enforcement_intelligence:
+  Rows: 4
+  Date Range: 2025-10-06 19:39:18.793975+00:00 to 2025-10-06 19:42:15.920356+00:00
+  Distinct Dates: 4
+
+
+================================================================================
+FEATURE POTENTIAL ANALYSIS
+================================================================================
+
+forecasting_data_warehouse:
+  Tables: 56
+  Total Columns: 738
+models_v4:
+  Tables: 65
+  Total Columns: 8372
+neural:
+  Tables: 0
+  Total Columns: 0
+staging:
+  Tables: 9
+  Total Columns: 103
+
+TOTAL RAW FEATURE POTENTIAL: 9213 columns
+Vertex AI Limit: 1,000 columns
+Feature Selection Ratio: 9213/1000 = 9.2x (need to select top features)
+
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Total Datasets Analyzed: 4
+Total Tables with Data: 157
+Total Rows Available: 431,740
+
+Time Series Tables Found: 45
+
+================================================================================
+NEXT STEPS:
+================================================================================
+
+1. Review time series tables - identify which have 50+ years of data
+2. Design feature consolidation strategy
+3. Determine how to join disparate time series (daily, weekly, monthly)
+4. Design feature engineering pipeline
+5. Implement feature selection (reduce to 1,000 columns for Vertex AI)
+6. Create Trump-era filtered training datasets
+    

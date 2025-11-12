@@ -236,3 +236,9 @@ python3 dryrun_glide_vegas.py --dry-run --all
 **Status:** Production Ready - READ ONLY access confirmed  
 **Data Loaded:** 5,628 rows across 8 tables (READ ONLY copy)
 
+
+
+
+
+
+

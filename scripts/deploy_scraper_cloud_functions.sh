@@ -155,3 +155,9 @@ echo "     gcloud functions logs read run-comprehensive-scraper --region=$REGION
 echo ""
 
 
+
+
+
+
+
+

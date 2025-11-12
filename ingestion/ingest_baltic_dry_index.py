@@ -10,6 +10,7 @@ from google.cloud import bigquery
 import logging
 import pandas as pd
 import time
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -95,7 +96,31 @@ class BalticDryIndexCollector:
             return True
 
         try:
-            table_id = f"{PROJECT_ID}.forecasting_data_warehouse.baltic_dry_index"
+            # Store to both existing table and new freight_logistics table
+            table_id_legacy = f"{PROJECT_ID}.forecasting_data_warehouse.baltic_dry_index"
+            table_id_new = f"{PROJECT_ID}.forecasting_data_warehouse.freight_logistics"
+            
+            # Prepare data for new freight_logistics table
+            freight_df = df.copy()
+            freight_df['baltic_dry_index'] = freight_df['bdi_value']
+            freight_df['freight_soybean_mentions'] = 0  # Can be enhanced with FreightWaves scraping
+            freight_df['source_name'] = 'BALTIC_EXCHANGE'
+            freight_df['confidence_score'] = 0.90
+            freight_df['ingest_timestamp_utc'] = pd.to_datetime(freight_df['ingest_timestamp'])
+            freight_df['provenance_uuid'] = [str(uuid.uuid4()) for _ in range(len(freight_df))]
+            freight_df = freight_df[['date', 'baltic_dry_index', 'freight_soybean_mentions', 'source_name', 'confidence_score', 'ingest_timestamp_utc', 'provenance_uuid']]
+            
+            # Store to new table
+            job_config = bigquery.LoadJobConfig(
+                write_disposition="WRITE_APPEND",
+                schema_update_options=['ALLOW_FIELD_ADDITION']
+            )
+            job = self.client.load_table_from_dataframe(freight_df, table_id_new, job_config=job_config)
+            job.result()
+            logger.info(f"✅ Loaded {len(freight_df)} records to {table_id_new}")
+            
+            # Also store to legacy table if it exists
+            table_id = table_id_legacy
 
             # Check for duplicates
             existing_dates = set()

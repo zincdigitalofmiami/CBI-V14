@@ -50,3 +50,9 @@ echo "   • View logs:    tail -f logs/auto_organize.log"
 echo "   • Remove cron:  crontab -e (then delete the line)"
 echo ""
 
+
+
+
+
+
+

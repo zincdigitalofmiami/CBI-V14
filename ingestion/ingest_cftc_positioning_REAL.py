@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 PROJECT = 'cbi-v14'
-DATASET = 'staging'
+DATASET = 'forecasting_data_warehouse'  # Changed from 'staging' to match production table
 TABLE = 'cftc_cot'
 
 
@@ -176,8 +176,22 @@ class CFTCScraper(AdvancedScraper):
         
         for rec in cftc_records:
             try:
-                # Parse date
-                report_date = rec.get('report_date_as_yyyy_mm_dd', rec.get('as_of_date_in_form_yymmdd'))
+                # Parse date - handle both timestamp and date string formats
+                report_date_raw = rec.get('report_date_as_yyyy_mm_dd', rec.get('as_of_date_in_form_yymmdd'))
+                
+                # Extract date from timestamp if needed (format: "2025-09-23T00:00:00.000")
+                if isinstance(report_date_raw, str):
+                    if 'T' in report_date_raw:
+                        report_date = report_date_raw.split('T')[0]  # Extract YYYY-MM-DD from timestamp
+                    elif len(report_date_raw) == 8:  # YYMMDD format
+                        year = '20' + report_date_raw[:2]
+                        month = report_date_raw[2:4]
+                        day = report_date_raw[4:6]
+                        report_date = f"{year}-{month}-{day}"
+                    else:
+                        report_date = report_date_raw
+                else:
+                    report_date = str(report_date_raw)
                 
                 # Extract positioning data (field names vary by endpoint)
                 commercial_long = int(float(rec.get('comm_positions_long_all', rec.get('commercial_long', 0))))
@@ -216,7 +230,7 @@ class CFTCScraper(AdvancedScraper):
                     'open_interest': float(open_interest),
                     'source_name': 'CFTC_API',
                     'confidence_score': 0.95,
-                    'ingest_timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                    'ingest_timestamp_utc': datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
                     'provenance_uuid': str(uuid.uuid4())
                 })
             
@@ -258,14 +272,39 @@ class CFTCScraper(AdvancedScraper):
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND
             )
             
-            job = self.client.load_table_from_json(rows, table_id, job_config=job_config)
+            # Convert rows to JSON-compatible format
+            json_rows = []
+            for row in rows:
+                json_row = {}
+                for key, value in row.items():
+                    if key == 'report_date':
+                        # DATE field - ensure YYYY-MM-DD format
+                        json_row[key] = str(value)
+                    elif key == 'ingest_timestamp_utc':
+                        # TIMESTAMP field - convert to RFC3339 format
+                        if isinstance(value, str):
+                            json_row[key] = value
+                        else:
+                            json_row[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+                    else:
+                        json_row[key] = value
+                json_rows.append(json_row)
+            
+            job = self.client.load_table_from_json(json_rows, table_id, job_config=job_config)
             job.result()
+            
+            # Check for errors
+            if job.errors:
+                logger.error(f"❌ BigQuery load errors: {job.errors}")
+                return 0
 
             logger.info(f"✅ Loaded {len(rows)} CFTC COT records to {table_id}")
             return len(rows)
 
         except Exception as e:
             logger.error(f"❌ BigQuery load failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return 0
     
     def run(self, weeks: int = 52) -> Dict:

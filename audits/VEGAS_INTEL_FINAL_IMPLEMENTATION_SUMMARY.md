@@ -579,3 +579,9 @@ gcloud scheduler jobs create http scrape-vegas-events \
 **Final Status:** READY FOR PRODUCTION DEPLOYMENT
 
 
+
+
+
+
+
+

@@ -231,3 +231,9 @@ Weekly Base Usage = Total Fryer Capacity × 4 turns / 7.6 lbs per gallon
 
 **READ ONLY REMINDER:** All queries are READ ONLY from Glide. We never write back.
 
+
+
+
+
+
+

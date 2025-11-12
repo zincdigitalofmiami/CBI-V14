@@ -1,0 +1,59 @@
+STANDARDIZED EXCLUSION LIST - 34 COLUMNS
+=========================================
+Used by ALL 4 models (1W, 1M, 3M, 6M)
+Date: November 5, 2025
+
+STANDARD EXCLUSIONS (6):
+------------------------
+1. target_1w
+2. target_1m
+3. target_3m
+4. target_6m
+5. date
+6. volatility_regime
+
+100% NULL COLUMNS - SOCIAL/NEWS BASIC (9):
+------------------------------------------
+7. social_sentiment_volatility
+8. bullish_ratio
+9. bearish_ratio
+10. social_sentiment_7d
+11. social_volume_7d
+12. trump_policy_7d
+13. trump_events_7d
+14. news_intelligence_7d
+15. news_volume_7d
+
+100% NULL COLUMNS - NEWS (7):
+-----------------------------
+16. news_article_count
+17. news_avg_score
+18. news_sentiment_avg
+19. china_news_count
+20. biofuel_news_count
+21. tariff_news_count
+22. weather_news_count
+
+100% NULL COLUMNS - TRUMP/POLICY (11):
+--------------------------------------
+23. trump_soybean_sentiment_7d
+24. trump_agricultural_impact_30d
+25. trump_soybean_relevance_30d
+26. days_since_trump_policy
+27. trump_policy_intensity_14d
+28. trump_policy_events
+29. trump_policy_impact_avg
+30. trump_policy_impact_max
+31. trade_policy_events
+32. china_policy_events
+33. ag_policy_events
+
+TOTAL: 34 columns excluded
+RESULT: 258 numeric features for training
+
+
+
+
+
+
+

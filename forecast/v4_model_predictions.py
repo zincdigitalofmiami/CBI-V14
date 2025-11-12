@@ -24,25 +24,25 @@ AVAILABLE_MODELS = {
     "1w": {
         "boosted_v3": "cbi-v14.models.zl_boosted_tree_1w_v3",  # Fallback to proven V3
         "dnn_v4": "cbi-v14.models_v4.zl_dnn_1w_v4",
-        "arima_v4": "cbi-v14.models_v4.zl_arima_1w_v4",
+        #"arima_v4": "cbi-v14.models_v4.zl_arima_1w_v4",  # DELETED - failed model
         #"automl_v4": "cbi-v14.models_v4.zl_automl_1w_v4",  # Will be available after training
     },
     "1m": {
         "boosted_v3": "cbi-v14.models.zl_boosted_tree_1m_v3",
         "dnn_v4": "cbi-v14.models_v4.zl_dnn_1m_v4",
-        "arima_v4": "cbi-v14.models_v4.zl_arima_1m_v4",
+        #"arima_v4": "cbi-v14.models_v4.zl_arima_1m_v4",  # DELETED - failed model
         #"automl_v4": "cbi-v14.models_v4.zl_automl_1m_v4",
     },
     "3m": {
         "boosted_v3": "cbi-v14.models.zl_boosted_tree_3m_v3",
         "dnn_v3": "cbi-v14.models.zl_dnn_3m_production",  # V3 DNN actually works for 3m/6m
-        "arima_v4": "cbi-v14.models_v4.zl_arima_3m_v4",
+        #"arima_v4": "cbi-v14.models_v4.zl_arima_3m_v4",  # DELETED - failed model
         #"automl_v4": "cbi-v14.models_v4.zl_automl_3m_v4",
     },
     "6m": {
         "boosted_v3": "cbi-v14.models.zl_boosted_tree_6m_v3",
         "dnn_v3": "cbi-v14.models.zl_dnn_6m_production",
-        "arima_v4": "cbi-v14.models_v4.zl_arima_6m_v4",
+        #"arima_v4": "cbi-v14.models_v4.zl_arima_6m_v4",  # DELETED - failed model
         #"automl_v4": "cbi-v14.models_v4.zl_automl_6m_v4",
     }
 }
@@ -83,9 +83,10 @@ async def get_v4_forecast(
     **Available Models:**
     - `boosted_v3`: Production V3 Boosted Tree (default, proven)
     - `dnn_v4`: Fixed DNN with normalization (1w, 1m only)
-    - `arima_v4`: ARIMA+ time series model
     - `automl_v4`: AutoML model (available after training completes)
     - `ensemble_v4`: Weighted ensemble (available after AutoML completes)
+    
+    Note: `arima_v4` models were deleted (failed training)
     """
     if horizon not in AVAILABLE_MODELS:
         raise HTTPException(

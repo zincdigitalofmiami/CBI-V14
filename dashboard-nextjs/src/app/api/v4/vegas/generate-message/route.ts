@@ -74,3 +74,9 @@ function generateTemplateMessage(opportunity: any): string {
   return `${opening}\n\n${context}\n\n${action}\n\n${closing}`
 }
 
+
+
+
+
+
+
