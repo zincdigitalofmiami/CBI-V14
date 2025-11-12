@@ -1,8 +1,60 @@
 {
 	"folders": [
 		{
-			"path": "."
+			"path": ".",
+			"name": "CBI-V14"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python3",
+		"python.analysis.extraPaths": [
+			"${workspaceFolder}/scripts",
+			"${workspaceFolder}/ingestion",
+			"${workspaceFolder}/forecast",
+			"${workspaceFolder}/vertex-ai"
+		],
+		"python.analysis.typeCheckingMode": "basic",
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true,
+			"**/.pytest_cache": true,
+			"**/.mypy_cache": true
+		},
+		"files.watcherExclude": {
+			"**/node_modules/**": true,
+			"**/.git/**": true,
+			"**/TrainingData/**": true,
+			"**/Models/**": true,
+			"**/Logs/**": true
+		},
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/archive": true
+		},
+		"python.formatting.provider": "black",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		},
+		"files.associations": {
+			"*.sql": "sql",
+			"*.sh": "shellscript"
+		},
+		"cursorpyright.analysis.extraPaths": [
+			"${workspaceFolder}/scripts",
+			"${workspaceFolder}/ingestion",
+			"${workspaceFolder}/forecast",
+			"${workspaceFolder}/vertex-ai"
+		],
+		"cursorpyright.analysis.typeCheckingMode": "basic"
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"ms-python.black-formatter",
+			"ms-toolsai.jupyter",
+			"googlecloudtools.cloudcode"
+		]
+	}
 }

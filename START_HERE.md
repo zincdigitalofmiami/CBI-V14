@@ -18,7 +18,7 @@
 ## 🎯 FIRST THREE COMMANDS
 
 ```bash
-cd /Users/zincdigital/CBI-V14
+cd "/Volumes/Satechi Hub/Projects/CBI-V14"
 
 # 1. Check status (shows the problem)
 ./scripts/status_check.sh
@@ -34,24 +34,28 @@ cd /Users/zincdigital/CBI-V14
 
 ## 📚 READ IN THIS ORDER
 
-### 1. Quick Start (3 minutes)
-**File**: `QUICK_START_NEXT_SESSION.md`  
+### 1. Master Execution Plan (5 minutes) ⭐
+**File**: `active-plans/MASTER_EXECUTION_PLAN.md`  
+**Purpose**: Current strategy, two-track approach, immediate next steps
+
+### 2. Quick Start (3 minutes)
+**File**: `docs/reference/QUICK_START_NEXT_SESSION.md`  
 **Purpose**: Situation brief, priorities, first actions  
 
-### 2. Complete Handover (15 minutes)
-**File**: `COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md`  
+### 3. Complete Handover (15 minutes)
+**File**: `docs/handoffs/COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md`  
 **Purpose**: Full context - inventory, issues, discoveries, action plan  
 
 ### 3. Audit Results (10 minutes)
-**File**: `COMPREHENSIVE_AUDIT_NOV6.md`  
+**File**: `docs/audits/COMPREHENSIVE_AUDIT_NOV6.md`  
 **Purpose**: Verification that everything documented is accurate  
 
 ### 4. Data-Driven Priorities (5 minutes)
-**File**: `THE_REAL_BIG_HITTERS_DATA_DRIVEN.md`  
+**File**: `docs/analysis/THE_REAL_BIG_HITTERS_DATA_DRIVEN.md`  
 **Purpose**: ACTUAL correlations (Crush Margin #1 at 0.961!)  
 
 ### 5. Production System Reference (as needed)
-**File**: `OFFICIAL_PRODUCTION_SYSTEM.md`  
+**File**: `docs/reference/OFFICIAL_PRODUCTION_SYSTEM.md`  
 **Purpose**: Naming conventions, data flow, 290 features  
 
 ---
@@ -91,15 +95,15 @@ cd /Users/zincdigital/CBI-V14
 
 ### New Tools ✅
 - `scripts/status_check.sh` - Quick health check
-- `QUICK_START_NEXT_SESSION.md` - Fast brief
-- `COMPREHENSIVE_AUDIT_NOV6.md` - Full verification
-- `AUDIT_SUMMARY_NOV6.md` - What was done
-- `SESSION_HANDOVER_PACKAGE.md` - Master index
+- `docs/reference/QUICK_START_NEXT_SESSION.md` - Fast brief
+- `docs/audits/COMPREHENSIVE_AUDIT_NOV6.md` - Full verification
+- `docs/handoffs/AUDIT_SUMMARY_NOV6.md` - What was done
+- `docs/handoffs/SESSION_HANDOVER_PACKAGE.md` - Master index
 - `START_HERE.md` - This file!
 
 ### Verified Ready ✅
 - `scripts/run_ultimate_consolidation.sh` - The fix
-- `bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql` - SQL consolidation
+- `config/bigquery/bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql` - SQL consolidation
 - All 5 priority scrapers (RIN, RFS, Baltic, Argentina, USDA)
 - All 71 ingestion scripts
 - All 16 BQML models
@@ -147,24 +151,24 @@ After consolidation completes:
 
 ## 📦 COMPLETE HANDOVER PACKAGE
 
-All documents are in `/Users/zincdigital/CBI-V14/`:
+Primary documents live under `/Volumes/Satechi Hub/Projects/CBI-V14/` (symlinked from `~/Documents/GitHub/CBI-V14`):
 
 **Quick References**:
-- ⚡ START_HERE.md (this file)
-- ⚡ QUICK_START_NEXT_SESSION.md
-- 📋 AUDIT_SUMMARY_NOV6.md
+- 📄 START_HERE.md (this file)
+- 📄 docs/reference/QUICK_START_NEXT_SESSION.md
+- 📄 docs/handoffs/AUDIT_SUMMARY_NOV6.md
 
 **Complete Documentation**:
-- 📖 COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md (529 lines)
-- 🔬 COMPREHENSIVE_AUDIT_NOV6.md (600+ lines)
-- 📊 THE_REAL_BIG_HITTERS_DATA_DRIVEN.md (230 lines)
-- 🎯 OFFICIAL_PRODUCTION_SYSTEM.md
-- 📦 SESSION_HANDOVER_PACKAGE.md (master index)
+- 📄 docs/handoffs/COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md (529 lines)
+- 🔬 docs/audits/COMPREHENSIVE_AUDIT_NOV6.md (600+ lines)
+- 📊 docs/analysis/THE_REAL_BIG_HITTERS_DATA_DRIVEN.md (230 lines)
+- 🎯 docs/reference/OFFICIAL_PRODUCTION_SYSTEM.md
+- 📦 docs/handoffs/SESSION_HANDOVER_PACKAGE.md (master index)
 
 **Tools**:
 - 🛠️ scripts/status_check.sh
 - 🛠️ scripts/run_ultimate_consolidation.sh
-- 🛠️ bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql
+- 🛠️ config/bigquery/bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql
 
 ---
 

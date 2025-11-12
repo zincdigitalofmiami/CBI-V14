@@ -60,3 +60,26 @@ cache/
 *.zip
 *.pkl
 .vercel
+
+# External drive data directories (too large for GitHub)
+TrainingData/
+Models/
+Logs/
+
+# Reorganization directories to ignore
+legacy/bqml-work/sql/*.log
+docs/audits/*.tmp
+docs/handoffs/*.tmp
+
+# Large data files
+data/*.parquet
+data/*.csv
+data/*.json
+src/ingestion/__pycache__/
+src/training/__pycache__/
+src/prediction/__pycache__/
+src/utils/__pycache__/
+
+# Temporary reorganization files
+*.backup.*
+reorganize_*.log

@@ -1,59 +1,54 @@
-# Vertex AI Directory Structure
+# Vertex AI Directory
 
-## Organization
+This directory contains all Vertex AI-related implementation for neural forecasting models.
 
-All Vertex AI work is organized into clear subdirectories following strict naming conventions:
+## Structure
 
 ```
 vertex-ai/
-├── data/              # Data preparation and validation scripts
-├── training/          # Model training scripts
+├── data/              # Data validation and audit scripts
+├── deployment/        # Model deployment pipeline
+│   ├── train_local_deploy_vertex.py
+│   ├── export_savedmodel.py
+│   ├── upload_to_vertex.py
+│   └── create_endpoint.py
+├── evaluation/        # Model evaluation and explainability
 ├── prediction/        # Prediction generation scripts
-├── evaluation/        # Model evaluation and explanation scripts
-├── deployment/        # Deployment and monitoring scripts
-└── config/            # Configuration files (YAML, JSON)
+└── training/          # Training configurations (future)
 ```
 
-## Naming Conventions
+## Current Status
 
-**CRITICAL RULES:**
-- ❌ NO `_test`, `_backup`, `_fixed`, `_safe`, `_v2` suffixes
-- ❌ NO temporary files or test artifacts
-- ✅ All files go directly to production locations
-- ✅ Descriptive names following pattern: `{action}_{resource}_{purpose}.py`
+**Deployment Pipeline**: ✅ Complete
+- Train locally on M4 Mac → Export SavedModel → Upload to Vertex → Deploy endpoint
+- Scripts ready to use, documented in `active-plans/MAC_TRAINING_SETUP_PLAN.md`
 
-## Current Files
+**Data/Evaluation**: ✅ Audit scripts exist
+- Validation and inventory tools in `data/`
 
-### Prediction (`prediction/`)
-- `predict_single_horizon.py` - Generate prediction for single horizon
-- `predict_all_horizons.py` - Generate predictions for all 4 horizons
-- `generate_predictions.py` - Batch prediction generator
-- `get_remaining_predictions.py` - Get predictions using existing endpoint
-- `run_predictions.sh` - Shell script for running predictions
+**Training**: ⏳ Next phase
+- Local training scripts to be created in `training/`
 
-### Evaluation (`evaluation/`)
-- `explain_single_horizon.py` - Feature importance and model explanation
+## Usage
 
-### Training (`training/`)
-- (To be created for new Vertex AI training scripts)
+### Complete Workflow
+```bash
+# Train a model locally and deploy to Vertex AI
+python vertex-ai/deployment/train_local_deploy_vertex.py --horizon=1m
+```
 
-### Data (`data/`)
-- (To be created for data preparation scripts)
+### Individual Steps
+```bash
+# Export a trained model
+python vertex-ai/deployment/export_savedmodel.py --model_path=... --horizon=1m
 
-### Deployment (`deployment/`)
-- (To be created for deployment scripts)
+# Upload to Vertex AI
+python vertex-ai/deployment/upload_to_vertex.py --saved_model_path=... --horizon=1m
 
-### Config (`config/`)
-- (To be created for configuration files)
-
-## Cleanup Rules
-
-1. **Before Creating:** Check for existing files/resources
-2. **During Work:** No temporary files - all work goes to final location
-3. **After Work:** Remove any test artifacts, clean up unused imports
-4. **Pre-Commit:** Verify no test/backup files in commit
+# Create/deploy endpoint
+python vertex-ai/deployment/create_endpoint.py --model_resource_name=... --horizon=1m
+```
 
 ## Reference
 
-See `CLEAN_WORKSPACE_ORGANIZATION_PLAN.md` for complete workspace organization rules.
-
+See `../active-plans/VERTEX_AI_TRUMP_ERA_PLAN.md` for complete Vertex AI strategy and naming conventions.

@@ -1,27 +1,41 @@
 CBI-V14 PRODUCTION SYSTEM - QUICK REFERENCE
 ============================================
 
+ROOT LOCATION (External Drive):
+  /Volumes/Satechi Hub/Projects/CBI-V14/
+  (Symlinked to ~/Documents/GitHub/CBI-V14 and aliased as `cbi` in ~/.zshrc)
+
 MODELS (DO NOT RENAME):
   cbi-v14.models_v4.bqml_1w
   cbi-v14.models_v4.bqml_1m
   cbi-v14.models_v4.bqml_3m
   cbi-v14.models_v4.bqml_6m
 
-DATASETS (ALL INGESTION GOES HERE):
-  cbi-v14.models_v4.production_training_data_1w (290 features)
-  cbi-v14.models_v4.production_training_data_1m (290 features)
-  cbi-v14.models_v4.production_training_data_3m (290 features)
-  cbi-v14.models_v4.production_training_data_6m (290 features)
+DATASETS (PRODUCTION TRAINING TABLES):
+  cbi-v14.models_v4.production_training_data_1w
+  cbi-v14.models_v4.production_training_data_1m
+  cbi-v14.models_v4.production_training_data_3m
+  cbi-v14.models_v4.production_training_data_6m
 
-INGESTION SCRIPTS:
-  scripts/hourly_prices.py
-  scripts/daily_weather.py
-  ingestion/ingest_social_intelligence_comprehensive.py
-  ingestion/backfill_trump_intelligence.py
-  ingestion/ingest_market_prices.py
-  ingestion/ingest_cftc_positioning_REAL.py
-  ingestion/ingest_usda_harvest_api.py
-  ingestion/ingest_eia_biofuel_real.py
+KEY FILES:
+  config/bigquery/bigquery-sql/TRUMP_RICH_DART_V1.sql
+  config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/
+  scripts/status_check.sh
+  scripts/run_ultimate_consolidation.sh
+  vertex-ai/deployment/train_local_deploy_vertex.py
+
+TOP COMMANDS:
+  ./scripts/status_check.sh
+  ./scripts/run_ultimate_consolidation.sh
+  bq query --nouse_legacy_sql < config/bigquery/bigquery-sql/TRUMP_RICH_DART_V1.sql
+
+INGESTION SCRIPTS (examples):
+  src/ingestion/ingest_epa_rin_prices.py
+  src/ingestion/ingest_epa_rfs_mandates.py
+  src/ingestion/ingest_argentina_port_logistics.py
+  src/ingestion/ingest_baltic_dry_index.py
+  src/ingestion/ingest_cftc_positioning_REAL.py
+  src/ingestion/trump_truth_social_monitor.py
 
 API KEYS (Secret Manager):
   FRED: dc195c8658c46ee1df83bcd4fd8a690b
@@ -29,9 +43,22 @@ API KEYS (Secret Manager):
   Scrape Creators: B1TOgQvMVSV6TDglqB8lJ2cirqi2
 
 DO NOT USE:
-  training_dataset_super_enriched (11 cols - BROKEN!)
-  Any _ARCHIVED_* tables
+  training_dataset_super_enriched (11 cols - BROKEN)
+  Any *_ARCHIVED tables
   Any *_backup tables
 
-PERFORMANCE:
-  MAE: 0.30, R²: 0.987, MAPE: <1%
+PERFORMANCE TARGETS:
+  MAPE < 2%, R² > 0.95 across all horizons
+
+FAST PATHS:
+  Documentation   → START_HERE.md, docs/handoffs/, docs/reference/
+  SQL & Features  → config/bigquery/
+  Source Code     → src/
+  Automation      → scripts/
+  Vertex AI       → vertex-ai/
+
+REMINDERS:
+  • Repository lives on the external drive (Satechi Hub).
+  • Use `./setup_new_machine.sh` on a fresh Apple Silicon Mac.
+  • `TrainingData/exports/` is the landing zone for BigQuery exports.
+  • `Logs/` tracks training, ingestion, and deployment runs.

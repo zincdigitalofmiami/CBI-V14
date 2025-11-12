@@ -11,29 +11,29 @@ QUICK START (5 minutes or less):
   📄 START_HERE.md (5.7 KB)
      └─ 5-minute quick start, perfect first file
 
-  📄 QUICK_START_NEXT_SESSION.md (5.8 KB)
+  📄 docs/reference/QUICK_START_NEXT_SESSION.md (5.8 KB)
      └─ 60-second situation + first 3 commands
 
   📄 AUDIT_SUMMARY_NOV6.md (11 KB)
      └─ What was accomplished in this audit
 
 COMPLETE REFERENCE (30 minutes):
-  📄 COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md (17 KB, 529 lines)
+  📄 docs/handoffs/COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md (17 KB, 529 lines)
      └─ Complete project state, inventory, issues, action plan
      └─ Read this for COMPLETE context
 
-  📄 COMPREHENSIVE_AUDIT_NOV6.md (15 KB, 600+ lines)
+  📄 docs/audits/COMPREHENSIVE_AUDIT_NOV6.md (15 KB, 600+ lines)
      └─ Full system verification audit
      └─ Proves handover accuracy (90%+ verified)
 
-  📄 THE_REAL_BIG_HITTERS_DATA_DRIVEN.md (230 lines)
+  📄 docs/analysis/THE_REAL_BIG_HITTERS_DATA_DRIVEN.md (230 lines)
      └─ ACTUAL correlations from Vertex AI
      └─ Crush Margin #1 at 0.961!
 
-  📄 SESSION_HANDOVER_PACKAGE.md (10 KB)
+  📄 docs/handoffs/SESSION_HANDOVER_PACKAGE.md (10 KB)
      └─ Master index of all handover materials
 
-  📄 OFFICIAL_PRODUCTION_SYSTEM.md
+  📄 docs/reference/OFFICIAL_PRODUCTION_SYSTEM.md
      └─ Production naming conventions
      └─ 290 feature list
      └─ Data flow diagram
@@ -63,24 +63,24 @@ DATA CONSOLIDATION:
      └─ Time: ~10 minutes
      └─ Creates backup automatically
 
-  📜 bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql
+  📜 config/bigquery/bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql
      └─ SQL logic for consolidation (191 lines)
      └─ Used by run_ultimate_consolidation.sh
 
 PRIORITY SCRAPERS (Ready to activate):
-  📜 ingestion/ingest_epa_rin_prices.py (6.9 KB)
+  📜 src/ingestion/ingest_epa_rin_prices.py (6.9 KB)
      └─ RIN prices D4/D5/D6 (0% → 100%)
 
-  📜 ingestion/ingest_epa_rfs_mandates.py (6.6 KB)
+  📜 src/ingestion/ingest_epa_rfs_mandates.py (6.6 KB)
      └─ RFS mandates (0% → 100%)
 
-  📜 ingestion/ingest_argentina_port_logistics.py (6.7 KB)
+  📜 src/ingestion/ingest_argentina_port_logistics.py (6.7 KB)
      └─ Argentina port data (0% → 100%)
 
-  📜 ingestion/ingest_baltic_dry_index.py (6.4 KB)
+  📜 src/ingestion/ingest_baltic_dry_index.py (6.4 KB)
      └─ Freight costs (0% → 100%)
 
-  📜 ingestion/ingest_usda_export_sales_weekly.py (6.5 KB)
+  📜 src/ingestion/ingest_usda_export_sales_weekly.py (6.5 KB)
      └─ USDA export data (0% → 100%)
 
 NEURAL ARCHITECTURE:
@@ -88,7 +88,7 @@ NEURAL ARCHITECTURE:
      └─ Collects deep driver data
      └─ For 3-layer neural architecture
 
-  📜 bigquery-sql/BUILD_NEURAL_FEATURES.sql
+  📜 config/bigquery/bigquery-sql/BUILD_NEURAL_FEATURES.sql
      └─ Creates 3-layer neural features
      └─ Layer 3: Deep drivers (Dollar, Fed, Crush)
      └─ Layer 2: Neural scores
@@ -99,19 +99,19 @@ NEURAL ARCHITECTURE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 FIRST COMMANDS (Next Session):
-  cd /Users/zincdigital/CBI-V14
+  cd "/Volumes/Satechi Hub/Projects/CBI-V14"
   ./scripts/status_check.sh
   ./scripts/run_ultimate_consolidation.sh
   ./scripts/status_check.sh
 
 ACTIVATE PRIORITY SCRAPERS:
-  python3 ingestion/ingest_epa_rin_prices.py
-  python3 ingestion/ingest_epa_rfs_mandates.py
-  python3 ingestion/ingest_baltic_dry_index.py
-  python3 ingestion/ingest_argentina_port_logistics.py
+  python3 src/ingestion/ingest_epa_rin_prices.py
+  python3 src/ingestion/ingest_epa_rfs_mandates.py
+  python3 src/ingestion/ingest_baltic_dry_index.py
+  python3 src/ingestion/ingest_argentina_port_logistics.py
 
 BUILD NEURAL FEATURES:
-  bq query < bigquery-sql/BUILD_NEURAL_FEATURES.sql
+  bq query < config/bigquery/bigquery-sql/BUILD_NEURAL_FEATURES.sql
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 KEY METRICS QUICK REFERENCE
@@ -175,20 +175,20 @@ PATH 4: Complete Deep Dive (60 minutes)
 📁 FILE LOCATIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Project Root: /Users/zincdigital/CBI-V14/
+Project Root: /Volumes/Satechi Hub/Projects/CBI-V14/
 
 Documentation:
-  /Users/zincdigital/CBI-V14/*.md
+  /Volumes/Satechi Hub/Projects/CBI-V14/*.md
 
 Tools:
-  /Users/zincdigital/CBI-V14/scripts/*.sh
-  /Users/zincdigital/CBI-V14/scripts/*.py
+  /Volumes/Satechi Hub/Projects/CBI-V14/scripts/*.sh
+  /Volumes/Satechi Hub/Projects/CBI-V14/scripts/*.py
 
 SQL:
-  /Users/zincdigital/CBI-V14/bigquery-sql/*.sql
+  /Volumes/Satechi Hub/Projects/CBI-V14/config/bigquery/bigquery-sql/*.sql
 
 Scrapers:
-  /Users/zincdigital/CBI-V14/ingestion/*.py
+  /Volumes/Satechi Hub/Projects/CBI-V14/src/ingestion/*.py
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ QUALITY ASSURANCE
