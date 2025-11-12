@@ -122,34 +122,42 @@ def export_table_to_parquet(table_name, output_path, description):
         return False
 
 def export_historical_data():
-    """Export full historical dataset (125 years) with regime labels"""
+    """Export full historical dataset (25 years, 2000-2025) with regime labels"""
     print(f"\n{'='*80}")
-    print(f"📤 EXPORTING: Full Historical Dataset (125 years)")
+    print(f"📤 EXPORTING: Full Historical Dataset (25 years, 2000-2025)")
     print(f"   Output: {TRAINING_DATA_RAW}/historical_full.parquet")
     print(f"{'='*80}")
     
     try:
-        # Export from forecasting_data_warehouse
-        # This is a complex query - adjust based on actual schema
+        # Export from forecasting_data_warehouse (now has 6,057 rows, 2000-2025)
+        # Schema: time (DATETIME), close (FLOAT64), open, high, low, volume, symbol
         query = """
         SELECT 
-            date,
-            zl_price as close_price,
+            DATE(time) as date,
+            time,
+            close as zl_price,
+            open,
+            high,
+            low,
+            volume,
+            symbol,
             -- Add regime labels based on date ranges
             CASE
-                WHEN date >= '2023-01-01' THEN 'trump_2.0'
-                WHEN date >= '2017-01-01' AND date < '2020-01-01' THEN 'trade_war'
-                WHEN date >= '2021-01-01' AND date < '2023-01-01' THEN 'inflation'
-                WHEN date >= '2008-01-01' AND date < '2009-01-01' OR 
-                     date >= '2020-01-01' AND date < '2021-01-01' THEN 'crisis'
+                WHEN DATE(time) >= '2023-01-01' THEN 'trump_2.0'
+                WHEN DATE(time) >= '2017-01-01' AND DATE(time) < '2020-01-01' THEN 'trade_war'
+                WHEN DATE(time) >= '2021-01-01' AND DATE(time) < '2023-01-01' THEN 'inflation'
+                WHEN (DATE(time) >= '2008-01-01' AND DATE(time) < '2009-01-01') OR 
+                     (DATE(time) >= '2020-01-01' AND DATE(time) < '2021-01-01') THEN 'crisis'
+                WHEN DATE(time) >= '2010-01-01' AND DATE(time) < '2017-01-01' THEN 'recovery'
+                WHEN DATE(time) >= '2000-01-01' AND DATE(time) < '2008-01-01' THEN 'pre_crisis'
                 ELSE 'historical'
             END as regime
         FROM `cbi-v14.forecasting_data_warehouse.soybean_oil_prices`
-        WHERE date IS NOT NULL
-        ORDER BY date
+        WHERE time IS NOT NULL
+        ORDER BY time
         """
         
-        print(f"  ⏳ Querying historical data...")
+        print(f"  ⏳ Querying historical data (expected ~6,057 rows)...")
         df = client.query(query).to_dataframe()
         
         output_path = f"{TRAINING_DATA_RAW}/historical_full.parquet"
@@ -158,6 +166,7 @@ def export_historical_data():
         file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
         print(f"  ✅ Export complete: {file_size:.2f} MB")
         print(f"  📊 Exported {len(df):,} rows × {len(df.columns)} columns")
+        print(f"  📅 Date range: {df['date'].min()} to {df['date'].max()}")
         
         return True
         
@@ -167,9 +176,9 @@ def export_historical_data():
         return False
 
 def export_regime_datasets():
-    """Export regime-specific datasets"""
+    """Export regime-specific datasets from production_training_data_1m"""
     print(f"\n{'='*80}")
-    print(f"📤 EXPORTING: Regime-Specific Datasets")
+    print(f"📤 EXPORTING: Regime-Specific Datasets (from production_training_data_1m)")
     print(f"{'='*80}")
     
     regimes = [
@@ -234,6 +243,55 @@ def export_regime_datasets():
     
     return all(results)
 
+def export_historical_regime_tables():
+    """Export historical regime tables created from backfill (2000-2019)"""
+    print(f"\n{'='*80}")
+    print(f"📤 EXPORTING: Historical Regime Tables (from backfill)")
+    print(f"{'='*80}")
+    
+    historical_regimes = [
+        {
+            'table': 'trade_war_2017_2019_historical',
+            'output_file': f'{TRAINING_DATA_EXPORTS}/trade_war_2017_2019_historical.parquet',
+            'description': 'Trade war regime (2017-2019) - 754 rows'
+        },
+        {
+            'table': 'crisis_2008_historical',
+            'output_file': f'{TRAINING_DATA_EXPORTS}/crisis_2008_historical.parquet',
+            'description': '2008 financial crisis - 253 rows'
+        },
+        {
+            'table': 'pre_crisis_2000_2007_historical',
+            'output_file': f'{TRAINING_DATA_EXPORTS}/pre_crisis_2000_2007_historical.parquet',
+            'description': 'Pre-crisis period (2000-2007) - 1,737 rows'
+        },
+        {
+            'table': 'recovery_2010_2016_historical',
+            'output_file': f'{TRAINING_DATA_EXPORTS}/recovery_2010_2016_historical.parquet',
+            'description': 'Post-crisis recovery (2010-2016) - 1,760 rows'
+        }
+    ]
+    
+    results = []
+    
+    for regime in historical_regimes:
+        try:
+            print(f"\n  📤 Exporting {regime['table']}...")
+            print(f"     {regime['description']}")
+            
+            success = export_table_to_parquet(
+                regime['table'],
+                regime['output_file'],
+                regime['description']
+            )
+            results.append(success)
+            
+        except Exception as e:
+            print(f"    ❌ Export failed: {e}")
+            results.append(False)
+    
+    return all(results)
+
 # Run exports
 print("\n" + "="*80)
 print("STARTING EXPORTS")
@@ -254,9 +312,13 @@ for config in EXPORT_CONFIG:
 historical_success = export_historical_data()
 export_results.append(historical_success)
 
-# Export regime-specific datasets
+# Export regime-specific datasets (from production_training_data_1m)
 regime_success = export_regime_datasets()
 export_results.append(regime_success)
+
+# Export historical regime tables (from backfill, 2000-2019)
+historical_regime_success = export_historical_regime_tables()
+export_results.append(historical_regime_success)
 
 # Final summary
 print("\n" + "="*80)
