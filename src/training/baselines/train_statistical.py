@@ -81,11 +81,15 @@ def main():
     parser = argparse.ArgumentParser(description="Train baseline statistical models.")
     parser.add_argument("--horizon", required=True, help="Forecast horizon (e.g., 1w, 1m).")
     parser.add_argument("--model", choices=['arima', 'prophet', 'all'], default='all', help="Model to train.")
+    parser.add_argument(
+        "--data-path",
+        help="Optional Parquet dataset path. Overrides default TrainingData/exports location."
+    )
     
     args = parser.parse_args()
     
     repo_root = get_repo_root()
-    data_path = repo_root / f"TrainingData/exports/production_training_data_{args.horizon}.parquet"
+    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/production_training_data_{args.horizon}.parquet"
     model_dir = repo_root / "Models/local/baselines"
     model_dir.mkdir(parents=True, exist_ok=True)
     
