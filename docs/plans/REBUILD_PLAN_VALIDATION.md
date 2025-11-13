@@ -227,10 +227,22 @@
    - Create migration order based on dependencies
    - Add view migration phase with rollback plan
 
-4. **BQML Model Migration**
-   - Inventory all BQML models
-   - Document model-to-table dependencies
-   - Create model migration/retraining plan
+4. **Model Training Strategy Decision** ⚠️ **REQUIRED BEFORE MIGRATION**
+   - **Option A: BQML (Recommended for simplicity)**
+     - Rebuild BQML models after table migration
+     - Native BigQuery integration
+     - Easy to deploy predictions via SQL
+     - Limited to BQML-supported algorithms
+   - **Option B: Local Mac M4 Pipeline**
+     - Train locally with TensorFlow Metal (LSTM/GRU)
+     - Export models and deploy to Vertex AI or local API
+     - Full control over model architecture
+     - More complex deployment
+   - **Option C: Vertex AI End-to-End**
+     - Train and deploy entirely in Vertex AI
+     - Most scalable but most complex
+     - Requires Vertex AI setup
+   - **Recommendation**: Use BQML for new dashboard (simplest), keep local pipeline for experimentation
 
 5. **Schema Normalization**
    - Create date column normalization script
@@ -257,7 +269,7 @@
 | Feature Engineering | ✅ Valid | Low |
 | Schema Assumptions | ⚠️ Needs Work | Medium |
 | View Dependencies | ❌ Missing | **HIGH** |
-| BQML Models | ❌ Missing | **HIGH** |
+| Model Training Strategy | ⚠️ Needs Decision | **HIGH** |
 | Execution Phases | ⚠️ Needs Detail | Medium |
 
 **Overall Assessment**: Plan is **80% complete** but needs critical additions before execution.
