@@ -48,17 +48,24 @@ def calculate_all_technical_indicators(df, symbol_prefix):
     # ============================================
     # RSI (14 and 9 period)
     delta = df['close'].diff()
-    gain = delta.where(delta > 0, 0)
-    loss = -delta.where(delta < 0, 0)
-    avg_gain_14 = gain.ewm(alpha=1/14, adjust=False).mean()
-    avg_loss_14 = loss.ewm(alpha=1/14, adjust=False).mean()
-    rs_14 = avg_gain_14 / avg_loss_14
-    df[f'{symbol_prefix}_rsi_14'] = 100 - (100 / (1 + rs_14))
+    gain = delta.where(delta > 0, 0).fillna(0)
+    loss = -delta.where(delta < 0, 0).fillna(0)
     
-    avg_gain_9 = gain.ewm(alpha=1/9, adjust=False).mean()
-    avg_loss_9 = loss.ewm(alpha=1/9, adjust=False).mean()
-    rs_9 = avg_gain_9 / avg_loss_9
-    df[f'{symbol_prefix}_rsi_9'] = 100 - (100 / (1 + rs_9))
+    avg_gain_14 = gain.rolling(window=14, min_periods=1).mean()
+    avg_loss_14 = loss.rolling(window=14, min_periods=1).mean()
+    
+    # Handle division by zero
+    rs_14 = avg_gain_14 / avg_loss_14.replace(0, np.nan)
+    rsi_14 = 100 - (100 / (1 + rs_14))
+    # Fill cases where loss is zero (RSI is 100) and initial NaNs
+    df[f'{symbol_prefix}_rsi_14d'] = rsi_14.fillna(100).fillna(50)
+
+    avg_gain_9 = gain.rolling(window=9, min_periods=1).mean()
+    avg_loss_9 = loss.rolling(window=9, min_periods=1).mean()
+
+    rs_9 = avg_gain_9 / avg_loss_9.replace(0, np.nan)
+    rsi_9 = 100 - (100 / (1 + rs_9))
+    df[f'{symbol_prefix}_rsi_9d'] = rsi_9.fillna(100).fillna(50)
     
     # Rate of Change (10-day)
     df[f'{symbol_prefix}_roc_10'] = ((df['close'] - df['close'].shift(10)) / df['close'].shift(10)) * 100

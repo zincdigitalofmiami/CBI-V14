@@ -46,16 +46,28 @@ class TestCalculatedFeatures(unittest.TestCase):
         
         rin_data = scraper.scrape_rin_trades_page()
 
-        self.assertEqual(len(rin_data), 2, "Should parse exactly 2 valid rows")
+        self.assertEqual(len(rin_data), 4, "Should parse exactly 4 valid rows from the test file")
         
-        record = rin_data[0]
-        self.assertEqual(record['date'], date(2025, 11, 3))
-        self.assertEqual(record['rin_d4_price'], 0.85)
-        self.assertEqual(record['rin_d6_price'], 0.95)
-        self.assertIsNone(record['rin_d5_price'])
+        # Convert to DataFrame for easier checking
+        df = pd.DataFrame(rin_data).set_index('date')
+
+        # Check first valid row
+        self.assertEqual(df.loc[date(2025, 11, 3)]['rin_d4_price'], 0.85)
+        self.assertEqual(df.loc[date(2025, 11, 3)]['rin_d6_price'], 0.95)
+        
+        # Check row where one value is invalid but others are not
+        self.assertTrue(pd.isna(df.loc[date(2025, 10, 13)]['rin_d4_price']))
+        self.assertEqual(df.loc[date(2025, 10, 13)]['rin_d6_price'], 0.90)
+
+        # Check that the row with an out-of-range price was filtered
+        self.assertNotIn(date(2025, 10, 6), df.index)
+        
+        # Check that the row with an invalid date is not present
+        # The current implementation parses dates and invalid dates become NaT and are dropped
+        # This is implicitly tested by the length check, but we can be explicit
+        self.assertFalse(df.index.hasnans)
         
         # Verify the schema of the dataframe before loading
-        df = pd.DataFrame(rin_data)
         self.assertIn('date', df.columns)
         self.assertIn('rin_d4_price', df.columns)
         self.assertEqual(df['rin_d4_price'].dtype, 'float64')
@@ -88,7 +100,7 @@ class TestCalculatedFeatures(unittest.TestCase):
         self.assertEqual(len(df), 1)
         self.assertEqual(df['bdi_value'].iloc[0], 1542.0)
 
-    @patch('scripts.ingest_volatility.find_volatility_file')
+    @patch('ingest_volatility.find_volatility_file')
     def test_volatility_parsing_and_filtering(self, mock_find_file):
         """Verify volatility CSV parsing, cleaning, and filtering."""
         sample_path = self.test_data_dir / 'volatility_sample.csv'
@@ -175,11 +187,11 @@ class TestCalculatedFeatures(unittest.TestCase):
         delta = df['close'].diff()
         gain = delta.clip(lower=0)
         loss = -delta.clip(upper=0)
-        avg_gain = gain.ewm(com=13, adjust=False).mean()
-        avg_loss = loss.ewm(com=13, adjust=False).mean()
+        avg_gain = gain.rolling(window=14, min_periods=1).mean()
+        avg_loss = loss.rolling(window=14, min_periods=1).mean()
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
-        self.assertTrue(0 < df_tech['test_rsi_14d'].iloc[-1] < 100)
+        self.assertTrue(0 < df_tech[f'test_rsi_14d'].iloc[-1] < 100)
         
     @patch('export_training_data.bigquery.Client')
     def test_parquet_export_regime_labeling(self, MockBigQueryClient):

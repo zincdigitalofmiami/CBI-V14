@@ -136,7 +136,7 @@ class EPARINScraper:
             rin_d3 = self._extract_price(row, 'D3')
             rin_d7 = self._extract_price(row, 'D7')
 
-            if not any([rin_d4, rin_d5, rin_d6, rin_d3, rin_d7]):
+            if not any(self._is_valid_price(p) for p in [rin_d4, rin_d5, rin_d6, rin_d3, rin_d7] if p is not None):
                 return None
 
             return {

@@ -144,11 +144,11 @@ def export_historical_data():
             -- Add regime labels based on date ranges
             CASE
                 WHEN DATE(time) >= '2023-01-01' THEN 'trump_2.0'
-                WHEN DATE(time) >= '2017-01-01' AND DATE(time) < '2020-01-01' THEN 'trade_war'
                 WHEN DATE(time) >= '2021-01-01' AND DATE(time) < '2023-01-01' THEN 'inflation'
-                WHEN (DATE(time) >= '2008-01-01' AND DATE(time) < '2010-01-01') OR 
-                     (DATE(time) >= '2020-01-01' AND DATE(time) < '2021-01-01') THEN 'crisis'
+                WHEN DATE(time) >= '2020-01-01' AND DATE(time) < '2021-01-01' THEN 'crisis'
+                WHEN DATE(time) >= '2017-01-01' AND DATE(time) < '2020-01-01' THEN 'trade_war'
                 WHEN DATE(time) >= '2010-01-01' AND DATE(time) < '2017-01-01' THEN 'recovery'
+                WHEN DATE(time) >= '2008-01-01' AND DATE(time) < '2010-01-01' THEN 'crisis'
                 WHEN DATE(time) >= '2000-01-01' AND DATE(time) < '2008-01-01' THEN 'pre_crisis'
                 ELSE 'historical'
             END as regime
@@ -294,52 +294,56 @@ def export_historical_regime_tables():
     
     return all(results)
 
-# Run exports
-print("\n" + "="*80)
-print("STARTING EXPORTS")
-print("="*80)
+def main():
+    """Main function to run all export operations."""
+    print("\n" + "="*80)
+    print("STARTING EXPORTS")
+    print("="*80)
+    
+    export_results = []
+    
+    # Export main training tables
+    for config in EXPORT_CONFIG:
+        success = export_table_to_parquet(
+            config['table'],
+            config['output_file'],
+            config['description']
+        )
+        export_results.append(success)
+    
+    # Export historical data
+    historical_success = export_historical_data()
+    export_results.append(historical_success)
+    
+    # Export regime-specific datasets (from production_training_data_1m)
+    regime_success = export_regime_datasets()
+    export_results.append(regime_success)
+    
+    # Export historical regime tables (from backfill, 2000-2019)
+    historical_regime_success = export_historical_regime_tables()
+    export_results.append(historical_regime_success)
+    
+    # Final summary
+    print("\n" + "="*80)
+    print("📋 EXPORT SUMMARY")
+    print("="*80)
+    
+    successful = sum(1 for r in export_results if r)
+    total = len(export_results)
+    
+    print(f"✅ Successful: {successful}/{total}")
+    print(f"❌ Failed: {total - successful}/{total}")
+    
+    if successful == total:
+        print("\n🎉 ALL EXPORTS COMPLETE!")
+        print(f"📁 Files saved to: {TRAINING_DATA_EXPORTS}")
+        print(f"📁 Historical data: {TRAINING_DATA_RAW}")
+    else:
+        print("\n⚠️  SOME EXPORTS FAILED - Review errors above")
+        sys.exit(1)
+    
+    print("="*80)
 
-export_results = []
-
-# Export main training tables
-for config in EXPORT_CONFIG:
-    success = export_table_to_parquet(
-        config['table'],
-        config['output_file'],
-        config['description']
-    )
-    export_results.append(success)
-
-# Export historical data
-historical_success = export_historical_data()
-export_results.append(historical_success)
-
-# Export regime-specific datasets (from production_training_data_1m)
-regime_success = export_regime_datasets()
-export_results.append(regime_success)
-
-# Export historical regime tables (from backfill, 2000-2019)
-historical_regime_success = export_historical_regime_tables()
-export_results.append(historical_regime_success)
-
-# Final summary
-print("\n" + "="*80)
-print("📋 EXPORT SUMMARY")
-print("="*80)
-
-successful = sum(export_results)
-total = len(export_results)
-
-print(f"✅ Successful: {successful}/{total}")
-print(f"❌ Failed: {total - successful}/{total}")
-
-if successful == total:
-    print("\n🎉 ALL EXPORTS COMPLETE!")
-    print(f"📁 Files saved to: {TRAINING_DATA_EXPORTS}")
-    print(f"📁 Historical data: {TRAINING_DATA_RAW}")
-else:
-    print("\n⚠️  SOME EXPORTS FAILED - Review errors above")
-    sys.exit(1)
-
-print("="*80)
+if __name__ == "__main__":
+    main()
 

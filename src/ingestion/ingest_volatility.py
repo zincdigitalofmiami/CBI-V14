@@ -86,9 +86,12 @@ def process_volatility_csv(file_path):
         
         # Convert implied vol from percentage string to float
         if df_clean['implied_vol'].dtype == 'object':
-            df_clean['implied_vol'] = df_clean['implied_vol'].str.replace('%', '', regex=False).astype(float)
+            df_clean['implied_vol'] = pd.to_numeric(df_clean['implied_vol'].str.replace('%', '', regex=False), errors='coerce')
         else:
             df_clean['implied_vol'] = pd.to_numeric(df_clean['implied_vol'], errors='coerce')
+        
+        # Drop rows where numeric conversion failed
+        df_clean.dropna(subset=['last_price', 'iv_hv_ratio', 'implied_vol'], inplace=True)
         
         # Validate ranges
         df_clean = df_clean[
