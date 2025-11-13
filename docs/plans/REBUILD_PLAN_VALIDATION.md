@@ -183,10 +183,11 @@
    - Plan doesn't address view migration order
    - Risk of broken views during migration
 
-5. **BQML Models**
-   - No mention of BQML model migration
-   - Models reference old table names
-   - Need model retraining or view aliases
+5. **Model Training Strategy** ✅ **DECIDED: Local Mac M4 Pipeline**
+   - **Approach**: Local Mac M4 + TensorFlow Metal training (NOT BQML)
+   - Plan needs: Document data export path from new BigQuery → local training
+   - Plan needs: Document prediction upload path from local models → BigQuery predictions table
+   - Plan needs: Ensure new table structure supports local training pipeline
 
 ---
 
@@ -227,22 +228,12 @@
    - Create migration order based on dependencies
    - Add view migration phase with rollback plan
 
-4. **Model Training Strategy Decision** ⚠️ **REQUIRED BEFORE MIGRATION**
-   - **Option A: BQML (Recommended for simplicity)**
-     - Rebuild BQML models after table migration
-     - Native BigQuery integration
-     - Easy to deploy predictions via SQL
-     - Limited to BQML-supported algorithms
-   - **Option B: Local Mac M4 Pipeline**
-     - Train locally with TensorFlow Metal (LSTM/GRU)
-     - Export models and deploy to Vertex AI or local API
-     - Full control over model architecture
-     - More complex deployment
-   - **Option C: Vertex AI End-to-End**
-     - Train and deploy entirely in Vertex AI
-     - Most scalable but most complex
-     - Requires Vertex AI setup
-   - **Recommendation**: Use BQML for new dashboard (simplest), keep local pipeline for experimentation
+4. **Model Training Strategy** ✅ **DECIDED: Local Mac M4 + TensorFlow Metal**
+   - **Approach**: Train locally on Mac M4 with TensorFlow Metal (LSTM/GRU)
+   - **Data Source**: Export from new BigQuery structure to local Parquet
+   - **Deployment**: Deploy trained models to Vertex AI or local API for dashboard
+   - **Plan Needs**: Document how new BigQuery structure feeds local training pipeline
+   - **Plan Needs**: Document prediction export path (local models → BigQuery predictions table)
 
 5. **Schema Normalization**
    - Create date column normalization script
@@ -269,10 +260,10 @@
 | Feature Engineering | ✅ Valid | Low |
 | Schema Assumptions | ⚠️ Needs Work | Medium |
 | View Dependencies | ❌ Missing | **HIGH** |
-| Model Training Strategy | ⚠️ Needs Decision | **HIGH** |
+| Model Training Strategy | ✅ Decided (Local Mac M4) | Low |
 | Execution Phases | ⚠️ Needs Detail | Medium |
 
-**Overall Assessment**: Plan is **80% complete** but needs critical additions before execution.
+**Overall Assessment**: Plan is **85% complete** but needs critical additions before execution.
 
 ---
 
