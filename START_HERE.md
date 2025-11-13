@@ -1,222 +1,226 @@
-# 🚀 START HERE - NEW SESSION
+# START HERE - CBI-V14 Quick Orientation
 
-**Welcome!** This document gets you up to speed in < 5 minutes.
-
----
-
-## ⚡ THE 60-SECOND VERSION
-
-**Project**: CBI-V14 - Soybean oil futures forecasting for U.S. Oil Solutions  
-**Problem**: Production data is 57 days stale (Sep 10 instead of Nov 6)  
-**Impact**: Models predicting on old data, missing market movements  
-**Fix**: Run ONE script (`./scripts/run_ultimate_consolidation.sh`)  
-**Time**: ~10 minutes  
-**Result**: Platform production-ready  
+**Last Updated**: November 13, 2025  
+**Read Time**: 3 minutes  
 
 ---
 
-## 🎯 FIRST THREE COMMANDS
+## ⚡ WHAT IS THIS?
+
+**CBI-V14** is a soybean oil (ZL) forecasting platform for U.S. Oil Solutions that:
+- Predicts ZL prices across 5 horizons (1w to 12m)
+- Powers BUY/WAIT/MONITOR procurement signals for Chris Stacy
+- Identifies sales opportunities for Kevin's Vegas restaurant clients
+- Uses 25 years of historical data (2000-2025) with 290 features
+
+---
+
+## 🎯 IF YOU'RE NEW, READ THESE IN ORDER
+
+### **1. This File** (you're here) - 3 minutes
+Quick orientation to the project
+
+### **2. README.md** - 5 minutes
+Full project overview, structure, commands
+
+### **3. QUICK_REFERENCE.txt** - 2 minutes
+Command cheatsheet for daily operations
+
+### **4. active-plans/MASTER_EXECUTION_PLAN.md** - 10 minutes
+7-day training strategy and execution plan
+
+---
+
+## ✅ PRODUCTION STATUS
+
+### **What's Working**
+- ✅ **5 BQML models** (MAPE 0.7-1.3%, R² > 0.95) serving live predictions
+- ✅ **290-feature training tables** with 6,057 rows (2000-2025)
+- ✅ **Next.js dashboard** live on Vercel
+- ✅ **32 cron jobs** ingesting data daily
+- ✅ **25 years of historical data** integrated (Nov 12)
+
+### **What's In Progress**
+- 🚧 **Surgical rebuild** - Organizing 340 tables into clean structure
+- 🚧 **Mac M4 training** - Local baselines with TensorFlow Metal
+- 🚧 **Vertex AI** - Neural models on 25-year history
+
+---
+
+## 🗂️ FOLDER GUIDE
+
+```
+Key Folders to Know:
+
+active-plans/          ← Current execution plans (START HERE)
+  ├── MASTER_EXECUTION_PLAN.md    (7-day training strategy)
+  ├── BASELINE_STRATEGY.md        (Mac M4 training)
+  └── SURGICAL_REBUILD_*          (Rebuild planning)
+
+scripts/               ← Operational utilities (168 scripts)
+  ├── export_training_data.py     (Export from BigQuery)
+  ├── build_features.py           (Feature engineering)
+  └── data_quality_checks.py      (Validation)
+
+src/
+  ├── training/baselines/         ← Day 2 training scripts
+  ├── prediction/                 ← Forecast generation + SHAP
+  └── ingestion/                  ← 78 data ingestion scripts
+
+config/bigquery/bigquery-sql/
+  ├── PRODUCTION_HORIZON_SPECIFIC/ ← 5 BQML training SQLs
+  └── INTEGRATE_YAHOO_FINANCE_HISTORICAL.sql
+
+docs/
+  ├── reference/         ← System docs (features, architecture)
+  ├── audits/            ← Nov 12 comprehensive audits
+  └── handoffs/          ← Transition documentation
+
+vertex-ai/             ← Neural training pipeline
+dashboard-nextjs/      ← Live dashboard (Vercel)
+```
+
+---
+
+## 🚀 FIRST COMMANDS TO RUN
 
 ```bash
+# Navigate to repo (external drive)
 cd "/Volumes/Satechi Hub/Projects/CBI-V14"
 
-# 1. Check status (shows the problem)
+# Or use the alias (if configured)
+cbi
+
+# Check system health
 ./scripts/status_check.sh
 
-# 2. Run the fix
-./scripts/run_ultimate_consolidation.sh
+# Validate data quality
+python3 scripts/data_quality_checks.py
 
-# 3. Verify success
-./scripts/status_check.sh
+# Export fresh training data
+python3 scripts/export_training_data.py
 ```
 
 ---
 
-## 📚 READ IN THIS ORDER
+## 🎓 KEY CONCEPTS
 
-### 1. Master Execution Plan (5 minutes) ⭐
-**File**: `active-plans/MASTER_EXECUTION_PLAN.md`  
-**Purpose**: Current strategy, two-track approach, immediate next steps
+### **The Two Tracks**
 
-### 2. Quick Start (3 minutes)
-**File**: `docs/reference/QUICK_START_NEXT_SESSION.md`  
-**Purpose**: Situation brief, priorities, first actions  
+**Track 1: BQML Production (Live)**
+- 5 DART models trained in BigQuery
+- MAPE 0.7-1.3%, R² > 0.95
+- Serving predictions to dashboard
+- Cost: ~$0.12 per training run
 
-### 3. Complete Handover (15 minutes)
-**File**: `docs/handoffs/COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md`  
-**Purpose**: Full context - inventory, issues, discoveries, action plan  
+**Track 2: Neural Pipeline (In Progress)**
+- Mac M4 local training + Vertex AI deployment
+- Statistical, tree, and neural baselines
+- 60-70 models trained sequentially
+- Memory-optimized for 16GB RAM
 
-### 3. Audit Results (10 minutes)
-**File**: `docs/audits/COMPREHENSIVE_AUDIT_NOV6.md`  
-**Purpose**: Verification that everything documented is accurate  
+### **The 340-Table Problem**
 
-### 4. Data-Driven Priorities (5 minutes)
-**File**: `docs/analysis/THE_REAL_BIG_HITTERS_DATA_DRIVEN.md`  
-**Purpose**: ACTUAL correlations (Crush Margin #1 at 0.961!)  
+**Why rebuild?**
+- 340 tables across 24 datasets = chaos
+- Same data in multiple places with different names
+- 97 duplicate sentiment columns
+- 20+ columns 100% NULL in production
+- **Gets worse every day**
 
-### 5. Production System Reference (as needed)
-**File**: `docs/reference/OFFICIAL_PRODUCTION_SYSTEM.md`  
-**Purpose**: Naming conventions, data flow, 290 features  
-
----
-
-## 🔥 THE MOST CRITICAL FACTS
-
-### Data Status (Nov 6, 2025)
-```
-🔴 production_training_data_1m: 57 days behind (CRITICAL)
-🔴 production_training_data_3m: 146 days behind (CRITICAL)
-🔴 production_training_data_6m: 275 days behind (CRITICAL)
-🟡 production_training_data_1w: 24 days behind (WARNING)
-✅ Big 8 Signals: 0 days behind (CURRENT!)
-```
-
-### The REAL Heavy Hitters (not assumptions!)
-```
-🏆 #1: Crush Margin     0.961 correlation  - THIS IS HUGE!
-🇨🇳 #2: China Imports   -0.813 correlation - NEGATIVE! (less = higher price)
-💵 #3: Dollar Index     -0.658 correlation
-🏦 #4: Fed Funds        -0.656 correlation
-🎯 #5: Tariffs          0.647 correlation
-📊 #8: VIX              0.398 correlation  - LOWER than expected!
-```
-
-### Critical DO NOTs
-```
-❌ DON'T rename BQML models (breaks production)
-❌ DON'T use training_dataset_super_enriched (broken, 11 cols)
-❌ DON'T assume Vertex AI endpoints exist (they don't - BQML only)
-❌ DON'T trust feature count = importance (VIX has 14 but low correlation)
-```
+**Solution:**
+- Archive old structure → `archive_legacy_nov12`
+- Rebuild with institutional naming (like Goldman Sachs)
+- Organize by asset class, function, regime
+- Create governance to prevent future chaos
 
 ---
 
-## 🛠️ WHAT WAS CREATED FOR YOU
+## 📚 DOCUMENTATION PRIORITY
 
-### New Tools ✅
-- `scripts/status_check.sh` - Quick health check
-- `docs/reference/QUICK_START_NEXT_SESSION.md` - Fast brief
-- `docs/audits/COMPREHENSIVE_AUDIT_NOV6.md` - Full verification
-- `docs/handoffs/AUDIT_SUMMARY_NOV6.md` - What was done
-- `docs/handoffs/SESSION_HANDOVER_PACKAGE.md` - Master index
-- `START_HERE.md` - This file!
+**Must Read** (15 minutes total):
+1. ⭐ `active-plans/MASTER_EXECUTION_PLAN.md` - Current strategy
+2. ⭐ `QUICK_REFERENCE.txt` - Command cheatsheet
+3. ⭐ `README.md` - Full overview
 
-### Verified Ready ✅
-- `scripts/run_ultimate_consolidation.sh` - The fix
-- `config/bigquery/bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql` - SQL consolidation
-- All 5 priority scrapers (RIN, RFS, Baltic, Argentina, USDA)
-- All 71 ingestion scripts
-- All 16 BQML models
+**Reference As Needed**:
+- `docs/reference/COMPLETE_FEATURE_LIST_290.md` - All features
+- `docs/reference/COMPLETE_SYSTEM_FLOW.md` - Data architecture
+- `docs/audits/FORENSIC_BIGQUERY_AUDIT_20251112.md` - 340 tables inventory
+
+**Client Requirements**:
+- `docs/reference/CHRIS_AND_KEVIN_NEEDS_COMPREHENSIVE.md`
 
 ---
 
-## 🎯 EXPECTED RESULTS AFTER FIX
+## 🔥 MOST IMPORTANT FACTS
 
-### Before
+### **Data Reality**
+- **6,057 rows** of soybean oil prices (2000-2025)
+- **+365% increase** from 1,301 rows (Nov 12 integration)
+- **290 features** in production training tables
+- **4 regime datasets** for crisis-specific training
+
+### **Production Models**
 ```
-production_training_data_1m: Sep 10 (57 days stale)
-Predictions: Inaccurate, missing market moves
-Client: "Markets moving MUCH more than our model"
-```
-
-### After
-```
-production_training_data_1m: Nov 5-6 (current!)
-Predictions: Accurate, tracking real markets
-Client: Satisfied, platform ready to ship
-```
-
----
-
-## 🚨 IF YOU ONLY DO ONE THING
-
-Run this:
-```bash
-./scripts/run_ultimate_consolidation.sh
+bqml_1w   (1-week forecasts)   MAPE 0.7-1.3%, R² > 0.95
+bqml_1m   (1-month forecasts)  MAPE 0.7-1.3%, R² > 0.95
+bqml_3m   (3-month forecasts)  MAPE 0.7-1.3%, R² > 0.95
+bqml_6m   (6-month forecasts)  MAPE 0.7-1.3%, R² > 0.95
+bqml_12m  (12-month forecasts) MAPE 0.7-1.3%, R² > 0.95
 ```
 
-That's it. That fixes 90% of the problem.
+### **Critical DON'Ts**
+- ❌ DON'T rename BQML models (breaks production)
+- ❌ DON'T use `training_dataset_super_enriched` (legacy, broken)
+- ❌ DON'T modify production tables without approval
 
 ---
 
-## 💬 QUESTIONS TO ASK USER
+## 🎯 WHAT TO DO NEXT
 
-After consolidation completes:
-1. "Data is now current - are predictions better?"
-2. "Should we prioritize Crush Margin features (0.961 correlation)?"
-3. "Ready to activate the 5 priority scrapers?"
-4. "Want the 3-layer neural architecture implemented?"
+### **If You're Starting Training:**
+1. Read `active-plans/MASTER_EXECUTION_PLAN.md`
+2. Run `scripts/export_training_data.py`
+3. Follow Day 2 baseline scripts in `src/training/baselines/`
 
----
+### **If You're Debugging:**
+1. Run `scripts/status_check.sh`
+2. Check recent audits in `docs/audits/`
+3. Review logs in `Logs/`
 
-## 📦 COMPLETE HANDOVER PACKAGE
-
-Primary documents live under `/Volumes/Satechi Hub/Projects/CBI-V14/` (symlinked from `~/Documents/GitHub/CBI-V14`):
-
-**Quick References**:
-- 📄 START_HERE.md (this file)
-- 📄 docs/reference/QUICK_START_NEXT_SESSION.md
-- 📄 docs/handoffs/AUDIT_SUMMARY_NOV6.md
-
-**Complete Documentation**:
-- 📄 docs/handoffs/COMPREHENSIVE_HANDOVER_DOCUMENT_NOV6.md (529 lines)
-- 🔬 docs/audits/COMPREHENSIVE_AUDIT_NOV6.md (600+ lines)
-- 📊 docs/analysis/THE_REAL_BIG_HITTERS_DATA_DRIVEN.md (230 lines)
-- 🎯 docs/reference/OFFICIAL_PRODUCTION_SYSTEM.md
-- 📦 docs/handoffs/SESSION_HANDOVER_PACKAGE.md (master index)
-
-**Tools**:
-- 🛠️ scripts/status_check.sh
-- 🛠️ scripts/run_ultimate_consolidation.sh
-- 🛠️ config/bigquery/bigquery-sql/ULTIMATE_DATA_CONSOLIDATION.sql
+### **If You're Planning:**
+1. Review `active-plans/` folder
+2. Check surgical rebuild docs
+3. Read client requirements in `docs/reference/`
 
 ---
 
-## ✅ HANDOVER QUALITY
+## 📞 QUICK HELP
 
-**Accuracy**: 90%+ directly verified  
-**Completeness**: 100% of critical items documented  
-**Readiness**: All tools tested and ready  
-**Risk**: Low (backups created automatically)  
-**Time to fix**: ~10 minutes  
-**Confidence**: HIGH  
+**Repository Location**: `/Volumes/Satechi Hub/Projects/CBI-V14/`  
+**Symlink**: `~/Documents/GitHub/CBI-V14`  
+**Alias**: `cbi` (in ~/.zshrc)  
+**Python Env**: `vertex-metal-312` (Python 3.12.6)
 
----
-
-## 🎓 KEY INSIGHT TO REMEMBER
-
-> **The data exists. The models work. The problem is just a broken consolidation pipeline.**
-> 
-> Source data is current (Big 8 signals Nov 6, prices Nov 5).  
-> Models are good (MAE 0.30, R² 0.987).  
-> The gap is in the middle - getting current data into training tables.  
-> 
-> **One script bridges that gap.**
+**Key Files**:
+- Master plan: `active-plans/MASTER_EXECUTION_PLAN.md`
+- Commands: `QUICK_REFERENCE.txt`
+- Full overview: `README.md`
 
 ---
 
-## 🚀 YOU'RE READY!
+## ✅ YOU'RE READY!
 
-- ✅ All documentation complete
-- ✅ All tools verified ready
-- ✅ All scripts tested
-- ✅ All files found
-- ✅ All claims verified
-- ✅ Fix is one command away
+You now know:
+- ✅ What CBI-V14 is (soybean oil forecasting)
+- ✅ What's working (5 BQML models live)
+- ✅ What's in progress (surgical rebuild, Mac training)
+- ✅ Where to find things (folder structure)
+- ✅ What to read next (MASTER_EXECUTION_PLAN.md)
 
-**Total time to get started**: < 5 minutes reading this  
-**Total time to fix critical issue**: ~10 minutes running script  
-**Total time to production**: 1-2 weeks polish after fix  
+**Next step**: Open `README.md` for full details, then dive into `active-plans/MASTER_EXECUTION_PLAN.md`
 
 ---
 
-**NEXT STEP**: Run `./scripts/status_check.sh` to see the problem, then run `./scripts/run_ultimate_consolidation.sh` to fix it!
-
----
-
-*Created: November 6, 2025*  
-*Purpose: Get new sessions up to speed FAST*  
-*Status: Complete and verified*  
-
-🎯 **YOU'VE GOT THIS!**
-
+🚀 **Welcome to CBI-V14!**
