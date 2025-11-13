@@ -1,0 +1,10 @@
+dataset,table_name,row_count,earliest_date,latest_date,error
+forecasting_data_warehouse,soybean_oil_prices,6057,2000-11-13,2025-11-05,
+forecasting_data_warehouse,corn_prices,15623,2000-11-13,2025-11-05,
+forecasting_data_warehouse,wheat_prices,15631,,,
+yahoo_finance_comprehensive,yahoo_normalized,314381,2000-11-13,2025-11-06,
+models_v4,pre_crisis_2000_2007_historical,1737,2000-11-13,2007-12-31,
+models_v4,crisis_2008_historical,253,2008-01-02,2008-12-31,
+models_v4,recovery_2010_2016_historical,1760,2010-01-04,2016-12-30,
+models_v4,trade_war_2017_2019_historical,754,2017-01-03,2019-12-31,
+models_v4,trump_rich_2023_2025,732,2023-01-03,2025-11-06,

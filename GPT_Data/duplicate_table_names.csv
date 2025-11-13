@@ -1,0 +1,10 @@
+table_name,dataset_count,datasets
+biofuel_policy,2,"forecasting_data_warehouse, staging"
+cftc_cot,2,"forecasting_data_warehouse, staging"
+daily_forecasts,2,"predictions, predictions_uc1"
+hourly_prices,2,"forecasting_data_warehouse, market_data"
+monthly_vertex_predictions,2,"predictions, predictions_uc1"
+trump_policy_intelligence,2,"forecasting_data_warehouse, staging"
+usda_export_sales,2,"forecasting_data_warehouse, staging"
+usda_harvest_progress,2,"forecasting_data_warehouse, staging"
+yahoo_finance_enhanced,2,"forecasting_data_warehouse, market_data"

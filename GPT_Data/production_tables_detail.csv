@@ -1,0 +1,8 @@
+dataset_name,table_name,table_type,row_count,created,modified,location,partitioning,clustering,column_count
+models_v4,production_training_data_12m,TABLE,1473.0,2025-11-07 21:48:21.655000+00:00,2025-11-07 21:48:21.655000+00:00,us-central1,,,301
+models_v4,production_training_data_1m,TABLE,1404.0,2025-11-06 03:24:29.532000+00:00,2025-11-06 22:10:33.168000+00:00,us-central1,,,444
+models_v4,production_training_data_1m_backup_20251112_165404,TABLE,1404.0,2025-11-12 22:54:11.782000+00:00,2025-11-12 22:54:11.782000+00:00,us-central1,,,444
+models_v4,production_training_data_1w,TABLE,1472.0,2025-11-06 03:43:52.468000+00:00,2025-11-06 13:48:47.433000+00:00,us-central1,,,300
+models_v4,production_training_data_1w_backup_20251112_165404,TABLE,1472.0,2025-11-12 22:54:08.013000+00:00,2025-11-12 22:54:08.013000+00:00,us-central1,,,300
+models_v4,production_training_data_3m,TABLE,1475.0,2025-11-06 03:45:14.903000+00:00,2025-11-06 13:49:04.531000+00:00,us-central1,,,300
+models_v4,production_training_data_6m,TABLE,1473.0,2025-11-06 03:45:43.838000+00:00,2025-11-06 13:49:15.474000+00:00,us-central1,,,300
