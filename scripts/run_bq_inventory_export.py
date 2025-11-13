@@ -34,34 +34,33 @@ def get_datasets(client):
 def get_full_inventory(client, datasets):
     """
     Builds a full inventory of all tables across all datasets and regions.
-    This is the robust replacement for the original INFORMATION_SCHEMA query.
+    This version uses the legacy __TABLES__ metadata view for robustness, as it
+    reliably contains row_count across all regions, unlike some INFORMATION_SCHEMA views.
     """
     all_tables_df = pd.DataFrame()
     with tqdm(total=len(datasets), desc="1/10: Full Inventory", unit="dataset") as pbar:
         for dataset_id in datasets:
             try:
-                dataset = client.get_dataset(dataset_id)
-                region = dataset.location.lower()
-                
-                # Some locations are multi-region like 'US', some are specific like 'us-central1'
-                # We need to handle both cases for INFORMATION_SCHEMA
-                schema_region = f"region-{region}"
-
                 query = f"""
                 SELECT
-                    table_catalog AS project_id,
-                    table_schema AS dataset_name,
-                    table_name,
-                    table_type,
+                    project_id,
+                    dataset_id as dataset_name,
+                    table_id as table_name,
+                    CASE type
+                        WHEN 1 THEN 'BASE TABLE'
+                        WHEN 2 THEN 'VIEW'
+                        WHEN 3 THEN 'MATERIALIZED VIEW'
+                        ELSE 'UNKNOWN'
+                    END as table_type,
                     row_count,
-                    creation_time,
-                    last_modified_time
-                FROM `{PROJECT_ID}.{schema_region}.INFORMATION_SCHEMA.TABLES`
-                WHERE table_schema = '{dataset_id}'
-                AND table_type IN ('BASE TABLE', 'VIEW', 'MATERIALIZED VIEW');
+                    TIMESTAMP_MILLIS(creation_time) as creation_time,
+                    TIMESTAMP_MILLIS(last_modified_time) as last_modified_time
+                FROM `{PROJECT_ID}.{dataset_id}.__TABLES__`
                 """
                 df = client.query(query).to_dataframe()
                 if not df.empty:
+                    if 'project_id' not in df.columns:
+                        df['project_id'] = PROJECT_ID
                     all_tables_df = pd.concat([all_tables_df, df], ignore_index=True)
             
             except Exception as e:
@@ -69,7 +68,11 @@ def get_full_inventory(client, datasets):
             finally:
                 pbar.update(1)
     
-    all_tables_df.sort_values(by=['dataset_name', 'table_name'], inplace=True)
+    if not all_tables_df.empty:
+        all_tables_df.sort_values(by=['dataset_name', 'table_name'], inplace=True)
+    else:
+        tqdm.write("   ⚠️ WARNING: Full inventory is empty. Subsequent queries may fail.")
+
     return all_tables_df
     
 def get_all_columns(client, datasets):
@@ -198,6 +201,9 @@ def main():
     
     # 1. Full Inventory (Robust version)
     inventory_df = get_full_inventory(client, get_datasets(client))
+    if inventory_df.empty:
+        print("❌ CRITICAL: Failed to generate table inventory. Aborting.")
+        return
     inventory_df.to_csv(os.path.join(OUTPUT_DIR, "inventory_340_objects.csv"), index=False)
     tqdm.write("   ✅ 1/10: Saved inventory_340_objects.csv")
 
@@ -255,6 +261,9 @@ def main():
         FROM `cbi-v14.us.INFORMATION_SCHEMA.TABLES`
         GROUP BY 1 HAVING COUNT(DISTINCT table_schema) > 1 ORDER BY 3 DESC, 1;
     """, "6/10: Duplicates")
+    # Fix for ARRAY to CSV conversion in pandas
+    if 'datasets' in duplicates_df.columns:
+        duplicates_df['datasets'] = duplicates_df['datasets'].apply(lambda x: x if isinstance(x, str) else ', '.join(map(str, x)))
     duplicates_df.to_csv(os.path.join(OUTPUT_DIR, "duplicate_table_names.csv"), index=False)
     tqdm.write("   ✅ 6/10: Saved duplicate_table_names.csv")
 
@@ -267,6 +276,9 @@ def main():
         FROM `cbi-v14.us.INFORMATION_SCHEMA.COLUMNS`
         GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 500;
     """, "7/10: Column Freq")
+    # Fix for ARRAY to CSV conversion in pandas
+    if 'tables' in column_freq_df.columns:
+        column_freq_df['tables'] = column_freq_df['tables'].apply(lambda x: x if isinstance(x, str) else ', '.join(map(str, x)))
     column_freq_df.to_csv(os.path.join(OUTPUT_DIR, "column_name_frequency.csv"), index=False)
     tqdm.write("   ✅ 7/10: Saved column_name_frequency.csv")
 
