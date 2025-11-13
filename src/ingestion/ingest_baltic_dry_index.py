@@ -39,37 +39,138 @@ class BalticDryIndexCollector:
     def fetch_baltic_data(self) -> pd.DataFrame:
         """Fetch Baltic Dry Index data from multiple sources"""
         all_data = []
-
-        for source in self.sources:
+        
+        # Try web scraping from public sources (no API key required)
+        sources_to_try = [
+            self._fetch_from_investing_com,
+            self._fetch_from_marketwatch,
+        ]
+        
+        for fetch_func in sources_to_try:
             try:
-                logger.info(f"Fetching Baltic data from {source['name']}")
-
-                # For demo purposes - implement actual API calls
-                # This would integrate with Trading Economics or Investing.com APIs
-
-                # Mock data structure for now
-                mock_data = {
-                    'date': datetime.now().date(),
-                    'bdi_value': 1250 + (datetime.now().hour * 10),  # Mock BDI value
-                    'bdi_change': 15.5,
-                    'bdi_change_pct': 1.25,
-                    'source': source['name'],
-                    'timestamp': datetime.utcnow()
-                }
-
-                all_data.append(mock_data)
-                time.sleep(1)  # Rate limiting
-
+                logger.info(f"Attempting to fetch Baltic data from {fetch_func.__name__}")
+                data = fetch_func()
+                if data and not data.empty:
+                    all_data.append(data)
+                    logger.info(f"✅ Successfully fetched from {fetch_func.__name__}")
+                    break  # Use first successful source
             except Exception as e:
-                logger.error(f"Error fetching from {source['name']}: {e}")
+                logger.warning(f"Failed to fetch from {fetch_func.__name__}: {e}")
+                time.sleep(2)  # Rate limiting between failed attempts
                 continue
-
+        
         if all_data:
-            df = pd.DataFrame(all_data)
+            df = pd.concat(all_data, ignore_index=True)
+            # Remove duplicates by date (keep first)
+            df = df.drop_duplicates(subset=['date'], keep='first')
             logger.info(f"Collected {len(df)} Baltic Dry Index records")
             return df
         else:
-            logger.error("No Baltic data collected")
+            logger.error("❌ No Baltic data collected from any source")
+            logger.warning("⚠️  Consider implementing Trading Economics API with credentials")
+            return pd.DataFrame()
+    
+    def _fetch_from_investing_com(self) -> pd.DataFrame:
+        """Fetch BDI from Investing.com (web scraping)"""
+        try:
+            from bs4 import BeautifulSoup
+            
+            url = "https://www.investing.com/indices/baltic-dry"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Look for current BDI value (Investing.com structure)
+            bdi_value = None
+            bdi_change = None
+            bdi_change_pct = None
+            
+            # Try multiple selectors for BDI value
+            value_selectors = [
+                '#last_last',
+                '.text-2xl',
+                '[data-test="instrument-price-last"]',
+                '.instrument-price_last__'
+            ]
+            
+            for selector in value_selectors:
+                elem = soup.select_one(selector)
+                if elem:
+                    try:
+                        bdi_value = float(elem.get_text().replace(',', ''))
+                        break
+                    except:
+                        continue
+            
+            # Try to find change
+            change_elem = soup.select_one('[data-test="instrument-price-change"]')
+            if change_elem:
+                change_text = change_elem.get_text()
+                try:
+                    bdi_change = float(change_text.split()[0])
+                    if '%' in change_text:
+                        bdi_change_pct = float(change_text.split()[1].replace('%', '').replace('(', '').replace(')', ''))
+                except:
+                    pass
+            
+            if bdi_value and 300 <= bdi_value <= 4000:  # Validate range
+                return pd.DataFrame([{
+                    'date': datetime.now().date(),
+                    'bdi_value': bdi_value,
+                    'bdi_change': bdi_change or 0.0,
+                    'bdi_change_pct': bdi_change_pct or 0.0,
+                    'source': 'investing_com',
+                    'timestamp': datetime.utcnow()
+                }])
+            else:
+                logger.warning(f"BDI value out of range: {bdi_value}")
+                return pd.DataFrame()
+                
+        except Exception as e:
+            logger.error(f"Error fetching from Investing.com: {e}")
+            return pd.DataFrame()
+    
+    def _fetch_from_marketwatch(self) -> pd.DataFrame:
+        """Fetch BDI from MarketWatch (web scraping fallback)"""
+        try:
+            from bs4 import BeautifulSoup
+            
+            url = "https://www.marketwatch.com/investing/index/bdi"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # MarketWatch structure
+            value_elem = soup.select_one('.intraday__price, .value')
+            if value_elem:
+                try:
+                    bdi_value = float(value_elem.get_text().replace(',', ''))
+                    if 300 <= bdi_value <= 4000:
+                        return pd.DataFrame([{
+                            'date': datetime.now().date(),
+                            'bdi_value': bdi_value,
+                            'bdi_change': 0.0,  # MarketWatch may not show change
+                            'bdi_change_pct': 0.0,
+                            'source': 'marketwatch',
+                            'timestamp': datetime.utcnow()
+                        }])
+                except:
+                    pass
+            
+            return pd.DataFrame()
+                
+        except Exception as e:
+            logger.error(f"Error fetching from MarketWatch: {e}")
             return pd.DataFrame()
 
     def validate_data(self, df: pd.DataFrame) -> pd.DataFrame:

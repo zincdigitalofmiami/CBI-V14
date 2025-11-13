@@ -1,14 +1,18 @@
 # CBI-V14 Master Execution Plan
 **Last Updated**: November 12, 2025  
-**Status**: Active - 7-Day Institutional System Execution
+**Status**: Active - 7-Day Institutional System Execution  
+**Data Status**: ✅ **25+ YEARS INTEGRATED** (365% increase in training data)
 
 ---
 
 ## Current Mission
 
-Train the most accurate ZL (soybean oil) forecasting models possible using local baselines on the Apple M4 Mac mini, then selectively deploy winners to Vertex AI for production predictions.
+Train the most accurate ZL (soybean oil) forecasting models possible using **25 years of historical data** (2000-2025) on local baselines with the Apple M4 Mac mini, then selectively deploy winners to Vertex AI for production predictions.
 
-**Key Principle**: Train everything locally (free iterations), only push to Vertex AI when a model beats existing benchmarks.
+**Key Updates**:
+- **Historical Data Integrated**: 6,057 rows of soybean oil prices (was 1,301)
+- **4 Regime Datasets Created**: 2008 Crisis, Trade War 2017-2019, Recovery, Pre-Crisis
+- **338K+ Pre-2020 Rows Available**: Full market cycle coverage
 
 ---
 
@@ -36,16 +40,22 @@ Train the most accurate ZL (soybean oil) forecasting models possible using local
 
 ## Training Strategy
 
-### Phase 1: Local Baselines (Current Focus)
-Run comprehensive baselines locally on full dataset (125+ years):
+### Phase 1: Local Baselines (Current Focus - Enhanced with Historical Data)
+Run comprehensive baselines locally on **expanded 25-year dataset** (2000-2025):
 
 **Statistical Baselines**:
-- ARIMA/Prophet (naive time series)
-- Exponential smoothing
+- ARIMA/Prophet (now with 25-year patterns)
+- Exponential smoothing (validated on 2008 crisis)
 
 **Tree-Based Baselines**:
-- LightGBM with DART dropout
-- XGBoost with regime weighting
+- LightGBM with DART dropout (trained on all regimes)
+- XGBoost with regime weighting (using new regime tables)
+
+**Regime-Specific Models** (NEW):
+- Crisis model (253 rows from 2008)
+- Trade War model (754 rows from 2017-2019)
+- Recovery model (1,760 rows from 2010-2016)
+- Pre-Crisis baseline (1,737 rows from 2000-2007)
 
 **Neural Baselines**:
 - Simple LSTM (1-2 layers)
@@ -268,13 +278,17 @@ A model qualifies for Vertex AI deployment if:
 - 1 neural volatility model (lightweight)
 - Count: 2 volatility models
 
-**Scripts Created**:
-- `src/training/baselines/statistical.py` (with caching)
-- `src/training/baselines/tree_models.py` (with memory limits)
-- `src/training/baselines/neural_baseline.py` (FP16, session cleanup)
-- `src/training/baselines/volatility_model.py`
+**Scripts Created** (✅ COMPLETE - November 12, 2025):
+- `src/training/baselines/train_statistical.py` (ARIMA/Prophet with caching)
+- `src/training/baselines/train_tree.py` (LightGBM/XGBoost with memory limits)
+- `src/training/baselines/train_simple_neural.py` (LSTM/GRU with FP16, Metal GPU, session cleanup)
+- `scripts/build_features.py` (feature engineering pipeline)
+- `src/prediction/generate_forecasts.py` (daily forecast generation)
+- `src/prediction/shap_explanations.py` (SHAP feature importance)
+- `src/analysis/backtesting_engine.py` (procurement strategy validation)
+- `scripts/crontab_setup.sh` (updated with ML pipeline automation)
 
-**Deliverable**: 20 baseline models started (complete remainder Days 3-4), volatility forecasts available
+**Deliverable**: ✅ Day 2 baseline training infrastructure complete. Ready to execute 20 baseline models (complete remainder Days 3-4), volatility forecasts available
 
 **Memory Management**: Clear sessions, one GPU job at a time, monitor Activity Monitor
 

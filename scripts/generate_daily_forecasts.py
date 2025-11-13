@@ -35,7 +35,6 @@ def get_sql_file_path():
         "GENERATE_PRODUCTION_FORECASTS_V3.sql",  # Same directory as main.py in Cloud Function
         os.path.join(os.path.dirname(__file__), "..", "bigquery_sql", "GENERATE_PRODUCTION_FORECASTS_V3.sql"),
         "bigquery_sql/GENERATE_PRODUCTION_FORECASTS_V3.sql",
-        "/Users/zincdigital/CBI-V14/bigquery_sql/GENERATE_PRODUCTION_FORECASTS_V3.sql",
     ]
     
     for path in possible_paths:

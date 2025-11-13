@@ -1,0 +1,5 @@
+Symbol,Name,Last,IV/HV,Imp Vol,SomeSignal
+SOYB,"Soybean Oil ETF",45.67,1.2,35.5%,BUY
+CORN,"Corn ETF",25.11,0.9,28.9%,SELL
+WHEAT,"Wheat ETF",-99,1.1,32.1%,HOLD
+INVALID,"Invalid Data",abc,xyz,bad%,NONE

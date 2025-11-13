@@ -16,6 +16,9 @@ import logging
 import time
 from bs4 import BeautifulSoup
 import re
+from typing import List, Optional, Dict
+from io import StringIO
+from requests import Response, exceptions as req_exceptions
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,6 +26,12 @@ logger = logging.getLogger(__name__)
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
 TABLE_ID = "biofuel_prices"
+
+MIN_VALID_PRICE = 0.0
+MAX_VALID_PRICE = 10.0  # conservative bound to reject obvious garbage
+REQUEST_TIMEOUT_SECONDS = 30
+REQUEST_RETRY_ATTEMPTS = 3
+REQUEST_RETRY_SLEEP_SECONDS = 2
 
 class EPARINScraper:
     def __init__(self):
@@ -34,67 +43,48 @@ class EPARINScraper:
         url = "https://www.epa.gov/fuels-registration-reporting-and-compliance-help/rin-trades-and-price-information"
         
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            
+            response = self._fetch_with_retries(url)
+            if response is None:
+                logger.error("Failed to fetch EPA RIN page after retries")
+                return []
+
             soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Try to find table with RIN prices
-            # EPA typically has tables with Week Ending, D4, D5, D6, D3, D7 columns
-            from io import StringIO
+            # Pandas parses all tables from the page text
             tables = pd.read_html(StringIO(response.text))
-            
-            rin_data = []
+
+            rin_records: List[Dict] = []
+            candidate_tables = 0
             for table in tables:
-                # Look for RIN price table (has D4, D5, D6 columns)
-                if any(col in str(table.columns).upper() for col in ['D4', 'D5', 'D6', 'WEEK']):
-                    logger.info(f"Found RIN price table with {len(table)} rows")
-                    
-                    # Standardize column names
-                    table.columns = [str(col).strip().upper() for col in table.columns]
-                    
-                    # Find week ending and price columns
-                    week_col = None
-                    for col in table.columns:
-                        if 'WEEK' in col or 'DATE' in col:
-                            week_col = col
-                            break
-                    
-                    if week_col:
-                        for _, row in table.iterrows():
-                            try:
-                                week_str = str(row[week_col])
-                                # Parse date
-                                date = pd.to_datetime(week_str, errors='coerce')
-                                if pd.isna(date):
-                                    continue
-                                
-                                # Extract RIN prices (D4, D5, D6, D3, D7)
-                                rin_d4 = self._extract_price(row, 'D4')
-                                rin_d5 = self._extract_price(row, 'D5')
-                                rin_d6 = self._extract_price(row, 'D6')
-                                rin_d3 = self._extract_price(row, 'D3')
-                                rin_d7 = self._extract_price(row, 'D7')
-                                
-                                if any([rin_d4, rin_d5, rin_d6, rin_d3, rin_d7]):
-                                    rin_data.append({
-                                        'date': date.date(),
-                                        'rin_d4_price': rin_d4,
-                                        'rin_d5_price': rin_d5,
-                                        'rin_d6_price': rin_d6,
-                                        'rin_d3_price': rin_d3,
-                                        'rin_d7_price': rin_d7
-                                    })
-                            except Exception as e:
-                                logger.warning(f"Error parsing row: {e}")
-                                continue
-            
-            logger.info(f"Extracted {len(rin_data)} RIN price records")
+                # Standardize column names
+                table.columns = [str(col).strip().upper() for col in table.columns]
+                if not self._looks_like_rin_table(table.columns):
+                    continue
+                candidate_tables += 1
+
+                week_col = self._find_week_column(table.columns)
+                if week_col is None:
+                    continue
+
+                for _, row in table.iterrows():
+                    record = self._parse_row(row, week_col)
+                    if record is not None:
+                        rin_records.append(record)
+
+            if candidate_tables == 0:
+                logger.warning("No candidate RIN price tables found on page")
+
+            # Dedupe by date (keep last occurrence in case of duplicates)
+            deduped: Dict[datetime, Dict] = {}
+            for rec in rin_records:
+                deduped[rec['date']] = rec
+
+            rin_data = list(deduped.values())
+            logger.info(
+                f"Extracted {len(rin_data)} valid RIN price records "
+                f"from {candidate_tables} candidate tables"
+            )
             return rin_data
-            
+
         except Exception as e:
             logger.error(f"Error scraping RIN trades page: {e}")
             return []
@@ -108,9 +98,83 @@ class EPARINScraper:
                     try:
                         # Remove $ and commas, convert to float
                         price_str = str(value).replace('$', '').replace(',', '').strip()
-                        return float(price_str)
+                        price_val = float(price_str)
+                        if self._is_valid_price(price_val):
+                            return price_val
                     except:
                         pass
+        return None
+    
+    def _is_valid_price(self, value: float) -> bool:
+        return MIN_VALID_PRICE <= value <= MAX_VALID_PRICE
+
+    def _looks_like_rin_table(self, columns: List[str]) -> bool:
+        """Heuristic: table must include a date/week column AND at least one of D4/D5/D6/D3/D7."""
+        cols = [str(c).upper() for c in columns]
+        has_week = any(('WEEK' in c) or ('DATE' in c) for c in cols)
+        has_rin = any(r in ''.join(cols) for r in ['D4', 'D5', 'D6', 'D3', 'D7'])
+        return has_week and has_rin
+
+    def _find_week_column(self, columns: List[str]) -> Optional[str]:
+        for col in columns:
+            u = str(col).upper()
+            if 'WEEK' in u or 'DATE' in u:
+                return col
+        return None
+
+    def _parse_row(self, row: pd.Series, week_col: str) -> Optional[Dict]:
+        """Parse a single row into a normalized record; returns None if invalid."""
+        try:
+            week_str = str(row[week_col])
+            date = pd.to_datetime(week_str, errors='coerce')
+            if pd.isna(date):
+                return None
+
+            rin_d4 = self._extract_price(row, 'D4')
+            rin_d5 = self._extract_price(row, 'D5')
+            rin_d6 = self._extract_price(row, 'D6')
+            rin_d3 = self._extract_price(row, 'D3')
+            rin_d7 = self._extract_price(row, 'D7')
+
+            if not any([rin_d4, rin_d5, rin_d6, rin_d3, rin_d7]):
+                return None
+
+            return {
+                'date': date.date(),
+                'rin_d4_price': rin_d4,
+                'rin_d5_price': rin_d5,
+                'rin_d6_price': rin_d6,
+                'rin_d3_price': rin_d3,
+                'rin_d7_price': rin_d7
+            }
+        except Exception as e:
+            logger.debug(f"Row parse error: {e}")
+            return None
+    
+    def _fetch_with_retries(self, url: str) -> Optional[Response]:
+        headers = {
+            'User-Agent': (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/119.0.0.0 Safari/537.36'
+            )
+        }
+        for attempt in range(1, REQUEST_RETRY_ATTEMPTS + 1):
+            try:
+                resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
+                resp.raise_for_status()
+                return resp
+            except (req_exceptions.Timeout, req_exceptions.ConnectionError) as e:
+                logger.warning(f"Request attempt {attempt} failed: {e}")
+                if attempt < REQUEST_RETRY_ATTEMPTS:
+                    time.sleep(REQUEST_RETRY_SLEEP_SECONDS)
+            except req_exceptions.HTTPError as e:
+                logger.error(f"HTTP error {e}; aborting")
+                return None
+            except Exception as e:
+                logger.error(f"Unexpected request error: {e}")
+                if attempt < REQUEST_RETRY_ATTEMPTS:
+                    time.sleep(REQUEST_RETRY_SLEEP_SECONDS)
         return None
     
     def load_to_bigquery(self, rin_data):
@@ -137,6 +201,13 @@ class EPARINScraper:
             # Convert date to datetime for BigQuery
             df['date'] = pd.to_datetime(df['date'])
             
+            # Basic intra-batch dedupe by date to ensure idempotency
+            before = len(df)
+            df = df.sort_values('date').drop_duplicates(subset=['date'], keep='last')
+            after = len(df)
+            if after < before:
+                logger.info(f"De-duplicated {before - after} rows within batch (by date)")
+            
             # Load to BigQuery (append mode)
             table_id = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}"
             job_config = bigquery.LoadJobConfig(
@@ -147,8 +218,8 @@ class EPARINScraper:
             job = self.client.load_table_from_dataframe(df, table_id, job_config=job_config)
             job.result()
             
-            logger.info(f"✅ Loaded {len(rin_data)} RIN price records to {table_id}")
-            return len(rin_data)
+            logger.info(f"✅ Loaded {len(df)} RIN price records to {table_id}")
+            return len(df)
             
         except Exception as e:
             logger.error(f"Error loading to BigQuery: {e}")

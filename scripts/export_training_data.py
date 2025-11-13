@@ -146,7 +146,7 @@ def export_historical_data():
                 WHEN DATE(time) >= '2023-01-01' THEN 'trump_2.0'
                 WHEN DATE(time) >= '2017-01-01' AND DATE(time) < '2020-01-01' THEN 'trade_war'
                 WHEN DATE(time) >= '2021-01-01' AND DATE(time) < '2023-01-01' THEN 'inflation'
-                WHEN (DATE(time) >= '2008-01-01' AND DATE(time) < '2009-01-01') OR 
+                WHEN (DATE(time) >= '2008-01-01' AND DATE(time) < '2010-01-01') OR 
                      (DATE(time) >= '2020-01-01' AND DATE(time) < '2021-01-01') THEN 'crisis'
                 WHEN DATE(time) >= '2010-01-01' AND DATE(time) < '2017-01-01' THEN 'recovery'
                 WHEN DATE(time) >= '2000-01-01' AND DATE(time) < '2008-01-01' THEN 'pre_crisis'
@@ -227,6 +227,7 @@ def export_regime_datasets():
             
             if len(df) == 0:
                 print(f"    ⚠️  No data for {regime['name']} - SKIPPING")
+                results.append(False)  # FIX: Track failed export (no data)
                 continue
             
             output_path = f"{TRAINING_DATA_EXPORTS}/{regime['name']}.parquet"
@@ -241,7 +242,8 @@ def export_regime_datasets():
             print(f"    ❌ Export failed: {e}")
             results.append(False)
     
-    return all(results)
+    # FIX: Return False if no results (all regimes skipped), otherwise return all(results)
+    return all(results) if results else False
 
 def export_historical_regime_tables():
     """Export historical regime tables created from backfill (2000-2019)"""

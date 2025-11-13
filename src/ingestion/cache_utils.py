@@ -26,9 +26,24 @@ class DataCache:
     - Support for JSON, pickle, and CSV formats
     """
     
-    def __init__(self, cache_dir="/Users/zincdigital/CBI-V14/cache", default_ttl_hours=6):
+    def __init__(self, cache_dir=None, default_ttl_hours=6):
+        # Auto-detect cache directory relative to repo root
+        if cache_dir is None:
+            # Try to find repo root by looking for common markers
+            current_path = Path(__file__).resolve()
+            repo_root = None
+            for parent in current_path.parents:
+                if (parent / "QUICK_REFERENCE.txt").exists() or (parent / ".git").exists():
+                    repo_root = parent
+                    break
+            if repo_root:
+                cache_dir = repo_root / "cache"
+            else:
+                # Fallback to current directory
+                cache_dir = Path.cwd() / "cache"
+        
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.default_ttl_hours = default_ttl_hours  # Increased default TTL
         
         # Create subdirectories for different data types
