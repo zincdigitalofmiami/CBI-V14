@@ -29,6 +29,9 @@
 		},
 		"search.exclude": {
 			"**/node_modules": true,
+			"**/TrainingData": true,
+			"**/Models": true,
+			"**/Logs": true,
 			"**/archive": true
 		},
 		"python.formatting.provider": "black",
