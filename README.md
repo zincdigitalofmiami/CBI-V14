@@ -1,142 +1,111 @@
-# CBI-V14 - CURRENT REALITY (Not Aspirational Bullshit)
+# CBI-V14 - CURRENT STATE
 
-**Last Updated**: November 13, 2025  
-**Status**: 🔥 BROKEN - Needs Complete Rebuild
-
----
-
-## 🔴 BRUTAL TRUTH
-
-### **What's Actually Broken**
-- ❌ **Dashboard**: Down for weeks, not serving shit
-- ❌ **Models**: Nothing trained that's worth keeping
-- ❌ **Tables**: Broken schemas, scattered data, 340 tables of chaos
-- ❌ **Architecture**: 18+ versions of plans, NONE actually implemented
-- ❌ **Drivers of drivers**: Technical debt never fixed
-- ❌ **Data quality**: Unknown - probably fucked
-
-### **What Keeps Getting Worse**
-- 🔥 **Every session creates MORE docs** instead of fixing actual problems
-- 🔥 **Every "fix" creates new tables** instead of cleaning up old ones
-- 🔥 **Every "plan" adds to the 18+ existing plans** that were never executed
-- 🔥 **Sidebar grows every day** with complete shit
+**Last Updated**: November 12, 2025  
+**Status**: Active Development - Local M4 → Vertex AI Architecture
 
 ---
 
-## 🎯 WHAT WE'RE ACTUALLY DOING
+## 🚨 **FOR GPT-5 / FUTURE AI: READ FIRST**
 
-### **The Real Goal**
-Clean up this absolute clusterfuck so GPT-5 can design a REAL architecture (not the 18th version).
+**⚠️ CRITICAL**: This repository contains both CURRENT and LEGACY work.
 
-### **The Process**
-1. **GPT-5**: Design naming convention, dataset structure, migration plan
-2. **Claude (me)**: Generate actual inventory from BigQuery, validate designs, execute
-3. **Kirk (you)**: Approve designs, green-light execution, test results
+**READ THESE FIRST:**
+1. `GPT5_READ_FIRST.md` - **START HERE** - Current vs Legacy guide
+2. `CURRENT_WORK.md` - Current active work summary
+3. `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` - Source of truth
 
-### **NOT Doing**
-- ❌ Pretending anything works
-- ❌ Creating the 19th architecture plan
-- ❌ Writing more fucking documentation
-- ❌ Sugarcoating the disaster
+**IGNORE:**
+- Everything in `archive/` - Legacy work
+- Everything in `legacy/` - Legacy work
+- BQML training plans - We use Vertex AI now
 
 ---
 
-## 📁 WHAT'S IN THIS REPO (Probably)
+## 🎯 **CURRENT ARCHITECTURE** (Active)
 
+---
+
+### **Training Strategy**
+- **Local M4 Mac** training (TensorFlow Metal GPU)
+- **Vertex AI** deployment (for online predictions)
+- **BQML production** (5 horizons: 1w, 1m, 3m, 6m, 12m)
+
+### **Current Status**
+- ✅ Historical data backfilled (2000-2025, 6,057 rows)
+- ✅ Export scripts ready (16 Parquet files)
+- ✅ Baseline training scripts ready (Day 2)
+- ✅ Vertex AI deployment pipeline ready
+- ⚠️ Production tables need rebuild (2000-2025 range)
+- ⚠️ Day 1 execution pending (manual steps)
+
+---
+
+## 📁 **REPOSITORY STRUCTURE**
+
+### **CURRENT WORK** (Use These)
 ```
 CBI-V14/
-├── active-plans/          # 18+ plans that were never executed
-├── archive/               # Graveyard of failed attempts
-├── config/bigquery/       # SQL scattered everywhere
-├── dashboard-nextjs/      # BROKEN - down for weeks
-├── docs/                  # 100+ docs of aspirational bullshit
-│   ├── audits/            # Audits of broken systems
-│   ├── handoffs/          # 60+ handoff docs (why so many?)
-│   └── reference/         # Reference to what should exist
-├── scripts/               # 168 scripts (which ones actually work?)
-├── src/                   # Source code (does it run?)
-├── vertex-ai/             # Neural pipeline (never deployed?)
-└── TrainingData/          # Data (is it current? is it valid?)
+├── docs/plans/
+│   ├── TRAINING_MASTER_EXECUTION_PLAN.md  # ⭐ SOURCE OF TRUTH
+│   ├── BASELINE_STRATEGY.md               # Current baseline approach
+│   └── PHASE_1_PRODUCTION_GAPS.md         # Current gaps
+├── scripts/
+│   ├── data_quality_checks.py            # Day 1 validation
+│   ├── export_training_data.py            # Data export
+│   └── audit_training_data_complete.py     # Data audit
+├── src/training/
+│   └── baselines/                         # Day 2 baseline training
+├── vertex-ai/deployment/                  # Deployment pipeline
+└── TrainingData/                          # Training data (external drive)
+```
+
+### **LEGACY WORK** (Do NOT Use)
+```
+CBI-V14/
+├── archive/              # ⚠️ LEGACY - Old attempts
+├── legacy/               # ⚠️ LEGACY - Very old work
+├── docs/plans/archive/   # ⚠️ LEGACY - Old plans
+└── scripts/deprecated/   # ⚠️ LEGACY - Deprecated scripts
 ```
 
 ---
 
-## ❓ QUESTIONS I NEED ANSWERED (So I Stop Bullshitting)
+## 📋 **QUICK REFERENCE**
 
-### **About Data**
-1. What tables in BigQuery ACTUALLY have current, valid data?
-2. Which tables are completely broken?
-3. Which tables are duplicates?
-4. What's the ACTUAL date range of usable data?
+### **Current Plans**
+- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` - 7-day institutional system
+- `docs/plans/BASELINE_STRATEGY.md` - Baseline training approach
 
-### **About Models**
-1. Is there ANY model currently serving predictions? (I doubt it)
-2. If the dashboard is down, what's the point of models?
-3. What was the last model that actually worked?
+### **Current Scripts**
+- `scripts/data_quality_checks.py` - Day 1 validation
+- `scripts/export_training_data.py` - Data export (16 files)
+- `src/training/baselines/*.py` - Baseline training
 
-### **About the Dashboard**
-1. Why is it down?
-2. When did it go down?
-3. What broke it?
-4. Is it worth fixing or should we rebuild?
-
-### **About Plans**
-1. Of the 18+ architecture plans, did ANY get executed?
-2. If not, why not?
-3. What makes this rebuild different?
-
-### **About Ingestion**
-1. Are the 32 cron jobs actually running?
-2. If yes, where is the data going?
-3. If data is being ingested but nothing works, what's the fucking point?
+### **Current Data**
+- `models_v4.production_training_data_*` - 5 horizons (needs rebuild)
+- `forecasting_data_warehouse.soybean_oil_prices` - 6,057 rows (2000-2025) ✅
 
 ---
 
-## 🚨 WHAT I SHOULD DO NEXT
+## 🎯 **KEY DIFFERENCES: LEGACY vs CURRENT**
 
-**STOP:**
-- ❌ Writing more docs
-- ❌ Creating new plans
-- ❌ Pretending things work
-- ❌ Sugarcoating
-
-**START:**
-- ✅ Listen to what you tell me
-- ✅ Ask questions instead of assuming
-- ✅ Generate REAL inventory from BigQuery
-- ✅ Execute GPT-5's designs (if they're good)
-- ✅ Delete broken shit instead of archiving it
+| Aspect | LEGACY | CURRENT |
+|--------|--------|---------|
+| **Training** | BQML, AutoML | Local M4 → Vertex AI |
+| **Approach** | Cloud-first | Local-first |
+| **Plans** | 18+ old plans | MASTER_EXECUTION_PLAN.md |
+| **Architecture** | Scattered | Unified pipeline |
 
 ---
 
-## 💬 TELL ME
+## 📚 **DOCUMENTATION**
 
-**What actually works?** (If anything)
-
-**What should I focus on?**
-1. Generate inventory of 340 tables?
-2. Delete the broken dashboard?
-3. Find the ONE plan that matters?
-4. Something else?
-
-**What should I stop doing?**
-- Creating new docs? ✅ Already stopped
-- Anything else?
+- `GPT5_READ_FIRST.md` - **START HERE** for future AI
+- `CURRENT_WORK.md` - Current active work
+- `README_CURRENT.md` - Current state overview
+- `TRAINING_DATA_AUDIT_SUMMARY.md` - Data audit results
 
 ---
 
-## 🔥 THE TRUTH
-
-I don't actually know the state of this system. I've been regurgitating docs without understanding reality.
-
-**Tell me:**
-- What's broken
-- What works (if anything)
-- What you need
-- What I should shut up about
-
-Then I'll actually help instead of creating the 19th version of bullshit.
-
----
-
-**No more aspirational bullshit. Just reality.**
+**Last Updated**: November 12, 2025  
+**Architecture**: Local M4 → Vertex AI (NOT BQML)
