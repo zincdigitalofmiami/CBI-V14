@@ -1,0 +1,29 @@
+# LEGACY IGNORE PATTERNS
+# Files/directories matching these patterns are LEGACY and should be ignored
+
+# Archive directories
+archive/
+docs/plans/archive/
+legacy/
+
+# Legacy file patterns
+*BQML*.md
+*ARCHIVE*.md
+*LEGACY*.md
+*OLD*.md
+*DEPRECATED*.md
+
+# Old handoffs (before November 12, 2025)
+docs/handoffs/*2025-10*.md
+docs/handoffs/*2025-09*.md
+docs/handoffs/*2025-08*.md
+
+# Legacy scripts
+scripts/deprecated/
+archive/*/scripts_legacy/
+archive/legacy_scripts/
+
+# Old plans
+legacy/old-plans/
+legacy/bqml-work/
+

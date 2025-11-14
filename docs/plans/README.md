@@ -1,50 +1,31 @@
 # Plans Directory
 
-**Single source of truth for all CBI-V14 plans and strategies.**
+## ⚠️ **IMPORTANT: CURRENT vs LEGACY**
+
+### ✅ **CURRENT PLANS** (Use These)
+- `TRAINING_MASTER_EXECUTION_PLAN.md` - **SOURCE OF TRUTH** - 7-day institutional system
+- `BASELINE_STRATEGY.md` - Baseline training approach
+- `PHASE_1_PRODUCTION_GAPS.md` - Production gaps to fix
+- `VERTEX_AI_TRUMP_ERA_PLAN.md` - Vertex AI deployment strategy
+
+### ❌ **LEGACY PLANS** (Do NOT Use)
+- `archive/` - All old plans (30+ files) - **IGNORE**
+- All other files in this directory - **Check dates, likely legacy**
 
 ---
 
-## Structure
+## 🎯 **FOR GPT-5 / FUTURE AI**
 
-### Active Plans (15 files)
+**ONLY REFERENCE:**
+- `TRAINING_MASTER_EXECUTION_PLAN.md` - Current architecture
+- `BASELINE_STRATEGY.md` - Current baseline approach
+- `PHASE_1_PRODUCTION_GAPS.md` - Current gaps
 
-**Training Plans:**
-- `TRAINING_MASTER_EXECUTION_PLAN.md` - Master training execution plan
-- `BASELINE_STRATEGY.md` - Baseline model strategy
-- `REGIME_BASED_TRAINING_STRATEGY.md` - Regime-specific training approach
-- `TRUMP_ERA_EXECUTION_PLAN.md` - Trump era specific training
-- `VERTEX_AI_TRUMP_ERA_PLAN.md` - Vertex AI deployment plan
-- `PHASE_1_PRODUCTION_GAPS.md` - Production gaps analysis
-
-**BigQuery Rebuild Plans:**
-- `BIGQUERY_REBUILD_MASTER_PLAN.md` - Master rebuild execution plan
-- `DATASET_STRUCTURE_DESIGN.md` - Dataset structure specification
-- `NAMING_CONVENTION_SPEC.md` - Naming convention rules
-- `DATA_LINEAGE_MAP.md` - Data flow documentation
-- `DEDUPLICATION_RULES.md` - Deduplication strategy
-- `COMPLETE_DATA_INTEGRATION_PLAN.md` - Data integration plan
-- `REBUILD_PLAN_VALIDATION.md` - Validation checklist
-- `ROLLBACK_PROCEDURE.md` - Rollback procedures
-- `VALIDATION_CHECKLIST.md` - Validation criteria
+**IGNORE:**
+- Everything in `archive/` subdirectory
+- Files dated before November 12, 2025
+- BQML-specific plans (we use Vertex AI now)
 
 ---
 
-## Related Documentation
-
-**Training Reports** (not plans): `docs/training/`
-- Training status reports, baseline results, training decisions
-
-**Production Configs** (not plans): `docs/production/`
-- Production system configurations, manifests, naming conventions
-
-**Archived Plans**: `docs/plans/archive/`
-- Historical plans and drafts preserved for reference
-
----
-
-## Consolidation History
-
-- **November 13, 2025**: Consolidated `active-plans/` into `docs/plans/`
-- All training plans and rebuild plans now in single location
-- Archives consolidated into `docs/plans/archive/`
-
+**Last Updated**: November 12, 2025
