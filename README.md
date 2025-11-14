@@ -61,6 +61,31 @@ CBI-V14/
 
 ---
 
+## 📋 **QUICK REFERENCE**
+
+### **Current Plans** (in `docs/plans/`)
+- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` - 7-day institutional system
+- `docs/plans/BASELINE_STRATEGY.md` - Baseline training approach
+- `docs/plans/PHASE_1_PRODUCTION_GAPS.md` - Production gaps to fix
+- `docs/plans/VERTEX_AI_TRUMP_ERA_PLAN.md` - Vertex AI deployment strategy
+
+### **Legacy Plans**
+- `docs/plans/archive/` - **ALL FILES** (30+ old plans)
+- `legacy/old-plans/` - Very old plans
+- `legacy/bqml-work/` - BQML training plans (replaced by Vertex AI)
+- Any plan mentioning BQML training
+
+### **Current Scripts**
+- `scripts/data_quality_checks.py` - Day 1 validation
+- `scripts/export_training_data.py` - Data export (16 files)
+- `src/training/baselines/*.py` - Baseline training
+
+### **Current Data**
+- `models_v4.production_training_data_*` - 5 horizons (needs rebuild)
+- `forecasting_data_warehouse.soybean_oil_prices` - 6,057 rows (2000-2025) ✅
+
+---
+
 ## ❓ QUESTIONS I NEED ANSWERED (So I Stop Bullshitting)
 
 ### **About Data**
