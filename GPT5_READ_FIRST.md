@@ -98,3 +98,30 @@ Before referencing any file, check:
 **Last Updated**: November 14, 2025  
 **Status**: Active work - Local M4 training architecture (local-first, cloud for storage only)
 
+
+---
+
+## Migration Audit Reports (November 14, 2025)
+
+**Location**: `docs/audits/20251114_*` and `scripts/migration/*AUDIT*.md`
+
+After completing the naming architecture migration, comprehensive audit reports were generated to verify the migration state and identify remaining issues.
+
+### Quick Access:
+- **Index**: `docs/audits/20251114_MIGRATION_AUDIT_INDEX.md`
+- **Pre-Fix Audit**: `docs/audits/20251114_PRE_FIX_AUDIT.md` (start here)
+- **Final Audit**: `docs/audits/20251114_FINAL_AUDIT.md` (complete analysis)
+- **Naming Structure**: `docs/audits/20251114_NAMING_STRUCTURE_AUDIT.md` (naming rules)
+
+### Key Findings:
+- Migration Status: 98% complete
+- Critical Issues: 3 (all fixable, <20 minutes)
+- Naming Compliance: ✅ All verified
+- Data Integrity: ✅ All data exists
+
+**Before making any changes**, review the audit reports to understand:
+1. Current migration state
+2. Naming convention requirements
+3. Remaining issues and fixes
+4. Verification procedures
+
