@@ -1,0 +1,31 @@
+# Cursor Rules for CBI-V14
+# These rules help AI assistants understand what's CURRENT vs LEGACY
+
+## CRITICAL: Read First
+1. ALWAYS read `GPT5_READ_FIRST.md` before starting work
+2. Use `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` as source of truth
+3. IGNORE everything in `archive/` and `legacy/` directories
+
+## Current Architecture
+- Training: Local M4 Mac → Vertex AI deployment
+- NOT: BQML training, AutoML, cloud-first
+- Source of Truth: `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md`
+
+## Legacy Work (DO NOT USE)
+- Everything in `archive/` directory
+- Everything in `legacy/` directory
+- BQML training plans (we use Vertex AI now)
+- AutoML references (we use custom neural models)
+
+## Current Files (USE THESE)
+- `scripts/data_quality_checks.py`
+- `scripts/export_training_data.py`
+- `src/training/baselines/*.py`
+- `vertex-ai/deployment/*.py`
+
+## Before Referencing Any File
+- Check if it's in `archive/` → IGNORE
+- Check if it's in `legacy/` → IGNORE
+- Check if it mentions BQML → IGNORE
+- Check if it mentions AutoML → IGNORE
+
