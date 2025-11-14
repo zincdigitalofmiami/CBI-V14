@@ -43,7 +43,9 @@ def train_arima(data_path: Path, horizon: str, model_dir: Path):
         fitted = model.fit()
         print(f"ARIMA model fitted for {horizon}.")
 
-        output_path = model_dir / f"arima_{horizon}.pkl"
+        model_subdir = model_dir / "arima_v001"
+        model_subdir.mkdir(parents=True, exist_ok=True)
+        output_path = model_subdir / "model.bin"
         joblib.dump(fitted, output_path)
         print(f"✅ ARIMA model for {horizon} saved to {output_path}")
     except Exception as e:
@@ -70,7 +72,9 @@ def train_prophet(data_path: Path, horizon: str, model_dir: Path):
         model.fit(prophet_df)
         print(f"Prophet model fitted for {horizon}.")
 
-        output_path = model_dir / f"prophet_{horizon}.pkl"
+        model_subdir = model_dir / "prophet_v001"
+        model_subdir.mkdir(parents=True, exist_ok=True)
+        output_path = model_subdir / "model.bin"
         joblib.dump(model, output_path)
         print(f"✅ Prophet model for {horizon} saved to {output_path}")
     except Exception as e:
@@ -80,6 +84,8 @@ def train_prophet(data_path: Path, horizon: str, model_dir: Path):
 def main():
     parser = argparse.ArgumentParser(description="Train baseline statistical models.")
     parser.add_argument("--horizon", required=True, help="Forecast horizon (e.g., 1w, 1m).")
+    parser.add_argument("--surface", choices=["prod", "full"], default="prod",
+                       help="Surface type: prod (≈290 cols) or full (1,948+ cols)")
     parser.add_argument("--model", choices=['arima', 'prophet', 'all'], default='all', help="Model to train.")
     parser.add_argument(
         "--data-path",
@@ -89,8 +95,11 @@ def main():
     args = parser.parse_args()
     
     repo_root = get_repo_root()
-    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/production_training_data_{args.horizon}.parquet"
-    model_dir = repo_root / "Models/local/baselines"
+    # New naming: zl_training_{surface}_allhistory_{horizon}.parquet
+    surface = getattr(args, 'surface', 'prod')  # Default to prod surface
+    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/zl_training_{surface}_allhistory_{args.horizon}.parquet"
+    # New model path: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
+    model_dir = repo_root / f"Models/local/horizon_{args.horizon}/{surface}/baselines"
     model_dir.mkdir(parents=True, exist_ok=True)
     
     if not data_path.exists():

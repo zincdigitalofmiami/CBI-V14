@@ -1,40 +1,55 @@
 # CBI-V14 Master Execution Plan
-**Last Updated**: November 12, 2025  
-**Status**: Active - 7-Day Institutional System Execution  
+**Last Updated**: November 14, 2025  
+**Status**: ✅ Migration Complete - Ready for Training  
+**Architecture**: Local-First (Mac M4), No Vertex AI, No BQML Training  
 **Data Status**: ✅ **25+ YEARS INTEGRATED** (365% increase in training data)
 
 ---
 
 ## Current Mission
 
-Train the most accurate ZL (soybean oil) forecasting models possible using **25 years of historical data** (2000-2025) on local baselines with the Apple M4 Mac mini, then selectively deploy winners to Vertex AI for production predictions.
+Train the most accurate ZL (soybean oil) forecasting models possible using **25 years of historical data** (2000-2025) with **regime-based weighting** on Apple M4 Mac mini. All training and inference is 100% local. BigQuery is used for storage only.
 
-**Key Updates**:
+**Key Updates (November 2025)**:
 - **Historical Data Integrated**: 6,057 rows of soybean oil prices (was 1,301)
-- **4 Regime Datasets Created**: 2008 Crisis, Trade War 2017-2019, Recovery, Pre-Crisis
+- **11 Regime Tables Created**: From historical_pre2000 to trump_2023_2025
 - **338K+ Pre-2020 Rows Available**: Full market cycle coverage
+- **Migration Complete**: New naming convention (Option 3) implemented
+- **Regime Weights Optimized**: Research-based, 50-5000 scale
 
 ---
 
-## Project Architecture
+## Project Architecture (November 2025)
 
-### Two-Track Approach
+### Local-First Training Architecture
 
-**Track 1: Production BQML (Active)**
-- **Models**: 5 BQML DART models (1w, 1m, 3m, 6m, 12m)
-- **Performance**: MAPE 0.7–1.3%, R² > 0.95
-- **Location**: `config/bigquery/bigquery-sql/PRODUCTION_HORIZON_SPECIFIC/`
-- **Status**: Live, serving predictions
-- **Cost**: ~$0.12 per training run
+**Storage Layer: BigQuery**
+- **Purpose**: Data warehouse only (NO training, NO inference)
+- **Datasets**: 8 canonical datasets (raw_intelligence, features, training, predictions, monitoring, vegas_intelligence, archive, yahoo_finance_comprehensive)
+- **Tables**: 12 training tables using `{asset}_{function}_{scope}_{regime}_{horizon}` naming
+- **Status**: ✅ Complete, all tables migrated
 
-**Track 2: Local Neural Pipeline → Vertex AI (In Progress)**
-- **Hardware**: Apple M4 Mac mini (16GB unified memory) + TensorFlow Metal
+**Compute Layer: Mac M4**
+- **Hardware**: Apple M4 Mac mini (16GB unified memory) + TensorFlow Metal GPU
 - **Environment**: `vertex-metal-312` (Python 3.12.6)
-- **Models**: 60-70 models (sequential training, memory-managed)
-- **Location**: `vertex-ai/` + `src/training/`
-- **Status**: Environment ready, Day 1 execution starting
-- **Cost**: Free locally, ~$10-15 optional cloud (FinBERT fine-tuning)
-- **Constraints**: Sequential training only, FP16 mixed precision mandatory, external SSD for all artifacts
+- **Training**: 100% local (baselines, advanced, regime-specific, ensemble)
+- **Inference**: 100% local prediction generation
+- **Models**: 60-70 total (sequential training, memory-managed)
+- **Cost**: $0 (no cloud compute)
+- **Constraints**: Sequential training, FP16 mixed precision, external SSD
+
+**Upload Layer: Python Scripts**
+- **Export**: `scripts/export_training_data.py` (BigQuery → Parquet)
+- **Upload**: `scripts/upload_predictions.py` (Local predictions → BigQuery)
+- **Workflow**: Automated, no manual intervention
+
+**UI Layer: Vercel Dashboard**
+- **Purpose**: Read-only UI
+- **Data Source**: BigQuery only (predictions.vw_zl_{h}_latest)
+- **No Dependencies**: On local models or Vertex AI
+- **Status**: Active
+
+**NO Vertex AI. NO BQML Training. 100% Local Control.**
 
 ---
 
@@ -84,46 +99,66 @@ For each horizon (1w, 1m, 3m, 6m, 12m):
 - Add horizon-specific features
 - Fine-tune architecture
 
-### Phase 4: Vertex AI Deployment
-- Export winners as SavedModels
-- Upload to Vertex AI Model Registry
-- Deploy endpoints only for models beating BQML benchmarks
+### Phase 4: Prediction Upload
+- Generate predictions locally for all trained models
+- Upload to BigQuery via `scripts/upload_predictions.py`
+- Create/update `predictions.vw_zl_{horizon}_latest` views
+- Dashboard reads from BigQuery (no Vertex AI endpoints)
 
 ---
 
-## Data Strategy
+## Data Strategy (November 2025 Update)
 
-### Primary Datasets
+### New Naming Convention
 
-**Trump-Era Training Table**:
-- Table: `cbi-v14.models_v4.trump_rich_2023_2025`
-- Features: 42 neural drivers
-- Rows: 782 (2023–2025)
-- Export: `TrainingData/exports/trump_rich_2023_2025.parquet`
+**Pattern**: `{asset}_{function}_{scope}_{regime}_{horizon}`
 
-**Extended Feature Catalog** (all 5 horizons):
-- Tables: 
-  - `cbi-v14.models_v4.production_training_data_1w`
-  - `cbi-v14.models_v4.production_training_data_1m`
-  - `cbi-v14.models_v4.production_training_data_3m`
-  - `cbi-v14.models_v4.production_training_data_6m`
-  - `cbi-v14.models_v4.production_training_data_12m`
-- Features: 290+ production features
-- Exports: `TrainingData/exports/production_training_data_{1w|1m|3m|6m|12m}.parquet`
+**Components**:
+- asset: `zl` (soybean oil)
+- function: `training`, `feat`, `commodity`, etc.
+- scope: `full` (1,948+ features) or `prod` (~290 features)
+- regime: `allhistory`, `trump_2023_2025`, `tradewar_2017_2019`, etc.
+- horizon: `1w`, `1m`, `3m`, `6m`, `12m`
 
-**Full Historical Dataset** (for regime baselines):
-- Tables: `cbi-v14.forecasting_data_warehouse.*`
+### Primary Training Tables (NEW)
+
+**Production Surface** (~290-450 features):
+- Tables: `cbi-v14.training.zl_training_prod_allhistory_{1w|1m|3m|6m|12m}`
+- Features: 275-449 features (varies by horizon)
+- Rows: 1,404-1,475 per table
+- Exports: `TrainingData/exports/zl_training_prod_allhistory_{horizon}.parquet`
+- Status: ✅ All created and exported
+
+**Full Surface** (1,948+ features):
+- Tables: `cbi-v14.training.zl_training_full_allhistory_{1w|1m|3m|6m|12m}`
 - Features: All available drivers
-- Timespan: 100–125 years
-- Export: `TrainingData/raw/historical_full.parquet`
+- Rows: Same as prod surface
+- Status: ✅ Created (placeholders, rebuild pending)
 
-### Regime Segmentation
-Create separate exports for:
-- `trump_2.0_2023_2025.parquet` (weight ×5000)
-- `trade_war_2017_2019.parquet` (weight ×1500)
-- `inflation_2021_2022.parquet` (weight ×1200)
-- `crisis_2008_2020.parquet` (weight ×500)
-- `historical_pre2000.parquet` (weight ×50)
+### Regime Support Tables
+
+**Regime Calendar**:
+- Table: `cbi-v14.training.regime_calendar`
+- Rows: 13,102 (maps every date 1990-2025 to regime)
+- Regimes: 11 total (historical_pre2000 → trump_2023_2025)
+
+**Regime Weights** (Research-Optimized):
+- Table: `cbi-v14.training.regime_weights`
+- Rows: 11 (one per regime)
+- Scale: 50-5000 (100x differential)
+- Trump era: 5000 (maximum recency bias)
+- Historical: 50 (pattern learning only)
+- Research: `scripts/migration/REGIME_WEIGHTS_RESEARCH.md`
+
+### Legacy Tables (Archived, Read-Only)
+
+**Archived to** `archive.legacy_20251114__models_v4__*`:
+- `production_training_data_{1w|1m|3m|6m|12m}` (5 tables)
+- `trump_rich_2023_2025`
+- Crisis and regime tables (4 tables)
+
+**Shim views** (temporary, 30-day grace period):
+- `models_v4.production_training_data_{horizon}` → points to new tables
 
 ---
 
@@ -142,15 +177,19 @@ Create separate exports for:
 | Training strategy | Sequential | One GPU job at a time | Prevent thermal throttling |
 | Batch sizes | Optimized | LSTM ≤32, TCN ≤32, Attention ≤16 | Memory-constrained |
 
-### Promotion Criteria (Vertex AI)
-A model qualifies for Vertex AI deployment if:
-1. Beats BQML MAPE by ≥10% on holdout data
+### Production Promotion Criteria (Dashboard Integration)
+A model qualifies for dashboard production use if:
+1. Beats reference BQML MAPE by ≥10% on holdout data (BQML: 0.7-1.3%)
 2. R² > 0.95 consistently across validation windows
 3. SHAP explanations align with known market dynamics
 4. No data leakage (verified via time-based splits)
 5. Passes monotonic constraint validation
 6. Passes walk-forward validation (60+ iterations)
 7. Regime detection accuracy > 95%
+8. Predictions upload successfully to BigQuery
+9. Dashboard can read from `predictions.vw_zl_{horizon}_latest`
+
+**Note**: All models run locally. "Production" = uploaded to BigQuery for dashboard consumption.
 
 ---
 
@@ -215,10 +254,52 @@ A model qualifies for Vertex AI deployment if:
 
 ---
 
+## Migration Status (November 14, 2025)
+
+### ✅ Completed: Naming Architecture Migration
+
+**Achievement**: Migrated entire system to institutional naming convention (Option 3)
+
+**Phases Complete**:
+- Phase 1: Archive (10 tables preserved)
+- Phase 2: Datasets (7/7 verified)
+- Phase 3: Training Tables (12/12 created with new naming)
+- Phase 4: Python Scripts (15/15 updated)
+- Phase 6: Shim Views (5/5 backward compatibility)
+
+**Key Deliverables**:
+- ✅ New naming: `{asset}_{function}_{scope}_{regime}_{horizon}`
+- ✅ Regime weights: 50-5000 (research-optimized)
+- ✅ Upload pipeline: `scripts/upload_predictions.py`
+- ✅ Documentation: 4 institutional framework documents
+- ✅ Architecture: 100% local-first verified
+
+**Documentation**: `docs/migrations/20251114_NAMING_ARCHITECTURE_MIGRATION.md`
+
+### ✅ Completed: Institutional Quant Framework
+
+**Achievement**: Established professional methodology for signal interpretation and forecasting
+
+**Documents Created**:
+1. `CONVICTION_VS_CONFIDENCE.md` - Separates directional certainty from forecast precision
+2. `SIGNAL_TREATMENT_RULES.md` - 12 institutional guidelines for market signals
+3. `CURSOR_MASTER_INSTRUCTION_SET.md` - Mandatory post-move audit protocol
+4. `INSTITUTIONAL_FRAMEWORK_INDEX.md` - Central navigation
+
+**Key Insights**:
+- Crisis = high conviction (direction) + low confidence (precision)
+- Signals must be paired, validated, contextualized
+- Post-move audits mandatory (VIX >25, USD/BRL >3%, etc.)
+
+**Documentation**: `docs/reference/` + `INSTITUTIONAL_FRAMEWORK_COMPLETE.md`
+
+---
+
 ## 7-Day Institutional Production System Execution Plan
 
 **Timeline**: 65 hours over 7 days (9-10 hours/day)  
-**Goal**: Complete institutional-grade forecasting system with zero deferrals
+**Goal**: Complete institutional-grade forecasting system with zero deferrals  
+**Current Status**: Migration complete (Day 0), ready to start Day 1
 
 ---
 

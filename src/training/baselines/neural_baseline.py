@@ -14,6 +14,7 @@ import numpy as np
 from datetime import datetime
 
 import tensorflow as tf
+import gc
 from tensorflow.keras import mixed_precision, backend as K
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, GRU, Dense, Dropout
@@ -24,18 +25,17 @@ mixed_precision.set_global_policy("mixed_float16")
 
 # Environment setup
 EXTERNAL_DRIVE = os.getenv("EXTERNAL_DRIVE", "/Volumes/Satechi Hub")
-CBI_V14_REPO = os.getenv("CBI_V14_REPO", f"{EXTERNAL_DRIVE}/Projects/CBI-V14}")
+CBI_V14_REPO = os.getenv("CBI_V14_REPO", f"{EXTERNAL_DRIVE}/Projects/CBI-V14")
 TRAINING_DATA = f"{CBI_V14_REPO}/TrainingData"
-MODELS_DIR = f"{CBI_V14_REPO}/Models/local/baselines"
 MLFLOW_DIR = f"{CBI_V14_REPO}/Models/mlflow"
 
 # MLflow setup
 mlflow.set_tracking_uri(f"file://{MLFLOW_DIR}")
 mlflow.set_experiment("baselines_neural")
 
-def load_training_data(horizon):
-    """Load cached training data"""
-    data_path = f"{TRAINING_DATA}/exports/production_training_data_{horizon}.parquet"
+def load_training_data(horizon, surface="prod"):
+    """Load cached training data (new naming convention)"""
+    data_path = f"{TRAINING_DATA}/exports/zl_training_{surface}_allhistory_{horizon}.parquet"
     
     print(f"Loading data: {data_path}")
     df = pl.read_parquet(data_path)
@@ -122,12 +122,13 @@ def build_feedforward_model(seq_len, n_features, units=128):
     
     return model
 
-def train_model(model, X_train, X_val, y_train, y_val, model_name, horizon):
+def train_model(model, X_train, X_val, y_train, y_val, model_name, horizon, models_dir):
     """Train a neural model with memory-safe settings"""
     
-    # Checkpoint path
-    checkpoint_path = f"{MODELS_DIR}/{model_name}_{horizon}.h5"
-    os.makedirs(MODELS_DIR, exist_ok=True)
+    # Checkpoint path (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
+    model_subdir = f"{models_dir}/{model_name}_v001"
+    os.makedirs(model_subdir, exist_ok=True)
+    checkpoint_path = f"{model_subdir}/model.h5"
     
     # Callbacks
     callbacks = [
@@ -161,6 +162,8 @@ def train_model(model, X_train, X_val, y_train, y_val, model_name, horizon):
 def main():
     parser = argparse.ArgumentParser(description="Train simple neural baseline models")
     parser.add_argument("--horizon", required=True, choices=["1w", "1m", "3m", "6m", "12m"], help="Prediction horizon")
+    parser.add_argument("--surface", choices=["prod", "full"], default="prod",
+                       help="Surface type: prod (≈290 cols) or full (1,948+ cols)")
     args = parser.parse_args()
     
     horizon = args.horizon
@@ -184,8 +187,12 @@ def main():
     print("="*80)
     print()
     
+    # Setup model directory (new naming)
+    surface = args.surface
+    models_dir = f"{CBI_V14_REPO}/Models/local/horizon_{horizon}/{surface}/baselines"
+    
     # Load data
-    df = load_training_data(horizon)
+    df = load_training_data(horizon, surface)
     X_train, X_val, y_train, y_val, n_features = prepare_sequences(df, target_col, seq_len=256)
     
     print(f"📊 Sequences prepared:")
@@ -210,7 +217,7 @@ def main():
         mlflow.log_param("seq_len", 256)
         
         model = build_lstm_model(256, n_features, units=128)
-        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "lstm_1layer", horizon)
+        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "lstm_1layer", horizon, models_dir)
         
         mlflow.log_metric("train_mape", train_mape)
         mlflow.log_metric("val_mape", val_mape)
@@ -234,7 +241,7 @@ def main():
         mlflow.log_param("batch_size", 64)
         
         model = build_gru_model(256, n_features, units=128)
-        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "gru_1layer", horizon)
+        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "gru_1layer", horizon, models_dir)
         
         mlflow.log_metric("train_mape", train_mape)
         mlflow.log_metric("val_mape", val_mape)
@@ -258,7 +265,7 @@ def main():
         mlflow.log_param("batch_size", 64)
         
         model = build_feedforward_model(256, n_features, units=128)
-        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "feedforward", horizon)
+        _, train_mape, val_mape = train_model(model, X_train, X_val, y_train, y_val, "feedforward", horizon, models_dir)
         
         mlflow.log_metric("train_mape", train_mape)
         mlflow.log_metric("val_mape", val_mape)
@@ -284,7 +291,7 @@ def main():
     print()
     
     print("💾 Models saved to:")
-    print(f"   {MODELS_DIR}")
+    print(f"   {models_dir}")
     print()
 
 if __name__ == "__main__":

@@ -1,0 +1,49 @@
+# CBI-V14 Training & Prediction Requirements
+# Updated: 2025-01-XX
+# Python 3.12 compatible
+
+# Core ML Libraries
+lightgbm>=4.6.0
+xgboost>=3.1.1
+scikit-learn>=1.7.2
+numpy>=1.26.0,<2.0.0  # TensorFlow compatibility
+
+# Deep Learning
+torch>=2.8.0
+tensorflow>=2.16.2
+tensorflow-macos>=2.16.2
+tensorflow-metal>=1.2.0
+
+# Time Series Forecasting
+statsmodels>=0.14.5
+prophet>=1.2.1
+darts>=0.38.0
+neuralforecast>=3.1.2
+pytorch-forecasting>=1.5.0
+pytorch-lightning>=2.5.2
+
+# Quantile Regression & Conformal Prediction
+mapie>=1.1.0
+
+# Volatility Modeling
+arch>=8.0.0
+
+# Gradient Boosting (Alternative)
+catboost>=1.2.8
+
+# BigQuery Integration
+google-cloud-bigquery>=3.38.0
+pandas-gbq>=0.29.2
+
+# Experiment Tracking
+mlflow>=3.6.0
+
+# Dependencies
+pandas>=2.3.3
+scipy>=1.16.2
+protobuf>=3.20.3,<5.0.0  # TensorFlow compatibility
+
+# Note: OpenMP runtime required for LightGBM/XGBoost on macOS:
+# Run: brew install libomp
+# Or: sudo chown -R $(whoami) /opt/homebrew && brew install libomp
+

@@ -18,16 +18,15 @@ from sklearn.model_selection import TimeSeriesSplit
 EXTERNAL_DRIVE = os.getenv("EXTERNAL_DRIVE", "/Volumes/Satechi Hub")
 CBI_V14_REPO = os.getenv("CBI_V14_REPO", f"{EXTERNAL_DRIVE}/Projects/CBI-V14")
 TRAINING_DATA = f"{CBI_V14_REPO}/TrainingData"
-MODELS_DIR = f"{CBI_V14_REPO}/Models/local/baselines"
 MLFLOW_DIR = f"{CBI_V14_REPO}/Models/mlflow"
 
 # MLflow setup
 mlflow.set_tracking_uri(f"file://{MLFLOW_DIR}")
 mlflow.set_experiment("baselines_tree")
 
-def load_training_data(horizon):
-    """Load cached training data"""
-    data_path = f"{TRAINING_DATA}/exports/production_training_data_{horizon}.parquet"
+def load_training_data(horizon, surface="prod"):
+    """Load cached training data (new naming convention)"""
+    data_path = f"{TRAINING_DATA}/exports/zl_training_{surface}_allhistory_{horizon}.parquet"
     
     print(f"Loading data: {data_path}")
     df = pl.read_parquet(data_path)
@@ -52,7 +51,7 @@ def prepare_features(df, target_col):
     
     return X_train, X_val, y_train, y_val, feature_cols
 
-def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon):
+def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
     """Train LightGBM DART model"""
     print(f"\n{'='*60}")
     print(f"Training LightGBM DART for {horizon}")
@@ -98,9 +97,11 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon):
         mlflow.log_metric("val_mape", val_mape)
         mlflow.log_metric("n_estimators_used", model.n_estimators_)
         
-        # Save model
-        os.makedirs(MODELS_DIR, exist_ok=True)
-        model_path = f"{MODELS_DIR}/lgbm_dart_{horizon}.txt"
+        # Save model (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
+        os.makedirs(models_dir, exist_ok=True)
+        model_subdir = f"{models_dir}/lightgbm_dart_v001"
+        os.makedirs(model_subdir, exist_ok=True)
+        model_path = f"{model_subdir}/model.bin"
         model.booster_.save_model(model_path)
         mlflow.log_artifact(model_path)
         
@@ -109,7 +110,7 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon):
         
         return model, val_mape
 
-def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon):
+def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
     """Train XGBoost DART model"""
     print(f"\n{'='*60}")
     print(f"Training XGBoost DART for {horizon}")
@@ -154,8 +155,10 @@ def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon):
         mlflow.log_metric("val_mape", val_mape)
         mlflow.log_metric("best_iteration", model.best_iteration)
         
-        # Save model
-        model_path = f"{MODELS_DIR}/xgb_dart_{horizon}.json"
+        # Save model (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
+        model_subdir = f"{models_dir}/xgboost_dart_v001"
+        os.makedirs(model_subdir, exist_ok=True)
+        model_path = f"{model_subdir}/model.bin"
         model.save_model(model_path)
         mlflow.log_artifact(model_path)
         
@@ -167,6 +170,8 @@ def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon):
 def main():
     parser = argparse.ArgumentParser(description="Train tree-based baseline models")
     parser.add_argument("--horizon", required=True, choices=["1w", "1m", "3m", "6m", "12m"], help="Prediction horizon")
+    parser.add_argument("--surface", choices=["prod", "full"], default="prod",
+                       help="Surface type: prod (≈290 cols) or full (1,948+ cols)")
     args = parser.parse_args()
     
     horizon = args.horizon
@@ -181,8 +186,12 @@ def main():
     print("="*80)
     print()
     
+    # Setup model directory (new naming)
+    surface = args.surface
+    models_dir = f"{CBI_V14_REPO}/Models/local/horizon_{horizon}/{surface}/baselines"
+    
     # Load data
-    df = load_training_data(horizon)
+    df = load_training_data(horizon, surface)
     X_train, X_val, y_train, y_val, feature_cols = prepare_features(df, target_col)
     
     print(f"📊 Data prepared:")
@@ -194,13 +203,13 @@ def main():
     results = {}
     
     try:
-        _, results['lgbm_dart'] = train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon)
+        _, results['lgbm_dart'] = train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir)
     except Exception as e:
         print(f"❌ LightGBM DART failed: {e}")
         results['lgbm_dart'] = None
     
     try:
-        _, results['xgb_dart'] = train_xgboost_dart(X_train, X_val, y_train, y_val, horizon)
+        _, results['xgb_dart'] = train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir)
     except Exception as e:
         print(f"❌ XGBoost DART failed: {e}")
         results['xgb_dart'] = None

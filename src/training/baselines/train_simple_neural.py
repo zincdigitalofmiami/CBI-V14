@@ -12,6 +12,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 import gc
+import sys
+
+# Add parent directory to path for feature catalog
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from training.features.feature_catalog import FeatureCatalog
 
 def get_repo_root():
     """Find the repository root by looking for a marker file."""
@@ -49,8 +54,19 @@ def train_neural_model(data_path: Path, horizon: str, model_type: str, model_dir
     try:
         df = pd.read_parquet(data_path)
         
-        numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-        feature_cols = [col for col in numeric_cols if 'target' not in col and 'price' not in col]
+        # Use comprehensive feature catalog - ALL features except targets
+        available_cols = set(df.columns)
+        feature_cols = FeatureCatalog.get_features_for_model('neural')
+        
+        # Filter to only features that exist in dataset
+        feature_cols = [col for col in feature_cols if col in available_cols]
+        
+        # Fallback: if catalog features missing, use all numeric except targets
+        if len(feature_cols) < 100:
+            numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+            feature_cols = [col for col in numeric_cols if col not in FeatureCatalog.EXCLUDED]
+        
+        print(f"Using {len(feature_cols)} features for {model_type.upper()}")
         target_col = 'zl_price_current'
         
         # Scale features
@@ -114,8 +130,11 @@ def main():
     configure_gpu()
     
     repo_root = get_repo_root()
-    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/production_training_data_{args.horizon}.parquet"
-    model_dir = repo_root / "Models/local/baselines"
+    # New naming: zl_training_{surface}_allhistory_{horizon}.parquet
+    surface = getattr(args, 'surface', 'prod')  # Default to prod surface
+    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/zl_training_{surface}_allhistory_{args.horizon}.parquet"
+    # New model path: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
+    model_dir = repo_root / f"Models/local/horizon_{args.horizon}/{surface}/baselines"
     model_dir.mkdir(parents=True, exist_ok=True)
 
     if not data_path.exists():

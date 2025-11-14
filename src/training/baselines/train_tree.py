@@ -9,6 +9,12 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 import joblib
 from pathlib import Path
+import sys
+from datetime import datetime
+
+# Add parent directory to path for feature catalog
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from training.features.feature_catalog import FeatureCatalog
 
 def get_repo_root():
     """Find the repository root by looking for a marker file."""
@@ -19,14 +25,24 @@ def get_repo_root():
     raise FileNotFoundError("Repository root not found.")
 
 def train_lightgbm(data_path: Path, horizon: str, model_dir: Path):
-    """Trains and saves a LightGBM DART model."""
+    """Trains and saves a LightGBM DART model using ALL available features."""
     print(f"\n--- Training LightGBM DART for {horizon} horizon ---")
     try:
         df = pd.read_parquet(data_path)
         
-        # Simple feature selection: use numeric types, exclude identifiers/targets
-        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-        feature_cols = [col for col in numeric_cols if 'target' not in col and 'price' not in col]
+        # Use comprehensive feature catalog - ALL features except targets
+        available_cols = set(df.columns)
+        feature_cols = FeatureCatalog.get_features_for_model('tree')
+        
+        # Filter to only features that exist in dataset
+        feature_cols = [col for col in feature_cols if col in available_cols]
+        
+        # Fallback: if catalog features missing, use all numeric except targets
+        if len(feature_cols) < 100:
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            feature_cols = [col for col in numeric_cols if col not in FeatureCatalog.EXCLUDED]
+        
+        print(f"Using {len(feature_cols)} features")
         target_col = 'zl_price_current'
         
         X = df[feature_cols]
@@ -50,20 +66,56 @@ def train_lightgbm(data_path: Path, horizon: str, model_dir: Path):
             callbacks=[lgb.early_stopping(50, verbose=False), lgb.log_evaluation(period=200)]
         )
         
-        output_path = model_dir / f"lightgbm_dart_{horizon}.pkl"
+        # Log feature importance
+        feature_importance = pd.DataFrame({
+            'feature': feature_cols,
+            'importance': model.feature_importances_
+        }).sort_values('importance', ascending=False)
+        
+        print(f"\nTop 10 features by importance:")
+        print(feature_importance.head(10).to_string(index=False))
+        
+        # New model structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
+        model_name = "lightgbm_dart_v001"
+        model_subdir = model_dir / model_name
+        model_subdir.mkdir(parents=True, exist_ok=True)
+        
+        output_path = model_subdir / "model.bin"
         joblib.dump(model, output_path)
+        
+        # Save metadata
+        (model_subdir / "columns_used.txt").write_text("\n".join(feature_cols))
+        from datetime import datetime
+        (model_subdir / "run_id.txt").write_text(f"train_tree_{horizon}_{datetime.now().isoformat()}")
+        
+        # Save feature importance
+        importance_path = model_subdir / "feature_importance.csv"
+        feature_importance.to_csv(importance_path, index=False)
+        
         print(f"✅ LightGBM DART model for {horizon} saved to {output_path}")
+        print(f"✅ Feature importance saved to {importance_path}")
     except Exception as e:
         print(f"❌ Failed to train LightGBM for {horizon}: {e}")
 
 def train_xgboost(data_path: Path, horizon: str, model_dir: Path):
-    """Trains and saves an XGBoost DART model."""
+    """Trains and saves an XGBoost DART model using ALL available features."""
     print(f"\n--- Training XGBoost DART for {horizon} horizon ---")
     try:
         df = pd.read_parquet(data_path)
         
-        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-        feature_cols = [col for col in numeric_cols if 'target' not in col and 'price' not in col]
+        # Use comprehensive feature catalog - ALL features except targets
+        available_cols = set(df.columns)
+        feature_cols = FeatureCatalog.get_features_for_model('tree')
+        
+        # Filter to only features that exist in dataset
+        feature_cols = [col for col in feature_cols if col in available_cols]
+        
+        # Fallback: if catalog features missing, use all numeric except targets
+        if len(feature_cols) < 100:
+            numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+            feature_cols = [col for col in numeric_cols if col not in FeatureCatalog.EXCLUDED]
+        
+        print(f"Using {len(feature_cols)} features")
         target_col = 'zl_price_current'
 
         X = df[feature_cols]
@@ -87,10 +139,35 @@ def train_xgboost(data_path: Path, horizon: str, model_dir: Path):
             early_stopping_rounds=50,
             verbose=False
         )
-
-        output_path = model_dir / f"xgboost_dart_{horizon}.pkl"
+        
+        # Log feature importance
+        feature_importance = pd.DataFrame({
+            'feature': feature_cols,
+            'importance': model.feature_importances_
+        }).sort_values('importance', ascending=False)
+        
+        print(f"\nTop 10 features by importance:")
+        print(feature_importance.head(10).to_string(index=False))
+        
+        # New model structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
+        model_name = "xgboost_dart_v001"
+        model_subdir = model_dir / model_name
+        model_subdir.mkdir(parents=True, exist_ok=True)
+        
+        output_path = model_subdir / "model.bin"
         joblib.dump(model, output_path)
+        
+        # Save metadata
+        (model_subdir / "columns_used.txt").write_text("\n".join(feature_cols))
+        from datetime import datetime
+        (model_subdir / "run_id.txt").write_text(f"train_tree_{horizon}_{datetime.now().isoformat()}")
+        
+        # Save feature importance
+        importance_path = model_subdir / "feature_importance.csv"
+        feature_importance.to_csv(importance_path, index=False)
+        
         print(f"✅ XGBoost DART model for {horizon} saved to {output_path}")
+        print(f"✅ Feature importance saved to {importance_path}")
     except Exception as e:
         print(f"❌ Failed to train XGBoost for {horizon}: {e}")
 
@@ -107,8 +184,11 @@ def main():
     args = parser.parse_args()
     
     repo_root = get_repo_root()
-    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/production_training_data_{args.horizon}.parquet"
-    model_dir = repo_root / "Models/local/baselines"
+    # New naming: zl_training_{surface}_allhistory_{horizon}.parquet
+    surface = getattr(args, 'surface', 'prod')  # Default to prod surface
+    data_path = Path(args.data_path).expanduser() if args.data_path else repo_root / f"TrainingData/exports/zl_training_{surface}_allhistory_{args.horizon}.parquet"
+    # New model path: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
+    model_dir = repo_root / f"Models/local/horizon_{args.horizon}/{surface}/baselines"
     model_dir.mkdir(parents=True, exist_ok=True)
 
     if not data_path.exists():
