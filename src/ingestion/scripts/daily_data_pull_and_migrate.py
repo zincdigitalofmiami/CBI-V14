@@ -186,7 +186,7 @@ def verify_system_readiness():
     logger.info("="*80)
     
     checks = [
-        ('Soybean Oil Prices', 'SELECT COUNT(*) as cnt FROM `cbi-v14.forecasting_data_warehouse.soybean_oil_prices`'),
+        ('Soybean Oil Prices', 'SELECT COUNT(*) as cnt FROM `cbi-v14.raw_intelligence.commodity_soybean_oil_prices`'),
         ('Trump Policy Data', 'SELECT COUNT(*) as cnt FROM `cbi-v14.forecasting_data_warehouse.trump_policy_intelligence`'),
         ('Social Sentiment', 'SELECT COUNT(*) as cnt FROM `cbi-v14.forecasting_data_warehouse.social_sentiment`'),
         ('CFTC COT Data', 'SELECT COUNT(*) as cnt FROM `cbi-v14.forecasting_data_warehouse.cftc_cot`'),

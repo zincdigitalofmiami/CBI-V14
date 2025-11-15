@@ -33,7 +33,7 @@ WITH feature_data AS (
     news_intelligence_7d,
     news_volume_7d,
     news_sentiment_avg
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE date >= '2024-01-01'
     AND target_1m IS NOT NULL
 ),

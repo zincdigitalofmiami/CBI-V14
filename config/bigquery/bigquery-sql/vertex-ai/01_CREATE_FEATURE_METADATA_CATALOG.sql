@@ -3,7 +3,7 @@
 -- Description: Creates a rich metadata catalog for all features. This table serves as
 --              the single source of truth for feature definitions, types, sources,
 --              and other critical metadata needed for advanced modeling and governance.
---              It is initialized from the vertex_ai_training_1m_base schema (or production_training_data_1m if migrating).
+--              It is initialized from the vertex_ai_training_1m_base schema (or zl_training_prod_allhistory_1m if migrating).
 -- v2 Update: Added `factor_group` to align with GS Quant / JPM DNA methodology.
 -- Author: Your Name
 -- Date: 2025-11-07
@@ -44,7 +44,7 @@ SELECT
 FROM
   `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
 WHERE
-  table_name = 'vertex_ai_training_1m_base'  -- Or 'production_training_data_1m' if migrating
+  table_name = 'vertex_ai_training_1m_base'  -- Or 'zl_training_prod_allhistory_1m' if migrating
 ORDER BY
   ordinal_position;
 

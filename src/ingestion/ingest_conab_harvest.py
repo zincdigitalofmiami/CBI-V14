@@ -3,7 +3,7 @@
 CONAB Soybean Harvest Ingestion
 
 Pulls Brazil soybean area, production, and yield from CONAB public tab-delimited files
-and writes aggregated indicators into forecasting_data_warehouse.economic_indicators.
+and writes aggregated indicators into raw_intelligence.macro_economic_indicators.
 """
 
 import json
@@ -17,7 +17,7 @@ import requests
 from google.cloud import bigquery
 
 PROJECT_ID = "cbi-v14"
-ECONOMIC_TABLE = f"{PROJECT_ID}.forecasting_data_warehouse.economic_indicators"
+ECONOMIC_TABLE = f"{PROJECT_ID}.raw_intelligence.macro_economic_indicators"
 CONAB_SOURCES = {
     "LevantamentoGraos": "https://portaldeinformacoes.conab.gov.br/downloads/arquivos/LevantamentoGraos.txt",
     "SerieHistoricaGraos": "https://portaldeinformacoes.conab.gov.br/downloads/arquivos/SerieHistoricaGraos.txt",

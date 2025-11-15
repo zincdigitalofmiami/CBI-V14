@@ -434,29 +434,29 @@ LEFT JOIN freight fr ON d.date = fr.date
 WHERE zl.zl_price_current IS NOT NULL;  -- Only keep dates with price data
 
 -- STEP 2: Update production tables with consolidated data
--- Update production_training_data_1m
-MERGE `cbi-v14.models_v4.production_training_data_1m` AS target
+-- Update zl_training_prod_allhistory_1m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1m` AS target
 USING `cbi-v14.models_v4._temp_consolidated_data` AS source
 ON target.date = source.date
 WHEN MATCHED THEN UPDATE SET target.* = source.*
 WHEN NOT MATCHED THEN INSERT ROW;
 
--- Update production_training_data_1w
-MERGE `cbi-v14.models_v4.production_training_data_1w` AS target
+-- Update zl_training_prod_allhistory_1w
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1w` AS target
 USING `cbi-v14.models_v4._temp_consolidated_data` AS source
 ON target.date = source.date
 WHEN MATCHED THEN UPDATE SET target.* = source.*
 WHEN NOT MATCHED THEN INSERT ROW;
 
--- Update production_training_data_3m
-MERGE `cbi-v14.models_v4.production_training_data_3m` AS target
+-- Update zl_training_prod_allhistory_3m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_3m` AS target
 USING `cbi-v14.models_v4._temp_consolidated_data` AS source
 ON target.date = source.date
 WHEN MATCHED THEN UPDATE SET target.* = source.*
 WHEN NOT MATCHED THEN INSERT ROW;
 
--- Update production_training_data_6m
-MERGE `cbi-v14.models_v4.production_training_data_6m` AS target
+-- Update zl_training_prod_allhistory_6m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_6m` AS target
 USING `cbi-v14.models_v4._temp_consolidated_data` AS source
 ON target.date = source.date
 WHEN MATCHED THEN UPDATE SET target.* = source.*
@@ -470,17 +470,17 @@ SELECT
   COUNT(*) as row_count,
   DATE_DIFF(CURRENT_DATE(), MAX(date), DAY) as days_behind
 FROM (
-  SELECT 'production_training_data_1m' as table_name, date
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  SELECT 'zl_training_prod_allhistory_1m' as table_name, date
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   UNION ALL
-  SELECT 'production_training_data_1w', date
-  FROM `cbi-v14.models_v4.production_training_data_1w`
+  SELECT 'zl_training_prod_allhistory_1w', date
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
   UNION ALL
-  SELECT 'production_training_data_3m', date
-  FROM `cbi-v14.models_v4.production_training_data_3m`
+  SELECT 'zl_training_prod_allhistory_3m', date
+  FROM `cbi-v14.training.zl_training_prod_allhistory_3m`
   UNION ALL
-  SELECT 'production_training_data_6m', date
-  FROM `cbi-v14.models_v4.production_training_data_6m`
+  SELECT 'zl_training_prod_allhistory_6m', date
+  FROM `cbi-v14.training.zl_training_prod_allhistory_6m`
 )
 GROUP BY table_name
 ORDER BY table_name;

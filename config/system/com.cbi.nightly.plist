@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<!--
+NIGHTLY TRAINING PIPELINE - LaunchDaemon
+
+This daemon runs the complete CBI-V14 training pipeline every night at midnight.
+It wraps the execution in caffeinate to prevent system sleep during training.
+
+Installation:
+  sudo cp config/system/com.cbi.nightly.plist /Library/LaunchDaemons/
+  sudo launchctl load /Library/LaunchDaemons/com.cbi.nightly.plist
+
+Uninstallation:
+  sudo launchctl unload /Library/LaunchDaemons/com.cbi.nightly.plist
+  sudo rm /Library/LaunchDaemons/com.cbi.nightly.plist
+
+Check status:
+  sudo launchctl list | grep com.cbi.nightly
+  
+View logs:
+  cat ~/Documents/GitHub/CBI-V14/Logs/nightly/nightly_pipeline_*.log
+-->
+
+<plist version="1.0">
+ <dict>
+   <!-- Service identifier -->
+   <key>Label</key>
+   <string>com.cbi.nightly</string>
+
+   <!-- Command to run: caffeinate wraps Python to prevent sleep -->
+   <key>ProgramArguments</key>
+   <array>
+     <string>/usr/bin/caffeinate</string>
+     <string>-dims</string>
+     <string>/usr/local/bin/python3</string>
+     <string>/Users/kirkmusick/Documents/GitHub/CBI-V14/scripts/run_nightly_pipeline.py</string>
+   </array>
+
+   <!-- Schedule: Run every day at midnight (00:00) -->
+   <key>StartCalendarInterval</key>
+   <dict>
+     <key>Hour</key>
+     <integer>0</integer>
+     <key>Minute</key>
+     <integer>0</integer>
+   </dict>
+
+   <!-- Logging -->
+   <key>StandardOutPath</key>
+   <string>/Users/kirkmusick/Documents/GitHub/CBI-V14/Logs/nightly/daemon_stdout.log</string>
+
+   <key>StandardErrorPath</key>
+   <string>/Users/kirkmusick/Documents/GitHub/CBI-V14/Logs/nightly/daemon_stderr.log</string>
+
+   <!-- Don't run on load (only at scheduled time) -->
+   <key>RunAtLoad</key>
+   <false/>
+
+   <!-- Don't keep alive - run once per schedule -->
+   <key>KeepAlive</key>
+   <false/>
+
+   <!-- Working directory -->
+   <key>WorkingDirectory</key>
+   <string>/Users/kirkmusick/Documents/GitHub/CBI-V14</string>
+
+   <!-- Environment variables (if needed) -->
+   <key>EnvironmentVariables</key>
+   <dict>
+     <key>PROJECT</key>
+     <string>cbi-v14</string>
+     <key>PATH</key>
+     <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+   </dict>
+
+ </dict>
+</plist>
+

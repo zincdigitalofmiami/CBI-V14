@@ -1,8 +1,8 @@
 # CBI-V14 Master Execution Plan
-**Last Updated**: November 14, 2025  
-**Status**: ✅ Migration Complete - Ready for Training  
+**Last Updated**: November 15, 2025  
+**Status**: ⚠️ Data Verification Complete - Issues Found - Training Blocked  
 **Architecture**: Local-First (Mac M4), No Vertex AI, No BQML Training  
-**Data Status**: ✅ **25+ YEARS INTEGRATED** (365% increase in training data)
+**Data Status**: ⚠️ **VERIFICATION AUDIT FINDINGS** (See issues below)
 
 ---
 
@@ -16,6 +16,17 @@ Train the most accurate ZL (soybean oil) forecasting models possible using **25 
 - **338K+ Pre-2020 Rows Available**: Full market cycle coverage
 - **Migration Complete**: New naming convention (Option 3) implemented
 - **Regime Weights Optimized**: Research-based, 50-5000 scale
+
+**⚠️ CRITICAL FINDINGS (November 15, 2025 Verification Audit)**:
+- **Training tables missing pre-2020 data**: All tables start from 2020, not 2000 (missing 20 years)
+- **Regime assignments incomplete**: Only 1-3 unique regimes per table (expected 7+)
+- **Critical issue**: `zl_training_prod_allhistory_1m` has 100% placeholder regimes ('allhistory', weight=1)
+- **Missing join tables**: `raw_intelligence.commodity_soybean_oil_prices`, `forecasting_data_warehouse.vix_data`
+- **✅ Verified**: No 0.5 placeholder pattern in production price data
+- **✅ Verified**: Historical data in models_v4 is real (5,236 rows, no placeholders)
+- **✅ Verified**: Yahoo Finance data is real (801K rows, 6,227 ZL rows)
+
+**See:** `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md` and `VERIFICATION_ISSUES_FOUND.md` for full details.
 
 ---
 
@@ -126,14 +137,18 @@ For each horizon (1w, 1m, 3m, 6m, 12m):
 - Tables: `cbi-v14.training.zl_training_prod_allhistory_{1w|1m|3m|6m|12m}`
 - Features: 275-449 features (varies by horizon)
 - Rows: 1,404-1,475 per table
+- Date Range: 2020-01-02 to 2025-11-06 (⚠️ **MISSING PRE-2020 DATA**)
+- Regimes: Only 1-3 unique regimes (⚠️ **INCOMPLETE** - expected 7+)
 - Exports: `TrainingData/exports/zl_training_prod_allhistory_{horizon}.parquet`
-- Status: ✅ All created and exported
+- Status: ⚠️ **ISSUES FOUND** - Regime assignments incomplete, missing pre-2020 data
 
 **Full Surface** (1,948+ features):
 - Tables: `cbi-v14.training.zl_training_full_allhistory_{1w|1m|3m|6m|12m}`
 - Features: All available drivers
-- Rows: Same as prod surface
-- Status: ✅ Created (placeholders, rebuild pending)
+- Rows: Same as prod surface (1,404-1,475)
+- Date Range: 2020-01-02 to 2025-11-06 (⚠️ **MISSING PRE-2020 DATA**)
+- Regimes: Only 1-3 unique regimes (⚠️ **INCOMPLETE**)
+- Status: ⚠️ **ISSUES FOUND** - Same issues as prod surface
 
 ### Regime Support Tables
 

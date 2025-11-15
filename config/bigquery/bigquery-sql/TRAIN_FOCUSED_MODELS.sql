@@ -153,7 +153,7 @@ original_1w AS (
     mean_absolute_percentage_error
   FROM ML.EVALUATE(
     MODEL `cbi-v14.models_v4.bqml_1w`,
-    (SELECT * FROM `cbi-v14.models_v4.production_training_data_1w`
+    (SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
      WHERE date >= '2024-01-01' AND target_1w IS NOT NULL)
   )
 ),
@@ -167,7 +167,7 @@ original_1m AS (
     mean_absolute_percentage_error
   FROM ML.EVALUATE(
     MODEL `cbi-v14.models_v4.bqml_1m`,
-    (SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`
+    (SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
      WHERE date >= '2024-01-01' AND target_1m IS NOT NULL)
   )
 ),
@@ -181,7 +181,7 @@ original_3m AS (
     mean_absolute_percentage_error
   FROM ML.EVALUATE(
     MODEL `cbi-v14.models_v4.bqml_3m`,
-    (SELECT * FROM `cbi-v14.models_v4.production_training_data_3m`
+    (SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_3m`
      WHERE date >= '2024-01-01' AND target_3m IS NOT NULL)
   )
 ),
@@ -195,7 +195,7 @@ original_6m AS (
     mean_absolute_percentage_error
   FROM ML.EVALUATE(
     MODEL `cbi-v14.models_v4.bqml_6m`,
-    (SELECT * FROM `cbi-v14.models_v4.production_training_data_6m`
+    (SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_6m`
      WHERE date >= '2024-01-01' AND target_6m IS NOT NULL)
   )
 )

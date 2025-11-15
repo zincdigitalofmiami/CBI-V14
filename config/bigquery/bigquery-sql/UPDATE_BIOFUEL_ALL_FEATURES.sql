@@ -4,7 +4,7 @@
 -- ============================================
 
 -- Step 1: Update raw biofuel component prices
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   heating_oil_price = b.close,
   natural_gas_price = b.close,
@@ -24,48 +24,48 @@ WHERE t.date = b.date
   END;
 
 -- Actually, let's do this properly with separate updates per symbol
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET heating_oil_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'HO=F';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET natural_gas_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'NG=F';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET gasoline_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'RB=F';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET sugar_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'SB=F';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET icln_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'ICLN';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET tan_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'TAN';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET dba_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'DBA';
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET vegi_price = b.close
 FROM `cbi-v14.yahoo_finance_comprehensive.biofuel_components_raw` b
 WHERE t.date = b.date AND b.symbol = 'VEGI';
 
 -- Step 2: Update RIN proxies and calculations
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   -- RIN proxies (replace the NULL columns)
   rin_d4_price = r.biodiesel_spread,
@@ -107,7 +107,7 @@ SELECT
   COUNT(dba_price) as dba,
   CAST(NULL AS INT64) as placeholder1,
   CAST(NULL AS INT64) as placeholder2
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 
 UNION ALL
 
@@ -121,7 +121,7 @@ SELECT
   CAST(NULL AS INT64),
   CAST(NULL AS INT64),
   CAST(NULL AS INT64)
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 
 UNION ALL
 
@@ -135,7 +135,7 @@ SELECT
   CAST(NULL AS INT64),
   CAST(NULL AS INT64),
   CAST(NULL AS INT64)
-FROM `cbi-v14.models_v4.production_training_data_1m`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 
 

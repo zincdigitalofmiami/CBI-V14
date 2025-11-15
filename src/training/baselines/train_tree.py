@@ -15,6 +15,7 @@ from datetime import datetime
 # Add parent directory to path for feature catalog
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from training.features.feature_catalog import FeatureCatalog
+from training.utils.model_saver import save_model_with_metadata
 
 def get_repo_root():
     """Find the repository root by looking for a marker file."""
@@ -75,25 +76,31 @@ def train_lightgbm(data_path: Path, horizon: str, model_dir: Path):
         print(f"\nTop 10 features by importance:")
         print(feature_importance.head(10).to_string(index=False))
         
-        # New model structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
-        model_name = "lightgbm_dart_v001"
-        model_subdir = model_dir / model_name
-        model_subdir.mkdir(parents=True, exist_ok=True)
+        # Save model with metadata using utility
+        model_subdir = save_model_with_metadata(
+            model=model,
+            model_dir=model_dir,
+            model_name="lightgbm_dart",
+            version="v001",
+            feature_cols=feature_cols,
+            feature_importance=feature_importance,
+            training_config={
+                'boosting_type': 'dart',
+                'num_leaves': 31,
+                'learning_rate': 0.05,
+                'n_estimators': model.n_estimators_,
+                'horizon': horizon
+            },
+            metrics={
+                'train_mape': train_mape,
+                'val_mape': val_mape,
+                'n_estimators_used': model.n_estimators_
+            },
+            model_type="lightgbm"
+        )
         
-        output_path = model_subdir / "model.bin"
-        joblib.dump(model, output_path)
-        
-        # Save metadata
-        (model_subdir / "columns_used.txt").write_text("\n".join(feature_cols))
-        from datetime import datetime
-        (model_subdir / "run_id.txt").write_text(f"train_tree_{horizon}_{datetime.now().isoformat()}")
-        
-        # Save feature importance
-        importance_path = model_subdir / "feature_importance.csv"
-        feature_importance.to_csv(importance_path, index=False)
-        
-        print(f"✅ LightGBM DART model for {horizon} saved to {output_path}")
-        print(f"✅ Feature importance saved to {importance_path}")
+        print(f"✅ LightGBM DART model for {horizon} saved to {model_subdir}")
+        print(f"✅ All metadata files saved")
     except Exception as e:
         print(f"❌ Failed to train LightGBM for {horizon}: {e}")
 
@@ -149,25 +156,31 @@ def train_xgboost(data_path: Path, horizon: str, model_dir: Path):
         print(f"\nTop 10 features by importance:")
         print(feature_importance.head(10).to_string(index=False))
         
-        # New model structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/
-        model_name = "xgboost_dart_v001"
-        model_subdir = model_dir / model_name
-        model_subdir.mkdir(parents=True, exist_ok=True)
+        # Save model with metadata using utility
+        model_subdir = save_model_with_metadata(
+            model=model,
+            model_dir=model_dir,
+            model_name="xgboost_dart",
+            version="v001",
+            feature_cols=feature_cols,
+            feature_importance=feature_importance,
+            training_config={
+                'booster': 'dart',
+                'max_depth': 8,
+                'learning_rate': 0.03,
+                'n_estimators': model.best_iteration if hasattr(model, 'best_iteration') else 1000,
+                'horizon': horizon
+            },
+            metrics={
+                'train_mape': train_mape,
+                'val_mape': val_mape,
+                'best_iteration': model.best_iteration if hasattr(model, 'best_iteration') else None
+            },
+            model_type="xgboost"
+        )
         
-        output_path = model_subdir / "model.bin"
-        joblib.dump(model, output_path)
-        
-        # Save metadata
-        (model_subdir / "columns_used.txt").write_text("\n".join(feature_cols))
-        from datetime import datetime
-        (model_subdir / "run_id.txt").write_text(f"train_tree_{horizon}_{datetime.now().isoformat()}")
-        
-        # Save feature importance
-        importance_path = model_subdir / "feature_importance.csv"
-        feature_importance.to_csv(importance_path, index=False)
-        
-        print(f"✅ XGBoost DART model for {horizon} saved to {output_path}")
-        print(f"✅ Feature importance saved to {importance_path}")
+        print(f"✅ XGBoost DART model for {horizon} saved to {model_subdir}")
+        print(f"✅ All metadata files saved")
     except Exception as e:
         print(f"❌ Failed to train XGBoost for {horizon}: {e}")
 

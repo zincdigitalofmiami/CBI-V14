@@ -247,25 +247,25 @@ WITH feature_list AS (
 schema_1w AS (
   SELECT column_name as feature
   FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
-  WHERE table_name = 'production_training_data_1w'
+  WHERE table_name = 'zl_training_prod_allhistory_1w'
     AND column_name NOT IN ('date', 'target_1w', 'target_1m', 'target_3m', 'target_6m')
 ),
 schema_1m AS (
   SELECT column_name as feature
   FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
-  WHERE table_name = 'production_training_data_1m'
+  WHERE table_name = 'zl_training_prod_allhistory_1m'
     AND column_name NOT IN ('date', 'target_1w', 'target_1m', 'target_3m', 'target_6m')
 ),
 schema_3m AS (
   SELECT column_name as feature
   FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
-  WHERE table_name = 'production_training_data_3m'
+  WHERE table_name = 'zl_training_prod_allhistory_3m'
     AND column_name NOT IN ('date', 'target_1w', 'target_1m', 'target_3m', 'target_6m')
 ),
 schema_6m AS (
   SELECT column_name as feature
   FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
-  WHERE table_name = 'production_training_data_6m'
+  WHERE table_name = 'zl_training_prod_allhistory_6m'
     AND column_name NOT IN ('date', 'target_1w', 'target_1m', 'target_3m', 'target_6m')
 )
 SELECT 

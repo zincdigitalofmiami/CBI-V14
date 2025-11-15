@@ -4,7 +4,7 @@
 -- ============================================
 
 -- Step 1: Add new columns for biofuel components (as independent features)
-ALTER TABLE `cbi-v14.models_v4.production_training_data_1m`
+ALTER TABLE `cbi-v14.training.zl_training_prod_allhistory_1m`
 ADD COLUMN IF NOT EXISTS heating_oil_price FLOAT64,
 ADD COLUMN IF NOT EXISTS natural_gas_price FLOAT64,
 ADD COLUMN IF NOT EXISTS gasoline_price FLOAT64,
@@ -15,7 +15,7 @@ ADD COLUMN IF NOT EXISTS dba_price FLOAT64,
 ADD COLUMN IF NOT EXISTS vegi_price FLOAT64;
 
 -- Step 2: Add RIN proxy calculation columns
-ALTER TABLE `cbi-v14.models_v4.production_training_data_1m`
+ALTER TABLE `cbi-v14.training.zl_training_prod_allhistory_1m`
 ADD COLUMN IF NOT EXISTS biodiesel_spread FLOAT64,
 ADD COLUMN IF NOT EXISTS ethanol_spread FLOAT64,
 ADD COLUMN IF NOT EXISTS biofuel_crack FLOAT64,
@@ -42,7 +42,7 @@ WITH combined_data AS (
 SELECT * FROM combined_data;
 
 -- Step 4: Update production with RIN proxies (replace NULL columns)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   -- RIN proxies (replace the NULL columns)
   rin_d4_price = r.biodiesel_spread,
@@ -80,7 +80,7 @@ SELECT
   COUNT(rin_d5_price) as d5_filled,
   ROUND(AVG(rin_d4_price), 2) as avg_d4_proxy,
   ROUND(AVG(rin_d6_price), 2) as avg_d6_proxy
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2020-01-01'
 
 UNION ALL
@@ -93,7 +93,7 @@ SELECT
   COUNT(rfs_mandate_total) as total_filled,
   ROUND(AVG(rfs_mandate_biodiesel), 2) as avg_biodiesel,
   ROUND(AVG(rfs_mandate_advanced), 2) as avg_advanced
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2020-01-01'
 
 UNION ALL
@@ -106,7 +106,7 @@ SELECT
   COUNT(biofuel_crack) as crack_filled,
   ROUND(AVG(biodiesel_spread), 2) as avg_biodiesel,
   ROUND(AVG(ethanol_spread), 2) as avg_ethanol
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2020-01-01';
 
 

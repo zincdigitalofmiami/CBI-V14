@@ -4,8 +4,8 @@
 -- Solution: Use Big 8 signals dates (has data through Nov 6, 2025)
 -- ============================================
 
--- Step 1: Update production_training_data_1m with ALL available data
-MERGE `cbi-v14.models_v4.production_training_data_1m` AS target
+-- Step 1: Update zl_training_prod_allhistory_1m with ALL available data
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1m` AS target
 USING (
   WITH 
   -- Use Big 8 signals for complete date range (has data through Nov 6)
@@ -352,12 +352,12 @@ WHEN NOT MATCHED THEN INSERT ROW;
 
 -- Verification
 SELECT 
-  'production_training_data_1m' as table_name,
+  'zl_training_prod_allhistory_1m' as table_name,
   MIN(date) as min_date,
   MAX(date) as max_date,
   COUNT(*) as total_rows,
   DATE_DIFF(CURRENT_DATE(), MAX(date), DAY) as days_behind
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2025-01-01';
 
 

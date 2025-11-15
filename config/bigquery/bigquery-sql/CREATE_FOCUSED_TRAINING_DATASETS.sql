@@ -68,7 +68,7 @@ SELECT
   COALESCE(feature_hidden_correlation, 0) as feature_hidden_correlation,
   COALESCE(big8_composite_score, 0) as big8_composite_score,
   COALESCE(volatility_regime, 'normal') as volatility_regime
-FROM `cbi-v14.models_v4.production_training_data_1w`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
 WHERE target_1w IS NOT NULL
   AND date >= '2023-01-01'
   AND zl_price_current > 0;
@@ -125,7 +125,7 @@ SELECT
   COALESCE(feature_hidden_correlation, 0) as feature_hidden_correlation,
   COALESCE(big8_composite_score, 0) as big8_composite_score,
   COALESCE(volatility_regime, 'normal') as volatility_regime
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE target_1m IS NOT NULL
   AND date >= '2023-01-01'
   AND zl_price_current > 0;
@@ -182,7 +182,7 @@ SELECT
   COALESCE(feature_hidden_correlation, 0) as feature_hidden_correlation,
   COALESCE(big8_composite_score, 0) as big8_composite_score,
   COALESCE(volatility_regime, 'normal') as volatility_regime
-FROM `cbi-v14.models_v4.production_training_data_3m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_3m`
 WHERE target_3m IS NOT NULL
   AND date >= '2023-01-01'
   AND zl_price_current > 0;
@@ -239,7 +239,7 @@ SELECT
   COALESCE(feature_hidden_correlation, 0) as feature_hidden_correlation,
   COALESCE(big8_composite_score, 0) as big8_composite_score,
   COALESCE(volatility_regime, 'normal') as volatility_regime
-FROM `cbi-v14.models_v4.production_training_data_6m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_6m`
 WHERE target_6m IS NOT NULL
   AND date >= '2023-01-01'
   AND zl_price_current > 0;

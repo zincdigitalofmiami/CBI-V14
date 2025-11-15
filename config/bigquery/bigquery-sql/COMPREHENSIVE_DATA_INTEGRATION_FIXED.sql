@@ -351,9 +351,9 @@ SELECT * FROM currency_pivoted ORDER BY date;
 
 -- NOTE: This SQL targets production_training_data_* tables
 -- Update each horizon table separately (1w, 1m, 3m, 6m)
--- For now, updating production_training_data_1m as example
+-- For now, updating zl_training_prod_allhistory_1m as example
 
-MERGE `cbi-v14.models_v4.production_training_data_1m` AS target
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1m` AS target
 USING (
   WITH 
   -- News data

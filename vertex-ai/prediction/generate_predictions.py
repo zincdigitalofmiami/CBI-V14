@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 """
+⚠️ LEGACY SCRIPT - REFERENCE ONLY ⚠️
+
+This script is NOT used in the current architecture (100% local M4 training).
+Kept for reference only.
+
+Current architecture: Predictions generated locally, uploaded to BigQuery.
+See src/prediction/ for current prediction scripts.
+
+---
+Original documentation (legacy):
 Generate predictions for 1W, 1M, 3M, 6M using sequential endpoint deployment
 Uses predict_frame view (no target columns - matches current training_dataset_super_enriched)
 """

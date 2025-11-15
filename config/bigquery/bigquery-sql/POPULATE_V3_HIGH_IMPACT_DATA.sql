@@ -4,7 +4,7 @@
 -- ============================================
 
 -- TIER 1: SOYB ETF (10 features, 0.92 corr)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   soyb_close = y.close,
   soyb_ma_7d = y.ma_7d,
@@ -26,10 +26,10 @@ FROM (
 ) y
 WHERE t.date = y.date;
 
-SELECT '1/18: SOYB updated' as status, COUNT(soyb_close) as filled FROM `cbi-v14.models_v4.production_training_data_1m`;
+SELECT '1/18: SOYB updated' as status, COUNT(soyb_close) as filled FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- TIER 1: CORN ETF (10 features, 0.88 corr)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   corn_etf_close = y.close,
   corn_etf_ma_7d = y.ma_7d,
@@ -51,10 +51,10 @@ FROM (
 ) y
 WHERE t.date = y.date;
 
-SELECT '2/18: CORN updated' as status, COUNT(corn_etf_close) as filled FROM `cbi-v14.models_v4.production_training_data_1m`;
+SELECT '2/18: CORN updated' as status, COUNT(corn_etf_close) as filled FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- TIER 1: WEAT ETF (10 features, 0.82 corr)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   weat_close = y.close,
   weat_ma_7d = y.ma_7d,
@@ -76,10 +76,10 @@ FROM (
 ) y
 WHERE t.date = y.date;
 
-SELECT '3/18: WEAT updated' as status, COUNT(weat_close) as filled FROM `cbi-v14.models_v4.production_training_data_1m`;
+SELECT '3/18: WEAT updated' as status, COUNT(weat_close) as filled FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- TIER 2: ADM (5 features, 0.78 corr)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   adm_close = y.close,
   adm_pe_ratio = y.pe_ratio,
@@ -95,7 +95,7 @@ FROM (
 ) y
 WHERE t.date = y.date;
 
-SELECT '4/18: ADM updated' as status, COUNT(adm_close) as filled FROM `cbi-v14.models_v4.production_training_data_1m`;
+SELECT '4/18: ADM updated' as status, COUNT(adm_close) as filled FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- Continue for all 18 symbols...
 -- [Abbreviated for space - full script continues with BG, NTR, DAR, TSN, Brent, Copper, NG, CF, MOS, DXY, BRL, CNY, MXN, VIX, HYG]
@@ -117,7 +117,7 @@ SELECT
   -- Tier 4 Dollar
   COUNT(dxy_yahoo_close) as dxy_filled,
   COUNT(brlusd_close) as brlusd_filled
-FROM `cbi-v14.models_v4.production_training_data_1m`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 
 

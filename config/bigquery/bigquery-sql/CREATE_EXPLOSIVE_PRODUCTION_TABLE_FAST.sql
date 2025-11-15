@@ -3,12 +3,12 @@
 -- Join existing production table with pivoted Yahoo features
 -- ============================================
 
-CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m_explosive` AS
+CREATE OR REPLACE TABLE `cbi-v14.training.zl_training_prod_allhistory_1m_explosive` AS
 
 WITH 
 -- Start with current production (444 columns including 110 v3 features)
 base_production AS (
-  SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`
+  SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 -- Pivot Yahoo data for remaining symbols we need
@@ -82,7 +82,7 @@ interactions AS (
     CASE WHEN vix_yahoo_close > 20 THEN 1 ELSE 0 END as vix_high_regime,
     CASE WHEN dxy_yahoo_close > AVG(dxy_yahoo_close) OVER (ORDER BY date ROWS BETWEEN 199 PRECEDING AND CURRENT ROW) THEN 1 ELSE 0 END as dollar_strength_regime
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE date >= '2020-01-01'
 )
 
@@ -101,10 +101,10 @@ SELECT
   'Explosive Production Table Created' as status,
   COUNT(*) as rows,
   (SELECT COUNT(*) FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS` 
-   WHERE table_name = 'production_training_data_1m_explosive') as columns,
+   WHERE table_name = 'zl_training_prod_allhistory_1m_explosive') as columns,
   MIN(date) as earliest,
   MAX(date) as latest
-FROM `cbi-v14.models_v4.production_training_data_1m_explosive`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m_explosive`;
 
 
 

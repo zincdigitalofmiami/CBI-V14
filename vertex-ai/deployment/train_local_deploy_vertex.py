@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 """
+⚠️ LEGACY SCRIPT - REFERENCE ONLY ⚠️
+
+This script is NOT used in the current architecture (100% local M4 training).
+Kept for reference only.
+
+Current architecture: 100% local training, no Vertex AI deployment.
+See GPT5_READ_FIRST.md for current architecture details.
+
+---
+Original documentation (legacy):
 Complete workflow: Train locally with TensorFlow Metal, deploy to Vertex AI.
 
 This script orchestrates the complete workflow:

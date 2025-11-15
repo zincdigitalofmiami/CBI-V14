@@ -30,7 +30,7 @@ class NeuralDataCollector:
         # For now, check if we have it in existing data
         query = """
         SELECT DISTINCT source_name 
-        FROM `cbi-v14.forecasting_data_warehouse.economic_indicators`
+        FROM `cbi-v14.raw_intelligence.macro_economic_indicators`
         WHERE source_name LIKE '%FRED%'
         LIMIT 1
         """

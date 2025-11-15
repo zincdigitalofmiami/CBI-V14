@@ -1,8 +1,8 @@
 
--- Update production_training_data_1m with RIN proxy features
+-- Update zl_training_prod_allhistory_1m with RIN proxy features
 -- These replace the NULL RIN columns with calculated proxies
 
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   -- Use biodiesel spread as D4 RIN proxy
   rin_d4_price = COALESCE(r.biodiesel_spread, 0),
@@ -28,5 +28,5 @@ SELECT
   COUNT(rin_d6_price) as d6_filled,
   AVG(rin_d4_price) as avg_d4_proxy,
   AVG(rin_d6_price) as avg_d6_proxy
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2020-01-01';

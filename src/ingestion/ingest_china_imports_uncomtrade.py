@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Fetch China monthly soybean (HS 1201) import quantities from UN Comtrade (last 3 months)
-and load numeric-only records into forecasting_data_warehouse.economic_indicators.
+and load numeric-only records into raw_intelligence.macro_economic_indicators.
 """
 import json
 import time
@@ -132,7 +132,7 @@ def main() -> None:
         time.sleep(1)
 
     if out:
-        load_records(client, f"{PROJECT_ID}.forecasting_data_warehouse.economic_indicators", out)
+        load_records(client, f"{PROJECT_ID}.raw_intelligence.macro_economic_indicators", out)
         print(json.dumps({"loaded_rows": len(out), "indicator": out[0]["indicator"], "months_loaded": [d["time"].strftime('%Y-%m') for d in out]}))
     else:
         print(json.dumps({"loaded_rows": 0, "message": "No data parsed"}))

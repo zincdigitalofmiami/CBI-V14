@@ -1,7 +1,7 @@
 -- ============================================
 -- STEP 1: BUILD trump_rich_2023_2025 TABLE
 -- 60+ features with all discovered data
--- Uses production_training_data_1m + joins for raw data
+-- Uses zl_training_prod_allhistory_1m + joins for raw data
 -- ============================================
 
 CREATE OR REPLACE TABLE `cbi-v14.models_v4.trump_rich_2023_2025` AS
@@ -93,7 +93,7 @@ trump_features AS (
     -- TARGET
     p.target_1m
     
-  FROM `cbi-v14.models_v4.production_training_data_1m` p
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m` p
   
   -- BIG EIGHT NEURAL SIGNALS (DISCOVERED!) - has raw vix_close, dxy_close
   LEFT JOIN `cbi-v14.neural.vw_big_eight_signals` b8

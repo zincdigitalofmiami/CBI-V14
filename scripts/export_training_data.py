@@ -58,6 +58,26 @@ def export_training_data(horizon: str, surface: str = "prod", output_dir: Path =
             print(f"  ⚠️  No data found")
             return False
         
+        # FIX: Convert BigQuery DATE columns to pandas datetime
+        # BigQuery's DATE type exports as 'dbdate' which pandas/pyarrow doesn't understand
+        date_columns = ['date', 'signal_date', 'ingest_date', 'last_updated', 'created_at']
+        for col in date_columns:
+            if col in df.columns:
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                    print(f"  🔄 Converted {col} to datetime")
+                except Exception as e:
+                    print(f"  ⚠️  Could not convert {col}: {e}")
+        
+        # Also convert any remaining columns with 'dbdate' dtype
+        for col in df.columns:
+            if str(df[col].dtype) == 'dbdate':
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                    print(f"  🔄 Converted {col} (dbdate) to datetime")
+                except Exception as e:
+                    print(f"  ⚠️  Could not convert {col}: {e}")
+        
         # Save to parquet
         df.to_parquet(output_file, index=False, engine='pyarrow')
         

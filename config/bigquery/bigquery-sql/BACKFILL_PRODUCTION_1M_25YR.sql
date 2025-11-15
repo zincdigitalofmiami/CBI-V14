@@ -6,7 +6,7 @@
 -- Only backfill dates that don't exist in production yet
 
 -- Step 1: Create staging table with full 25-year history
-CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m_staging_25yr` AS
+CREATE OR REPLACE TABLE `cbi-v14.training.zl_training_prod_allhistory_1m_staging_25yr` AS
 
 WITH 
 -- Get all dates from Yahoo ZL data (2000-2025)
@@ -22,7 +22,7 @@ all_yahoo_dates AS (
 -- Get existing production data (2020-2025)
 existing_prod AS (
   SELECT *
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 -- Get historical ZL data from Yahoo (2000-2020, before production starts)
@@ -105,7 +105,7 @@ SELECT
   MAX(date) as latest_date,
   COUNT(CASE WHEN date < '2020-01-06' THEN 1 END) as historical_rows,
   COUNT(CASE WHEN date >= '2020-01-06' THEN 1 END) as current_rows
-FROM `cbi-v14.models_v4.production_training_data_1m_staging_25yr`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m_staging_25yr`;
 
 
 

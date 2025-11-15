@@ -1,0 +1,14 @@
+⚠️ LEGACY DIRECTORY - REFERENCE ONLY
+
+This directory contains legacy Vertex AI code that is NOT used in the current architecture.
+
+Current Architecture (November 2025):
+- 100% Local Training on Mac M4
+- BigQuery for Storage Only (no cloud compute)
+- NO Vertex AI (not used)
+
+See:
+- GPT5_READ_FIRST.md for current architecture
+- LEGACY_MARKER.md for details
+- README.md for directory structure
+

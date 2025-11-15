@@ -34,7 +34,7 @@ WITH rate_differentials AS (
     -- Rate of change
     (fed_funds_rate - LAG(fed_funds_rate, 12) OVER (ORDER BY date)) as fed_12m_change
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 risk_sentiment AS (
@@ -65,7 +65,7 @@ risk_sentiment AS (
       ORDER BY date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
     ) as haven_flow_proxy
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 trade_dynamics AS (
@@ -87,7 +87,7 @@ trade_dynamics AS (
     -- Trade momentum
     china_soybean_imports_mt - LAG(china_soybean_imports_mt, 1) OVER (ORDER BY date) as import_momentum
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 )
 
 -- Combine all dollar drivers
@@ -159,7 +159,7 @@ WITH employment_dynamics AS (
       ORDER BY date ROWS BETWEEN 89 PRECEDING AND CURRENT ROW
     ) as wage_pressure_proxy
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 inflation_components AS (
@@ -181,7 +181,7 @@ inflation_components AS (
     -- Supply chain pressure (use volatility as proxy)
     volatility_30d as supply_chain_stress
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 financial_conditions AS (
@@ -202,7 +202,7 @@ financial_conditions AS (
       ELSE 0
     END as financial_conditions_index
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 )
 
 -- Combine Fed drivers
@@ -268,7 +268,7 @@ WITH processing_dynamics AS (
       ELSE 0
     END as capacity_pressure
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 demand_drivers AS (
@@ -291,7 +291,7 @@ demand_drivers AS (
     crude_price,
     crude_price / NULLIF(zl_price_current, 0) as energy_ag_ratio
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 logistics_costs AS (
@@ -309,7 +309,7 @@ logistics_costs AS (
     -- Supply chain stress
     volatility_30d as logistics_stress
     
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 )
 
 -- Combine crush drivers
@@ -392,7 +392,7 @@ SELECT
   p.target_3m,
   p.target_6m
   
-FROM `cbi-v14.models_v4.production_training_data_1m` p
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m` p
 JOIN `cbi-v14.models_v4.dollar_neural_drivers` d ON p.date = d.date
 JOIN `cbi-v14.models_v4.fed_neural_drivers` f ON p.date = f.date
 JOIN `cbi-v14.models_v4.crush_neural_drivers` c ON p.date = c.date;

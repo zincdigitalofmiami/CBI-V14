@@ -98,7 +98,7 @@ trump_features AS (
     -- TARGET
     LEAD(zl_f_close, 22) OVER (ORDER BY date) - zl_f_close AS target_1m
     
-  FROM `cbi-v14.models_v4.production_training_data_1m` p
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m` p
   
   -- BIG EIGHT NEURAL SIGNALS (DISCOVERED!)
   LEFT JOIN `cbi-v14.neural.vw_big_eight_signals` b8

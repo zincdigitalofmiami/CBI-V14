@@ -5,7 +5,7 @@
 -- ============================================
 
 -- RSI (Relative Strength Index) calculation
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET rsi_14 = rsi_calc.rsi_14
 FROM (
   WITH price_data AS (
@@ -13,7 +13,7 @@ FROM (
       date,
       zl_price_current,
       LAG(zl_price_current, 1) OVER (ORDER BY date) AS prev_price
-    FROM `cbi-v14.models_v4.production_training_data_1m`
+    FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
     WHERE zl_price_current IS NOT NULL
   ),
   rsi_gains_losses AS (
@@ -38,7 +38,7 @@ FROM (
 WHERE t.date = rsi_calc.date AND t.date > '2025-09-10';
 
 -- MACD (Moving Average Convergence Divergence) calculation
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   macd_line = macd_calc.macd_line,
   macd_signal = macd_calc.macd_signal,
@@ -48,7 +48,7 @@ FROM (
     SELECT 
       date,
       zl_price_current
-    FROM `cbi-v14.models_v4.production_training_data_1m`
+    FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
     WHERE zl_price_current IS NOT NULL
   ),
   macd_ema AS (
@@ -84,6 +84,6 @@ SELECT
   AVG(macd_line) as avg_macd,
   MIN(date) as earliest,
   MAX(date) as latest
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date > '2025-09-10';
 

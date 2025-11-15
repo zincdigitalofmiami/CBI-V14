@@ -5,7 +5,7 @@ UN Comtrade + SECEX ingestor for soybean trade metrics (no API key required).
 - Optional: Brazil exports to China specifically (partner 156) via UN Comtrade.
 - Optional: Check SECEX CSV availability for provenance logging (no parsing yet).
 
-Writes numeric-only rows to forecasting_data_warehouse.economic_indicators.
+Writes numeric-only rows to raw_intelligence.macro_economic_indicators.
 """
 import json
 import uuid
@@ -136,7 +136,7 @@ def try_secex_csv(year: int) -> Optional[str]:
 
 def main() -> None:
     client = bigquery.Client(project=PROJECT_ID)
-    table_id = f"{PROJECT_ID}.forecasting_data_warehouse.economic_indicators"
+    table_id = f"{PROJECT_ID}.raw_intelligence.macro_economic_indicators"
 
     rows: List[Dict] = []
 

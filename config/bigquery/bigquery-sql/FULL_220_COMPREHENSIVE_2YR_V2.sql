@@ -7,7 +7,7 @@
 -- OBJECTIVE: Discovery baseline to identify which features actually matter
 -- ISOLATION: Completely separate from production models/tables
 -- MODEL: bqml_1m_baseline_exploratory_220_symbols (separate from bqml_1m_baseline_exploratory)
--- TABLE: full_220_comprehensive_2yr (separate from production_training_data_1m)
+-- TABLE: full_220_comprehensive_2yr (separate from zl_training_prod_allhistory_1m)
 --
 -- CONFIGURATION:
 -- - Max Iterations: 300 (was 50 - stopped early)
@@ -51,12 +51,12 @@
 -- Run this first to verify data availability before full execution
 /*
 SELECT 
-  'production_training_data_1m' as table_name,
+  'zl_training_prod_allhistory_1m' as table_name,
   COUNT(*) as total_rows,
   COUNTIF(target_1m IS NOT NULL) as rows_with_target,
   MIN(date) as earliest_date,
   MAX(date) as latest_date
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2024-01-01';
 
 SELECT 
@@ -79,7 +79,7 @@ WITH
 -- Base production features (read-only, never modified)
 base_production AS (
   SELECT * 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE date >= '2024-01-01'
     AND target_1m IS NOT NULL
 ),

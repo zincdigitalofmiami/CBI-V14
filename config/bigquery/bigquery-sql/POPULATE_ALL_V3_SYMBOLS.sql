@@ -3,7 +3,7 @@
 -- ============================================
 
 -- 1. CORN ETF (0.88 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   corn_etf_close = y.close,
   corn_etf_ma_7d = y.ma_7d,
@@ -24,7 +24,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 2. WEAT ETF (0.82 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   weat_close = y.close,
   weat_ma_7d = y.ma_7d,
@@ -45,7 +45,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 3. ADM (0.78 correlation) - includes fundamentals
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   adm_close = y.close,
   adm_pe_ratio = y.pe_ratio,
@@ -60,7 +60,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 4. BG Bunge (0.76 correlation) - includes fundamentals
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   bg_close = y.close,
   bg_pe_ratio = y.pe_ratio,
@@ -75,7 +75,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 5. NTR Nutrien (0.72 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   ntr_close = y.close,
   ntr_pe_ratio = y.pe_ratio,
@@ -90,7 +90,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 6. DAR Darling (0.72 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   dar_close = y.close,
   dar_pe_ratio = y.pe_ratio,
@@ -105,7 +105,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 7. TSN Tyson (0.68 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   tsn_close = y.close,
   tsn_pe_ratio = y.pe_ratio,
@@ -120,7 +120,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 8. Brent Crude BZ=F (0.75 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   brent_close = y.close,
   brent_rsi_14 = y.rsi_14,
@@ -135,7 +135,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 9. Copper HG=F (0.65 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   copper_close = y.close,
   copper_rsi_14 = y.rsi_14,
@@ -150,7 +150,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 10. Natural Gas NG=F
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   natgas_yahoo_close = y.close,
   natgas_yahoo_rsi_14 = y.rsi_14,
@@ -165,7 +165,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 11. CF Industries (0.68 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   cf_close = y.close,
   cf_pe_ratio = y.pe_ratio,
@@ -180,7 +180,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 12. MOS Mosaic (0.70 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   mos_close = y.close,
   mos_pe_ratio = y.pe_ratio,
@@ -195,7 +195,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 13. DXY Dollar Index (-0.658 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   dxy_yahoo_close = y.close,
   dxy_yahoo_rsi_14 = y.rsi_14,
@@ -210,7 +210,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 14. BRL/USD (-0.60 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   brlusd_close = y.close,
   brlusd_rsi_14 = y.rsi_14,
@@ -225,7 +225,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 15. CNY/USD (-0.50 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   cnyusd_close = y.close,
   cnyusd_rsi_14 = y.rsi_14,
@@ -240,7 +240,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 16. MXN/USD
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   mxnusd_close = y.close,
   mxnusd_rsi_14 = y.rsi_14,
@@ -255,7 +255,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 17. VIX (0.398 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   vix_yahoo_close = y.close,
   vix_yahoo_rsi_14 = y.rsi_14,
@@ -270,7 +270,7 @@ FROM (
 WHERE t.date = y.date;
 
 -- 18. HYG High Yield Credit (-0.58 correlation)
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   hyg_close = y.close,
   hyg_rsi_14 = y.rsi_14,
@@ -300,7 +300,7 @@ SELECT
   COUNT(brent_close) as brent_filled,
   COUNT(dxy_yahoo_close) as dxy_filled,
   COUNT(vix_yahoo_close) as vix_filled
-FROM `cbi-v14.models_v4.production_training_data_1m`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 
 

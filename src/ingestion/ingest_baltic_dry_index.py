@@ -198,7 +198,7 @@ class BalticDryIndexCollector:
 
         try:
             # Store to both existing table and new freight_logistics table
-            table_id_legacy = f"{PROJECT_ID}.forecasting_data_warehouse.baltic_dry_index"
+            table_id_legacy = f"{PROJECT_ID}.raw_intelligence.shipping_baltic_dry_index"
             table_id_new = f"{PROJECT_ID}.forecasting_data_warehouse.freight_logistics"
             
             # Prepare data for new freight_logistics table

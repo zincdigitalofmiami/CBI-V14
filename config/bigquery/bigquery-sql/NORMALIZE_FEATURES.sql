@@ -22,7 +22,7 @@ WITH feature_stats AS (
     STDDEV(argentina_export_tax) as std_argentina_export_tax,
     AVG(news_intelligence_7d) as mean_news_intelligence_7d,
     STDDEV(news_intelligence_7d) as std_news_intelligence_7d
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE date >= '2024-01-01'
     AND target_1m IS NOT NULL
 ),
@@ -67,7 +67,7 @@ normalized_data AS (
       -1.0
     ), 1.0) as news_intelligence_7d_norm
     
-  FROM `cbi-v14.models_v4.production_training_data_1m` p
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m` p
   CROSS JOIN feature_stats fs
   WHERE p.date >= '2024-01-01'
     AND p.target_1m IS NOT NULL

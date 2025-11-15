@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+⚠️ LEGACY SCRIPT - REFERENCE ONLY ⚠️
+
+This script is NOT used in the current architecture (100% local M4 training).
+Kept for reference only.
+
+Current table naming: training.zl_training_prod_allhistory_{horizon}
+Legacy tables referenced: models_v4.vertex_ai_training_{horizon}_base
+"""
 import pandas as pd
 from google.cloud import bigquery
 
@@ -5,6 +15,9 @@ def audit_training_schemas():
     """
     Audits the schemas of all vertex_ai_training_*_base tables and reports discrepancies.
     Updated to use new naming convention: vertex_ai_training_{horizon}_base
+    
+    ⚠️ LEGACY: This script references old table names. Current architecture uses:
+    - training.zl_training_prod_allhistory_{horizon}
     """
     client = bigquery.Client(project='cbi-v14')
     datasets = ['models_v4']

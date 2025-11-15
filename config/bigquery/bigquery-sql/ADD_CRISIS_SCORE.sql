@@ -21,7 +21,7 @@ WITH ars_volatility AS (
       ORDER BY date 
       ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
     ) as ars_vol_30d
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE usd_ars_rate IS NOT NULL
 ),
 debt_gdp AS (
@@ -31,7 +31,7 @@ debt_gdp AS (
   SELECT 
     date,
     0.8 as debt_gdp_ratio  -- Default: 80% debt-to-GDP (can be updated with actual data)
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 crisis_calc AS (
   SELECT 

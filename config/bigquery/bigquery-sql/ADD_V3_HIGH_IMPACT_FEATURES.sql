@@ -5,7 +5,7 @@
 
 -- TIER 1: Ultra-high correlation ETFs (0.82-0.92)
 -- SOYB ETF (10 features)
-ALTER TABLE `cbi-v14.models_v4.production_training_data_1m`
+ALTER TABLE `cbi-v14.training.zl_training_prod_allhistory_1m`
 ADD COLUMN IF NOT EXISTS soyb_close FLOAT64,
 ADD COLUMN IF NOT EXISTS soyb_ma_7d FLOAT64,
 ADD COLUMN IF NOT EXISTS soyb_ma_30d FLOAT64,
@@ -162,7 +162,7 @@ SELECT
   COUNT(*) as total_columns,
   COUNT(*) - 334 as new_columns_added
 FROM `cbi-v14.models_v4.INFORMATION_SCHEMA.COLUMNS`
-WHERE table_name = 'production_training_data_1m';
+WHERE table_name = 'zl_training_prod_allhistory_1m';
 
 
 

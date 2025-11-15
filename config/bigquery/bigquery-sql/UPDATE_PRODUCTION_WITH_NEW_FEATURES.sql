@@ -4,8 +4,8 @@
 -- Purpose: Update production_training_data_* tables with new scraped features
 -- ============================================
 
--- Update production_training_data_1m
-MERGE `cbi-v14.models_v4.production_training_data_1m` AS target
+-- Update zl_training_prod_allhistory_1m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1m` AS target
 USING (
   WITH 
   -- RIN prices data
@@ -86,8 +86,8 @@ WHEN MATCHED THEN UPDATE SET
   china_weekly_cancellations_mt = COALESCE(target.china_weekly_cancellations_mt, source.china_weekly_cancellations_mt);
 
 -- Repeat for other horizons (1w, 3m, 6m) - same pattern
--- production_training_data_1w
-MERGE `cbi-v14.models_v4.production_training_data_1w` AS target
+-- zl_training_prod_allhistory_1w
+MERGE `cbi-v14.training.zl_training_prod_allhistory_1w` AS target
 USING (
   WITH 
   rin AS (SELECT date, rin_d4_price, rin_d5_price, rin_d6_price FROM `cbi-v14.models_v4.rin_prices_daily`),
@@ -121,8 +121,8 @@ WHEN MATCHED THEN UPDATE SET
   argentina_port_throughput_teu = COALESCE(target.argentina_port_throughput_teu, source.argentina_port_throughput_teu),
   china_weekly_cancellations_mt = COALESCE(target.china_weekly_cancellations_mt, source.china_weekly_cancellations_mt);
 
--- production_training_data_3m
-MERGE `cbi-v14.models_v4.production_training_data_3m` AS target
+-- zl_training_prod_allhistory_3m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_3m` AS target
 USING (
   WITH 
   rin AS (SELECT date, rin_d4_price, rin_d5_price, rin_d6_price FROM `cbi-v14.models_v4.rin_prices_daily`),
@@ -156,8 +156,8 @@ WHEN MATCHED THEN UPDATE SET
   argentina_port_throughput_teu = COALESCE(target.argentina_port_throughput_teu, source.argentina_port_throughput_teu),
   china_weekly_cancellations_mt = COALESCE(target.china_weekly_cancellations_mt, source.china_weekly_cancellations_mt);
 
--- production_training_data_6m
-MERGE `cbi-v14.models_v4.production_training_data_6m` AS target
+-- zl_training_prod_allhistory_6m
+MERGE `cbi-v14.training.zl_training_prod_allhistory_6m` AS target
 USING (
   WITH 
   rin AS (SELECT date, rin_d4_price, rin_d5_price, rin_d6_price FROM `cbi-v14.models_v4.rin_prices_daily`),

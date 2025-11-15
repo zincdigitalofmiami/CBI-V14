@@ -5,13 +5,13 @@
 -- Version: 1.0
 -- Date: November 6, 2025
 --
--- PURPOSE: Update production_training_data_1m with calculated RIN proxy
+-- PURPOSE: Update zl_training_prod_allhistory_1m with calculated RIN proxy
 -- features, filling the 6 NULL RIN/RFS columns and adding new biofuel
 -- economics features.
 --
 -- DEPENDENCIES:
 -- - cbi-v14.yahoo_finance_comprehensive.rin_proxy_features_final
--- - cbi-v14.models_v4.production_training_data_1m
+-- - cbi-v14.models_v4.zl_training_prod_allhistory_1m
 --
 -- VALIDATION: Performs row count verification before and after update
 -- ============================================
@@ -26,10 +26,10 @@ SELECT
   COUNT(rfs_mandate_biodiesel) as rfs_biodiesel_filled_before,
   COUNT(rfs_mandate_advanced) as rfs_advanced_filled_before,
   COUNT(rfs_mandate_total) as rfs_total_filled_before
-FROM `cbi-v14.models_v4.production_training_data_1m`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- MAIN UPDATE: FILL RIN/RFS COLUMNS + NEW BIOFUEL FEATURES
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   -- ============================================
   -- FILL THE 6 NULL RIN/RFS COLUMNS
@@ -88,7 +88,7 @@ SELECT
   ROUND(AVG(rin_d6_price), 2) as avg_rin_d6,
   ROUND(AVG(biodiesel_spread), 2) as avg_biodiesel_spread,
   ROUND(AVG(ethanol_spread), 2) as avg_ethanol_spread
-FROM `cbi-v14.models_v4.production_training_data_1m`;
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- SAMPLE RECENT DATA FOR VERIFICATION
 SELECT
@@ -99,7 +99,7 @@ SELECT
   ROUND(biodiesel_spread, 2) as bio_spread,
   ROUND(ethanol_spread, 2) as eth_spread,
   ROUND(soy_to_corn_ratio, 2) as soy_corn
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2025-10-01'
   AND rin_d4_price IS NOT NULL
 ORDER BY date DESC
@@ -116,7 +116,7 @@ SELECT
   AVG(ABS(rin_d6_price)) < 500 as rin_d6_in_valid_range,
   STDDEV(biodiesel_spread) > 0 as biodiesel_spread_has_variance,
   CORR(rin_d4_price, biodiesel_spread) = 1.0 as rin_d4_matches_spread
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2020-01-01';
 
 

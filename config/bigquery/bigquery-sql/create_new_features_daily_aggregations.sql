@@ -23,7 +23,7 @@ WITH rin_weekly AS (
 -- Get all training dates
 training_dates AS (
   SELECT DISTINCT date 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   ORDER BY date
 ),
 -- Forward-fill RIN weekly data to daily
@@ -57,7 +57,7 @@ WITH rfs_yearly AS (
 -- Get all training dates
 training_dates AS (
   SELECT DISTINCT date 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   ORDER BY date
 ),
 -- Forward-fill RFS yearly data to daily
@@ -87,7 +87,7 @@ WITH freight_raw AS (
 -- Get all training dates
 training_dates AS (
   SELECT DISTINCT date 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   ORDER BY date
 ),
 -- Forward-fill freight data to daily
@@ -116,7 +116,7 @@ WITH port_raw AS (
 -- Get all training dates
 training_dates AS (
   SELECT DISTINCT date 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   ORDER BY date
 ),
 -- Forward-fill port data to daily
@@ -154,7 +154,7 @@ china_weekly AS (
 -- Get all training dates
 training_dates AS (
   SELECT DISTINCT date 
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   ORDER BY date
 ),
 -- Combine existing and new data

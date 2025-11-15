@@ -72,7 +72,7 @@ SELECT
   
   -- Target
   target_1w
-FROM `cbi-v14.models_v4.production_training_data_1w`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
 WHERE target_1w IS NOT NULL
   AND date >= '2023-01-01'  -- Focus on recent market regime
   AND zl_price_current > 0;
@@ -114,7 +114,7 @@ SELECT
   COALESCE(ma_30d, zl_price_current) as ma_30d,
   
   target_1w
-FROM `cbi-v14.models_v4.production_training_data_1w`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
 WHERE target_1w IS NOT NULL
   AND date >= '2023-01-01'
   AND big8_composite_score IS NOT NULL;
@@ -136,7 +136,7 @@ OPTIONS(
 SELECT 
   * EXCEPT(date, target_1m, target_3m, target_6m),
   target_1w
-FROM `cbi-v14.models_v4.production_training_data_1w`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
 WHERE target_1w IS NOT NULL
   AND date >= '2022-01-01'  -- More data for complex model
   AND zl_price_current > 0;
@@ -146,7 +146,7 @@ WHERE target_1w IS NOT NULL
 -- ============================================
 CREATE OR REPLACE TABLE `cbi-v14.models_v4.ultimate_model_comparison` AS
 WITH evaluation_data AS (
-  SELECT * FROM `cbi-v14.models_v4.production_training_data_1w`
+  SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1w`
   WHERE date >= '2024-06-01'  -- Recent 5 months for evaluation
     AND target_1w IS NOT NULL
 ),

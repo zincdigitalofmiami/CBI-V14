@@ -15,7 +15,7 @@ WITH current_data AS (
     trade_war_intensity,
     news_intelligence_7d,
     argentina_export_tax
-  FROM `cbi-v14.models_v4.production_training_data_1m`
+  FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
   WHERE date >= '2024-01-01'
 ),
 lagged_data AS (

@@ -8,7 +8,7 @@
 -- Stocks: 51 features each (43 + 8 fundamentals)
 
 -- TIER 1 ETF: SOYB (43 features, 0.92 correlation)
-ALTER TABLE `cbi-v14.models_v4.production_training_data_1m`
+ALTER TABLE `cbi-v14.training.zl_training_prod_allhistory_1m`
 -- Price features (6)
 ADD COLUMN IF NOT EXISTS soyb_open FLOAT64,
 ADD COLUMN IF NOT EXISTS soyb_high FLOAT64,
@@ -70,7 +70,7 @@ ADD COLUMN IF NOT EXISTS soyb_zscore_20d FLOAT64;
 -- [For stocks ADM, BG, NTR, DAR, TSN, CF, MOS: Add 8 fundamental columns on top of 43]
 
 -- INTERACTION FEATURES (100+ new)
-ALTER TABLE `cbi-v14.models_v4.production_training_data_1m`
+ALTER TABLE `cbi-v14.training.zl_training_prod_allhistory_1m`
 -- Spreads & Ratios
 ADD COLUMN IF NOT EXISTS soyb_corn_ratio FLOAT64,
 ADD COLUMN IF NOT EXISTS soyb_weat_ratio FLOAT64,

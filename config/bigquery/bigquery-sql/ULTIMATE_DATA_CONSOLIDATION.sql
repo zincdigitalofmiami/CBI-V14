@@ -1,18 +1,31 @@
--- ============================================
+-- =======================================================================================
+-- ⚠️ LEGACY SCRIPT - REFERENCE ONLY ⚠️
+-- 
+-- This script is NOT used in the current architecture (100% local M4 training).
+-- Kept for reference only.
+--
+-- Current architecture: 100% local training, no Vertex AI deployment.
+-- Current table naming: training.zl_training_prod_allhistory_{horizon}
+-- Legacy tables referenced: models_v4.production_training_data_*
+--
+-- =======================================================================================
 -- ULTIMATE DATA CONSOLIDATION - ZERO STALE DATA
 -- Date: November 6, 2025
 -- Mission: Consolidate ALL available data with ZERO staleness
--- Target: production_training_data_1m (and other horizons)
--- ============================================
+-- Target: training.zl_training_prod_allhistory_1m (and other horizons)
+-- =======================================================================================
 
--- STEP 1: Create backup before major changes
-CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m_backup_nov6` AS
-SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`;
+-- STEP 1: Create backup before major changes (LEGACY - not used)
+-- CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m_backup_nov6` AS
+-- SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`;
 
 -- ============================================
 -- STEP 2: EXTEND DATES USING BIG 8 SIGNALS (CURRENT!)
 -- ============================================
-CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m` AS
+-- ⚠️ LEGACY: This table is not used in current architecture
+-- Current architecture uses: training.zl_training_prod_allhistory_1m
+-- CREATE OR REPLACE TABLE `cbi-v14.models_v4.production_training_data_1m` AS
+CREATE OR REPLACE TABLE `cbi-v14.training.zl_training_prod_allhistory_1m` AS
 WITH 
 -- Get ALL dates from Big 8 signals (current through Nov 6!)
 all_dates AS (
@@ -23,7 +36,7 @@ all_dates AS (
 
 -- Get existing production data
 existing_data AS (
-  SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`
+  SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 ),
 
 -- Get Vertex AI data for missing dates (Sep 11 - Oct 27)

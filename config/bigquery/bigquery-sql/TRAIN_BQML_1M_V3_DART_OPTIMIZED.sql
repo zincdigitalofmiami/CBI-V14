@@ -75,7 +75,7 @@ SELECT
     tsn_analyst_target,
     weather_news_count
   )
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE target_1m IS NOT NULL
   AND date >= '2020-01-01';
   

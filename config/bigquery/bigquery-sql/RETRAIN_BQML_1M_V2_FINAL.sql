@@ -6,7 +6,7 @@
 -- Version: 2.0
 -- Date: November 6, 2025
 --
--- TRAINING DATASET: production_training_data_1m
+-- TRAINING DATASET: zl_training_prod_allhistory_1m
 -- - Total rows: 1,404
 -- - Date range: 2020-01-01 to 2025-11-06
 -- - Features: 334 (all validated, RIN/RFS now filled)
@@ -67,7 +67,7 @@ SELECT
     biodiesel_spread_vol,
     ethanol_spread_vol
   )
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE target_1m IS NOT NULL
   AND date >= '2020-01-01';  -- Filter to stable regime (post-COVID recovery)
 

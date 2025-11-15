@@ -4,8 +4,8 @@
 -- Solution: Forward-fill to Nov 5, 2025 using latest prices
 -- ============================================
 
--- Step 1: Extend production_training_data_1m
-INSERT INTO `cbi-v14.models_v4.production_training_data_1m`
+-- Step 1: Extend zl_training_prod_allhistory_1m
+INSERT INTO `cbi-v14.training.zl_training_prod_allhistory_1m`
 WITH new_dates AS (
   -- Get all dates after Sep 10 that need to be added
   SELECT DISTINCT DATE(time) as date
@@ -27,8 +27,8 @@ latest_prices AS (
 ),
 last_complete_row AS (
   -- Get the last complete row to forward-fill from
-  SELECT * FROM `cbi-v14.models_v4.production_training_data_1m`
-  WHERE date = (SELECT MAX(date) FROM `cbi-v14.models_v4.production_training_data_1m`)
+  SELECT * FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
+  WHERE date = (SELECT MAX(date) FROM `cbi-v14.training.zl_training_prod_allhistory_1m`)
   LIMIT 1
 )
 -- Create new rows with updated prices and forward-filled features
@@ -205,13 +205,13 @@ CROSS JOIN last_complete_row lcr;
 
 -- Verify the update
 SELECT 
-  'production_training_data_1m' as table_name,
+  'zl_training_prod_allhistory_1m' as table_name,
   MIN(date) as min_date,
   MAX(date) as max_date,
   COUNT(*) as total_rows,
   DATE_DIFF(MAX(date), MIN(date), DAY) + 1 as date_span,
   DATE_DIFF(CURRENT_DATE(), MAX(date), DAY) as days_behind
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date >= '2025-09-01';
 
 -- Repeat for other horizons (1w, 3m, 6m)

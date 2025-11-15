@@ -3,16 +3,30 @@
 Tree-Based Baselines - LightGBM DART, XGBoost DART
 Day 2, Track B: Train tree models for all 5 horizons
 M4 16GB Optimized: CPU-friendly, 8-10 threads
+Enhanced with M4 configs and evaluation pipeline
 """
 import os
+import sys
 import argparse
 import polars as pl
 import mlflow
 import numpy as np
 from datetime import datetime
+from pathlib import Path
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.model_selection import TimeSeriesSplit
+
+# Add src to path for imports
+# Correctly navigate up from src/training/baselines to the project root
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+from training.config.m4_config import (
+    LIGHTGBM_CONFIG, XGBOOST_CONFIG, get_config_for_model, EVALUATION_THRESHOLDS
+)
+from training.evaluation.metrics import (
+    comprehensive_evaluation, print_evaluation_summary, calculate_sharpe
+)
 
 # Environment setup
 EXTERNAL_DRIVE = os.getenv("EXTERNAL_DRIVE", "/Volumes/Satechi Hub")
@@ -35,50 +49,48 @@ def load_training_data(horizon, surface="prod"):
     return df
 
 def prepare_features(df, target_col):
-    """Prepare features for tree models"""
+    """Prepare features for tree models with walk-forward validation"""
     # Exclude target and date columns
     exclude_cols = ['date', target_col] + [col for col in df.columns if col.startswith('target_')]
     feature_cols = [col for col in df.columns if col not in exclude_cols]
     
+    # Sort by date for walk-forward split
+    if 'date' in df.columns:
+        df_sorted = df.sort('date')
+    else:
+        df_sorted = df
+    
+    # Walk-forward split: last 20% for validation
+    split_idx = int(len(df_sorted) * 0.8)
+    df_train = df_sorted[:split_idx]
+    df_val = df_sorted[split_idx:]
+    
     # Convert to numpy
-    X = df.select(feature_cols).to_numpy()
-    y = df[target_col].to_numpy()
+    X_train = df_train.select(feature_cols).to_numpy()
+    X_val = df_val.select(feature_cols).to_numpy()
+    y_train = df_train[target_col].to_numpy()
+    y_val = df_val[target_col].to_numpy()
     
-    # Split train/val (80/20)
-    split_idx = int(len(X) * 0.8)
-    X_train, X_val = X[:split_idx], X[split_idx:]
-    y_train, y_val = y[:split_idx], y[split_idx:]
-    
-    return X_train, X_val, y_train, y_val, feature_cols
+    return X_train, X_val, y_train, y_val, feature_cols, df_val
 
-def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
-    """Train LightGBM DART model"""
+def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir, df_val=None):
+    """Train LightGBM DART model with M4-optimized config"""
     print(f"\n{'='*60}")
     print(f"Training LightGBM DART for {horizon}")
     print(f"{'='*60}")
     
     with mlflow.start_run(run_name=f"lgbm_dart_{horizon}"):
-        # Parameters (optimized for M4 Mac)
-        params = {
-            'boosting_type': 'dart',
-            'objective': 'regression',
-            'metric': 'mape',
-            'num_leaves': 31,
-            'max_depth': 6,
-            'learning_rate': 0.05,
-            'n_estimators': 2000,
-            'num_threads': 8,  # M4 has 10 cores, leave 2 for OS
-            'verbose': -1
-        }
+        # Get M4-optimized config
+        config = get_config_for_model('lightgbm', horizon)
         
         # Log parameters
-        for k, v in params.items():
+        for k, v in config.items():
             mlflow.log_param(k, v)
         mlflow.log_param("model_type", "LightGBM_DART")
         mlflow.log_param("horizon", horizon)
         
         # Train
-        model = lgb.LGBMRegressor(**params)
+        model = lgb.LGBMRegressor(**config)
         model.fit(
             X_train, y_train,
             eval_set=[(X_val, y_val)],
@@ -89,7 +101,7 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
         train_pred = model.predict(X_train)
         val_pred = model.predict(X_val)
         
-        # Metrics
+        # Basic metrics
         train_mape = np.mean(np.abs((y_train - train_pred) / y_train)) * 100
         val_mape = np.mean(np.abs((y_val - val_pred) / y_val)) * 100
         
@@ -97,7 +109,40 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         mlflow.log_metric("n_estimators_used", model.n_estimators_)
         
-        # Save model (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
+        # Comprehensive evaluation if validation dataframe provided
+        if df_val is not None:
+            try:
+                # Add predictions to validation dataframe
+                df_eval = df_val.with_columns([
+                    pl.Series("y_pred", val_pred),
+                    pl.Series("y_true", y_val)
+                ])
+                
+                eval_results = comprehensive_evaluation(
+                    df_eval,
+                    y_true_col="y_true",
+                    y_pred_col="y_pred",
+                    horizon=horizon
+                )
+                
+                # Log regime-specific metrics
+                if 'by_regime' in eval_results:
+                    for regime, metrics in eval_results['by_regime'].items():
+                        mlflow.log_metric(f"mape_{regime}", metrics.get('mape', np.nan))
+                        if 'sharpe' in metrics:
+                            mlflow.log_metric(f"sharpe_{regime}", metrics['sharpe'])
+                
+                # Check against thresholds
+                target_mape = EVALUATION_THRESHOLDS['mape_max'].get(horizon, 10.0)
+                if val_mape <= target_mape:
+                    mlflow.log_param("meets_mape_threshold", True)
+                else:
+                    mlflow.log_param("meets_mape_threshold", False)
+                    print(f"   ⚠️  MAPE {val_mape:.2f}% exceeds threshold {target_mape:.2f}%")
+            except Exception as e:
+                print(f"   ⚠️  Comprehensive evaluation failed: {e}")
+        
+        # Save model
         os.makedirs(models_dir, exist_ok=True)
         model_subdir = f"{models_dir}/lightgbm_dart_v001"
         os.makedirs(model_subdir, exist_ok=True)
@@ -110,32 +155,24 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
         
         return model, val_mape
 
-def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
-    """Train XGBoost DART model"""
+def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir, df_val=None):
+    """Train XGBoost DART model with M4-optimized config"""
     print(f"\n{'='*60}")
     print(f"Training XGBoost DART for {horizon}")
     print(f"{'='*60}")
     
     with mlflow.start_run(run_name=f"xgb_dart_{horizon}"):
-        # Parameters
-        params = {
-            'booster': 'dart',
-            'objective': 'reg:squarederror',
-            'max_depth': 8,
-            'learning_rate': 0.03,
-            'n_estimators': 2000,
-            'tree_method': 'hist',  # Fast histogram method
-            'n_jobs': 8
-        }
+        # Get M4-optimized config
+        config = get_config_for_model('xgboost', horizon)
         
         # Log parameters
-        for k, v in params.items():
+        for k, v in config.items():
             mlflow.log_param(k, v)
         mlflow.log_param("model_type", "XGBoost_DART")
         mlflow.log_param("horizon", horizon)
         
         # Train
-        model = xgb.XGBRegressor(**params)
+        model = xgb.XGBRegressor(**config)
         model.fit(
             X_train, y_train,
             eval_set=[(X_val, y_val)],
@@ -147,7 +184,7 @@ def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
         train_pred = model.predict(X_train)
         val_pred = model.predict(X_val)
         
-        # Metrics
+        # Basic metrics
         train_mape = np.mean(np.abs((y_train - train_pred) / y_train)) * 100
         val_mape = np.mean(np.abs((y_val - val_pred) / y_val)) * 100
         
@@ -155,7 +192,30 @@ def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         mlflow.log_metric("best_iteration", model.best_iteration)
         
-        # Save model (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
+        # Comprehensive evaluation if validation dataframe provided
+        if df_val is not None:
+            try:
+                df_eval = df_val.with_columns([
+                    pl.Series("y_pred", val_pred),
+                    pl.Series("y_true", y_val)
+                ])
+                
+                eval_results = comprehensive_evaluation(
+                    df_eval,
+                    y_true_col="y_true",
+                    y_pred_col="y_pred",
+                    horizon=horizon
+                )
+                
+                if 'by_regime' in eval_results:
+                    for regime, metrics in eval_results['by_regime'].items():
+                        mlflow.log_metric(f"mape_{regime}", metrics.get('mape', np.nan))
+                        if 'sharpe' in metrics:
+                            mlflow.log_metric(f"sharpe_{regime}", metrics['sharpe'])
+            except Exception as e:
+                print(f"   ⚠️  Comprehensive evaluation failed: {e}")
+        
+        # Save model
         model_subdir = f"{models_dir}/xgboost_dart_v001"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
@@ -192,7 +252,7 @@ def main():
     
     # Load data
     df = load_training_data(horizon, surface)
-    X_train, X_val, y_train, y_val, feature_cols = prepare_features(df, target_col)
+    X_train, X_val, y_train, y_val, feature_cols, df_val = prepare_features(df, target_col)
     
     print(f"📊 Data prepared:")
     print(f"   Training: {len(X_train)} samples × {len(feature_cols)} features")
@@ -203,15 +263,23 @@ def main():
     results = {}
     
     try:
-        _, results['lgbm_dart'] = train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir)
+        _, results['lgbm_dart'] = train_lightgbm_dart(
+            X_train, X_val, y_train, y_val, horizon, models_dir, df_val
+        )
     except Exception as e:
         print(f"❌ LightGBM DART failed: {e}")
+        import traceback
+        traceback.print_exc()
         results['lgbm_dart'] = None
     
     try:
-        _, results['xgb_dart'] = train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir)
+        _, results['xgb_dart'] = train_xgboost_dart(
+            X_train, X_val, y_train, y_val, horizon, models_dir, df_val
+        )
     except Exception as e:
         print(f"❌ XGBoost DART failed: {e}")
+        import traceback
+        traceback.print_exc()
         results['xgb_dart'] = None
     
     # Summary
@@ -226,7 +294,7 @@ def main():
             print(f"❌ {model_name:20s}: FAILED")
     
     if any(v is not None for v in results.values()):
-        best_model = min((k, v) for k, v in results.items() if v is not None, key=lambda x: x[1])
+        best_model = min((item for item in results.items() if item[1] is not None), key=lambda x: x[1])
         print(f"\n🏆 Best model: {best_model[0]} (MAPE = {best_model[1]:.2f}%)")
     
     print("="*80)

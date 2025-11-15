@@ -110,7 +110,7 @@ def process_article_numeric_only(url: str, source_name: str, category: str, clie
             )
         )
 
-    econ_loaded, econ_err = load_records(client, f"{PROJECT_ID}.forecasting_data_warehouse.economic_indicators", econ_records)
+    econ_loaded, econ_err = load_records(client, f"{PROJECT_ID}.raw_intelligence.macro_economic_indicators", econ_records)
     result["numeric"] = econ_loaded
     if econ_err:
         result["error"] = econ_err

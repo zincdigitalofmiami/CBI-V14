@@ -5,7 +5,7 @@
 -- ============================================
 
 -- Step 1: Update social sentiment features
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   social_sentiment_avg = s.social_sentiment_avg,
   social_sentiment_volatility = s.social_sentiment_volatility,
@@ -19,7 +19,7 @@ WHERE t.date = s.date
   AND t.date > '2025-09-10';
 
 -- Step 2: Update news sentiment features
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   news_sentiment_avg = n.news_sentiment_avg,
   news_article_count = n.news_article_count,
@@ -31,7 +31,7 @@ WHERE t.date = n.date
   AND t.date > '2025-09-10';
 
 -- Step 3: Update Trump policy features
-UPDATE `cbi-v14.models_v4.production_training_data_1m` t
+UPDATE `cbi-v14.training.zl_training_prod_allhistory_1m` t
 SET 
   trump_policy_events = tp.trump_policy_events,
   trump_policy_impact_avg = tp.trump_policy_impact_avg,
@@ -54,7 +54,7 @@ SELECT
   COUNT(CASE WHEN trump_policy_impact_max IS NOT NULL THEN 1 END) as has_trump_policy,
   MIN(date) as earliest,
   MAX(date) as latest
-FROM `cbi-v14.models_v4.production_training_data_1m`
+FROM `cbi-v14.training.zl_training_prod_allhistory_1m`
 WHERE date > '2025-09-10';
 
 
