@@ -112,7 +112,9 @@ training.zl_training_full_allhistory_6m
 training.zl_training_full_allhistory_12m
 ```
 
-**OPTIONAL REGIME-SPECIFIC TABLES:**
+**TOTAL MANDATORY TRAINING TABLES: 15 (10 primary + 5 regime)**
+
+**MANDATORY REGIME-SPECIFIC TABLES (5):**
 ```
 training.zl_training_full_crisis_all
 training.zl_training_full_precrisis_all
@@ -120,6 +122,8 @@ training.zl_training_full_recovery_all
 training.zl_training_full_tradewar_all
 training.zl_training_prod_trump_all
 ```
+
+**Note:** These regime tables are REQUIRED - we use ALL regime data for training and analysis.
 
 **SUPPORT TABLES:**
 ```
@@ -227,6 +231,13 @@ Models/local/horizon_1w/full/advanced/lstm_attention_v2/
 Models/local/horizon_3m/prod/ensemble/weighted_v1/
 ```
 
+**Model Versioning (`_v{ver}`):**
+- `v1`, `v2`, `v3`, etc. = Model version number
+- Increment when you retrain with different hyperparameters, features, or architecture
+- Allows multiple model versions to coexist for comparison
+- Example: `lightgbm_v1` (first version), `lightgbm_v2` (improved hyperparameters), `lightgbm_v3` (new features)
+- This is NOT optional - every model MUST have a version number
+
 **Required Artifacts in Each Model Directory:**
 - `model.keras` or `model.bin` or `model.pkl` (model file)
 - `columns_used.txt` (feature list in order)
@@ -238,16 +249,45 @@ Models/local/horizon_3m/prod/ensemble/weighted_v1/
 
 ## Dataset Organization (FROZEN)
 
-### Primary Datasets
+### Primary Datasets (Location: US - Multi-region)
 ```
-cbi-v14.training           ← All training data (primary + regime variants)
-cbi-v14.raw_intelligence   ← All raw ingested data
-cbi-v14.features           ← Engineered features (mostly views)
-cbi-v14.predictions        ← Model outputs
-cbi-v14.monitoring         ← Data quality, model performance
-cbi-v14.performance        ← MAPE/Sharpe tracking
-cbi-v14.archive            ← Legacy/historical snapshots
+cbi-v14.training           ← All training data (primary + regime variants) [US]
+cbi-v14.raw_intelligence   ← All raw ingested data [US]
+cbi-v14.features           ← Engineered features (mostly views) [US]
+cbi-v14.predictions        ← Model outputs [US]
+cbi-v14.monitoring         ← Data quality, model performance [US]
+cbi-v14.archive            ← Legacy/historical snapshots [US]
 ```
+
+**Dataset Location Summary (Verified November 15, 2025):**
+
+**US (Multi-region) - Primary Production Datasets:**
+- `training` - All training data
+- `raw_intelligence` - All raw ingested data
+- `features` - Engineered features
+- `predictions` - Model outputs
+- `monitoring` - Data quality, model performance
+- `archive` - Legacy/historical snapshots
+- `dashboard` - Dashboard data
+- `market_data` - Market data
+- `model_backups_oct27` - Model backups
+- `models_v5` - Models v5
+- `vegas_intelligence` - Sales dashboard data
+- `weather` - Weather data
+
+**us-central1 (Single region) - Supporting/Legacy Datasets:**
+- `api` - API-facing views
+- `performance` - MAPE/Sharpe tracking
+- `forecasting_data_warehouse` - LEGACY warehouse
+- `models_v4` - LEGACY models
+- `signals` - Pre-calculated signals
+- `neural` - Neural network features
+- `staging` - Staging data
+- `curated` - Curated data
+- `yahoo_finance_comprehensive` - Yahoo Finance data
+- And 10+ other legacy/supporting datasets
+
+**Answer:** Most production datasets are in **US** (multi-region). Legacy and supporting datasets are in **us-central1** (single region).
 
 ### Supporting Datasets
 ```
