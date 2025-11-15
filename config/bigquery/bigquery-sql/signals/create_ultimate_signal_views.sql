@@ -287,69 +287,103 @@ WHERE p.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR);
 -- ============================================================================
 CREATE OR REPLACE VIEW `cbi-v14.api.vw_ultimate_adaptive_signal` AS
 WITH latest_signals AS (
-  SELECT *
-  FROM `cbi-v14.signals.vw_comprehensive_signal_universe`
-  WHERE date = (SELECT MAX(date) FROM `cbi-v14.signals.vw_comprehensive_signal_universe`)
-),
-forecasts AS (
   SELECT 
-    zl_price as current_price,
-    
-    -- Simple forecast based on signals (replace with ML model later)
-    zl_price * (1 + 
-      CASE 
-        WHEN regime = 'VIX_CRISIS' THEN -0.05
-        WHEN regime = 'HARVEST_CRISIS' THEN 0.08
-        WHEN regime = 'CHINA_CRISIS' THEN -0.03
-        WHEN regime = 'TARIFF_CRISIS' THEN -0.04
-        ELSE zl_return_5d
-      END
-    ) as forecast_1w,
-    
-    zl_price * (1 + 
-      CASE 
-        WHEN regime = 'VIX_CRISIS' THEN -0.08
-        WHEN regime = 'HARVEST_CRISIS' THEN 0.15
-        WHEN regime = 'CHINA_CRISIS' THEN -0.05
-        WHEN regime = 'TARIFF_CRISIS' THEN -0.06
-        ELSE zl_return_20d
-      END
-    ) as forecast_1m,
-    
-    -- Trading recommendation
+    s.*,
+    det.feature_labor_stress,
+    det.vix_override_flag,
+    det.harvest_override_flag,
+    det.china_override_flag,
+    det.tariff_override_flag,
+    det.labor_override_flag,
+    det.primary_signal_driver,
+    det.master_regime_classification,
+    det.crisis_intensity_score
+  FROM `cbi-v14.signals.vw_comprehensive_signal_universe` AS s
+  LEFT JOIN `cbi-v14.neural.vw_chris_priority_regime_detector` det
+    ON s.date = det.signal_date
+  WHERE s.date = (SELECT MAX(date) FROM `cbi-v14.signals.vw_comprehensive_signal_universe`)
+),
+mape AS (
+  SELECT 
+    overall_mape_1week,
+    crisis_mape_1week,
+    normal_mape_1week,
+    mape_trend_ratio
+  FROM `cbi-v14.performance.vw_forecast_performance_tracking`
+),
+sharpe AS (
+  SELECT
+    seasonal_adjusted_sharpe_1week,
     CASE 
-      WHEN crisis_intensity > 75 AND primary_driver = 'HARVEST' THEN 'STRONG_BUY'
-      WHEN crisis_intensity > 75 AND primary_driver IN ('VIX', 'TARIFF') THEN 'SELL'
-      WHEN zl_return_5d > 0.03 AND zl_volatility < 0.02 THEN 'BUY'
-      WHEN zl_return_5d < -0.03 THEN 'SELL'
-      ELSE 'HOLD'
-    END as recommendation,
-    
-    -- Confidence based on data availability
-    CASE 
-      WHEN vix_current IS NOT NULL AND harvest_pace_signal IS NOT NULL THEN 'HIGH'
-      WHEN vix_current IS NOT NULL OR harvest_pace_signal IS NOT NULL THEN 'MEDIUM'
-      ELSE 'LOW'
-    END as confidence
-    
-  FROM latest_signals
+      WHEN crisis_sharpe_1week IS NOT NULL THEN crisis_sharpe_1week
+      ELSE normal_sharpe_1week
+    END AS regime_sharpe_1week,
+    weather_driven_sharpe_1week,
+    labor_sharpe_1week,
+    cumulative_return,
+    max_drawdown,
+    calmar_ratio,
+    win_rate,
+    profit_factor,
+    best_seasonal_period
+  FROM `cbi-v14.performance.vw_soybean_sharpe_metrics`
 )
-SELECT 
-  current_price,
-  ROUND(forecast_1w, 2) as forecast_1week,
-  ROUND(forecast_1m, 2) as forecast_1month,
-  ROUND(forecast_1m * 1.1, 2) as forecast_3month,
-  ROUND(forecast_1m * 1.2, 2) as forecast_6month,
-  vix_current as vix_level,
-  ROUND(vix_stress_ratio, 2) as vix_stress,
-  ROUND(harvest_pace_signal, 2) as harvest_pace,
-  ROUND(china_relations_signal, 2) as china_tension,
-  ROUND(tariff_threat_signal, 2) as tariff_threat,
-  regime as market_regime,
-  ROUND(crisis_intensity, 0) as crisis_score,
-  primary_driver,
-  recommendation,
-  confidence,
-  CURRENT_TIMESTAMP() as signal_timestamp
-FROM latest_signals
-CROSS JOIN forecasts;
+SELECT
+  ls.date AS signal_date,
+  ls.zl_price AS current_price,
+  ROUND(ls.zl_price * (1 + COALESCE(ls.zl_return_5d, 0)), 2)  AS forecast_1week,
+  ROUND(ls.zl_price * (1 + COALESCE(ls.zl_return_20d, 0)), 2) AS forecast_1month,
+  ROUND(ls.zl_price * (1 + COALESCE(ls.zl_return_20d, 0) * 3), 2) AS forecast_3month,
+  ROUND(ls.zl_price * (1 + COALESCE(ls.zl_return_20d, 0) * 6), 2) AS forecast_6month,
+  ROUND(ls.zl_price * (1 + COALESCE(ls.zl_return_20d, 0) * 12), 2) AS forecast_12month,
+  ls.vix_current AS vix_level,
+  ROUND(ls.feature_vix_stress, 3)         AS vix_stress,
+  ROUND(ls.feature_harvest_pace, 3)       AS harvest_pace,
+  ROUND(ls.feature_china_relations, 3)    AS china_relations,
+  ROUND(ls.feature_tariff_probability, 3) AS tariff_threat,
+  ROUND(ls.feature_geopolitical_volatility, 3) AS geopolitical_volatility,
+  ROUND(ls.feature_biofuel_cascade, 3)    AS biofuel_impact,
+  ROUND(ls.feature_hidden_correlation, 3) AS hidden_correlation,
+  ROUND(ls.feature_labor_stress, 3)       AS labor_stress,
+  ls.vix_override_flag,
+  ls.harvest_override_flag,
+  ls.china_override_flag,
+  ls.tariff_override_flag,
+  ls.labor_override_flag,
+  ls.primary_signal_driver,
+  ls.master_regime_classification,
+  ls.crisis_intensity_score,
+  CASE 
+    WHEN ls.crisis_intensity_score > 75 AND ls.primary_signal_driver = 'HARVEST' THEN 'STRONG_BUY'
+    WHEN ls.crisis_intensity_score > 75 AND ls.primary_signal_driver IN ('VIX', 'LABOR', 'TARIFF') THEN 'SELL'
+    WHEN COALESCE(ls.zl_return_5d,0) > 0.03 AND COALESCE(ls.zl_volatility,0) < 0.02 THEN 'BUY'
+    WHEN COALESCE(ls.zl_return_5d,0) < -0.03 THEN 'SELL'
+    ELSE 'HOLD'
+  END AS trading_recommendation,
+  CASE
+    WHEN ls.vix_override_flag OR ls.harvest_override_flag THEN 'HIGH'
+    WHEN ls.china_override_flag OR ls.tariff_override_flag OR ls.labor_override_flag THEN 'MEDIUM'
+    ELSE 'LOW'
+  END AS confidence,
+  ROUND(mape.overall_mape_1week, 1) AS overall_mape_1week,
+  ROUND(
+    CASE
+      WHEN ls.master_regime_classification LIKE '%CRISIS%' THEN mape.crisis_mape_1week
+      ELSE mape.normal_mape_1week
+    END, 1
+  ) AS relevant_regime_mape,
+  ROUND(mape.mape_trend_ratio, 2) AS mape_trend_ratio,
+  ROUND(sharpe.seasonal_adjusted_sharpe_1week, 2) AS soybean_adjusted_sharpe,
+  ROUND(sharpe.regime_sharpe_1week, 2)           AS soybean_regime_sharpe,
+  ROUND(sharpe.weather_driven_sharpe_1week, 2)   AS weather_driven_sharpe,
+  ROUND(COALESCE(sharpe.labor_sharpe_1week, 0), 2) AS labor_driven_sharpe,
+  ROUND(sharpe.cumulative_return * 100, 1)       AS soybean_strategy_return_pct,
+  ROUND(sharpe.max_drawdown * 100, 1)            AS max_drawdown_pct,
+  ROUND(sharpe.calmar_ratio, 2)                  AS calmar_ratio,
+  ROUND(sharpe.win_rate * 100, 1)                AS win_rate_pct,
+  ROUND(sharpe.profit_factor, 2)                 AS soybean_profit_factor,
+  sharpe.best_seasonal_period,
+  CURRENT_TIMESTAMP() AS signal_timestamp
+FROM latest_signals ls
+CROSS JOIN mape
+CROSS JOIN sharpe;

@@ -79,9 +79,9 @@ combined AS (
     
     -- Primary driver detection
     CASE
-      WHEN ABS(p.return_5d) > 0.05 AND v.vix_level > 25 THEN 'VOLATILITY'
+      WHEN ABS(p.return_5d) > 0.05 AND v.vix_level > 25 THEN 'VIX'
       WHEN p.return_5d > 0.03 AND p.volatility_20d < 0.15 THEN 'FUNDAMENTAL'
-      WHEN p.return_5d < -0.03 AND v.vix_level > 20 THEN 'RISK_OFF'
+      WHEN p.return_5d < -0.03 AND v.vix_level > 20 THEN 'VIX'
       WHEN EXTRACT(MONTH FROM p.signal_date) IN (9,10,11) THEN 'HARVEST'
       WHEN EXTRACT(MONTH FROM p.signal_date) IN (3,4,5) THEN 'PLANTING'
       ELSE 'FUNDAMENTAL'
@@ -102,9 +102,37 @@ combined AS (
   LEFT JOIN vix_data v ON p.signal_date = v.date
   LEFT JOIN regime_map rm ON p.signal_date = rm.date
 )
-SELECT * FROM combined
-WHERE signal_date IS NOT NULL
-ORDER BY signal_date DESC;
+priority AS (
+  SELECT *
+  FROM `cbi-v14.neural.vw_chris_priority_regime_detector`
+)
+SELECT 
+  c.signal_date,
+  c.date,
+  c.zl_price_current,
+  c.nn_forecast_1week,
+  c.nn_forecast_1month,
+  c.nn_forecast_3month,
+  CASE 
+    WHEN COALESCE(pdet.labor_override_flag, FALSE) THEN 'LABOR_STRESS_REGIME'
+    ELSE c.master_regime_classification
+  END AS master_regime_classification,
+  c.crisis_intensity_score,
+  COALESCE(pdet.feature_labor_stress, 0.0) AS feature_labor_stress,
+  CASE
+    WHEN COALESCE(pdet.labor_override_flag, FALSE) THEN 'LABOR'
+    ELSE c.primary_signal_driver
+  END AS primary_signal_driver,
+  COALESCE(pdet.vix_override_flag, FALSE) AS vix_override_flag,
+  COALESCE(pdet.harvest_override_flag, FALSE) AS harvest_override_flag,
+  COALESCE(pdet.china_override_flag, FALSE) AS china_override_flag,
+  COALESCE(pdet.tariff_override_flag, FALSE) AS tariff_override_flag,
+  COALESCE(pdet.labor_override_flag, FALSE) AS labor_override_flag
+FROM combined c
+LEFT JOIN priority pdet
+  ON c.signal_date = pdet.signal_date
+WHERE c.signal_date IS NOT NULL
+ORDER BY c.signal_date DESC;
 
 -- ----------------------------------------------------------------------------
 -- 0B. Create Risk-Free Rates Table (SIMPLIFIED)

@@ -63,6 +63,16 @@
 ✅ trade_china_soybean_imports
 ```
 
+## Big 8 Pillars (Regime Override Spine)
+- VIX stress (volatility shocks)
+- South America harvest pace (supply fundamentals)
+- China relations stress (trade dynamics)
+- Tariff threat (policy risk)
+- ICE / Labor disruption (enforcement and chokepoint risk)
+- Geopolitical volatility (non-tariff political shocks)
+- Biofuel policy impact (RFS, LCFS, SAF demand swings)
+- Hidden correlation cluster (substitution, logistics, cross-asset linkages)
+
 **Pattern Match:** 100% of current tables follow Option 3 pattern
 
 ---
@@ -214,7 +224,7 @@ TrainingData/exports/zl_training_full_allhistory_12m.parquet
 ### Pattern 5: Model Save Paths (MANDATORY)
 
 ```
-Models/local/horizon_{h}/{scope}/{family}/{model}_v{ver}/
+Models/local/horizon_{h}/{scope}/{family}/{model}/
 ```
 
 **Components (FIXED):**
@@ -222,21 +232,19 @@ Models/local/horizon_{h}/{scope}/{family}/{model}_v{ver}/
 - `scope`: `prod` | `full`
 - `family`: `baselines` | `advanced` | `ensemble` | `regime`
 - `model`: `lightgbm` | `lstm` | `xgboost` | etc.
-- `ver`: `1` | `2` | `3` | etc.
 
 **Examples:**
 ```
-Models/local/horizon_1m/prod/baselines/lightgbm_v1/
-Models/local/horizon_1w/full/advanced/lstm_attention_v2/
-Models/local/horizon_3m/prod/ensemble/weighted_v1/
+Models/local/horizon_1m/prod/baselines/lightgbm/        ← first training run (no version)
+Models/local/horizon_1w/full/advanced/lstm_attention/  ← first training run (no version)
+Models/local/horizon_3m/prod/ensemble/weighted_v2/     ← second training run (retrain)
 ```
 
-**Model Versioning (`_v{ver}`):**
-- `v1`, `v2`, `v3`, etc. = Model version number
-- Increment when you retrain with different hyperparameters, features, or architecture
-- Allows multiple model versions to coexist for comparison
-- Example: `lightgbm_v1` (first version), `lightgbm_v2` (improved hyperparameters), `lightgbm_v3` (new features)
-- This is NOT optional - every model MUST have a version number
+**Model Versioning (when retraining):**
+- First training run: **NO version suffix** (only `/model/`)
+- Subsequent retraining: append `_v2`, `_v3`, etc. to the model directory
+- Example: second run → `lightgbm_v2/`; third run → `lightgbm_v3/`
+- Only use version suffixes after a successful prior training run
 
 **Required Artifacts in Each Model Directory:**
 - `model.keras` or `model.bin` or `model.pkl` (model file)
@@ -249,19 +257,19 @@ Models/local/horizon_3m/prod/ensemble/weighted_v1/
 
 ## Dataset Organization (FROZEN)
 
-### Primary Datasets (Location: US - Multi-region)
+### Primary Datasets (Location: us-central1 - single region)
 ```
-cbi-v14.training           ← All training data (primary + regime variants) [US]
-cbi-v14.raw_intelligence   ← All raw ingested data [US]
-cbi-v14.features           ← Engineered features (mostly views) [US]
-cbi-v14.predictions        ← Model outputs [US]
-cbi-v14.monitoring         ← Data quality, model performance [US]
-cbi-v14.archive            ← Legacy/historical snapshots [US]
+cbi-v14.training           ← All training data (primary + regime variants) [us-central1]
+cbi-v14.raw_intelligence   ← All raw ingested data [us-central1]
+cbi-v14.features           ← Engineered features (mostly views) [us-central1]
+cbi-v14.predictions        ← Model outputs [us-central1]
+cbi-v14.monitoring         ← Data quality, model performance [us-central1]
+cbi-v14.archive            ← Legacy/historical snapshots [us-central1]
 ```
 
-**Dataset Location Summary (Verified November 15, 2025):**
+**Dataset Location Summary (Migration to us-central1 verified November 15, 2025):**
 
-**US (Multi-region) - Primary Production Datasets:**
+**us-central1 (Single region) - Primary Production Datasets:**
 - `training` - All training data
 - `raw_intelligence` - All raw ingested data
 - `features` - Engineered features
@@ -275,7 +283,7 @@ cbi-v14.archive            ← Legacy/historical snapshots [US]
 - `vegas_intelligence` - Sales dashboard data
 - `weather` - Weather data
 
-**us-central1 (Single region) - Supporting/Legacy Datasets:**
+**us-central1 (Single region) - Supporting/Legacy Datasets (unchanged):**
 - `api` - API-facing views
 - `performance` - MAPE/Sharpe tracking
 - `forecasting_data_warehouse` - LEGACY warehouse
@@ -287,7 +295,7 @@ cbi-v14.archive            ← Legacy/historical snapshots [US]
 - `yahoo_finance_comprehensive` - Yahoo Finance data
 - And 10+ other legacy/supporting datasets
 
-**Answer:** Most production datasets are in **US** (multi-region). Legacy and supporting datasets are in **us-central1** (single region).
+**Answer:** All primary datasets now reside in **us-central1** (single region). Legacy/supporting datasets remain in **us-central1**. Migration from `US` multi-region completed due to recent breach response.
 
 ### Supporting Datasets
 ```
@@ -467,8 +475,9 @@ soybean_oil_prices                     ❌ Should be: commodity_soybean_oil_pric
 
 ### When Saving Models
 ```
-✅ DO:    Models/local/horizon_1m/prod/baselines/lightgbm_v1/
-❌ DON'T: Models/local/baselines/1m_prod_lightgbm_v1/
+✅ DO:    Models/local/horizon_1m/prod/baselines/lightgbm/
+❌ DON'T: Models/local/baselines/1m_prod_lightgbm/
+🛈 When retraining, append version suffix: `lightgbm_v2/`, `lightgbm_v3/`, etc.
 ❌ DON'T: Models/local/production_1m/lightgbm/
 ```
 

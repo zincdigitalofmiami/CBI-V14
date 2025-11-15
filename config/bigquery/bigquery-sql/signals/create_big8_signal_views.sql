@@ -507,3 +507,55 @@ SELECT
     
     CURRENT_TIMESTAMP() as updated_at
 FROM regime_calc;
+
+-- ============================================================================
+-- PRIORITY REGIME DETECTOR (Big 4 + Labor)
+-- ============================================================================
+CREATE OR REPLACE VIEW `cbi-v14.neural.vw_chris_priority_regime_detector` AS
+WITH base_signals AS (
+  SELECT
+    signal_date,
+    COALESCE(feature_vix_stress, 0.0) AS feature_vix_stress,
+    COALESCE(feature_harvest_pace, 0.0) AS feature_harvest_pace,
+    COALESCE(feature_china_relations, 0.0) AS feature_china_relations,
+    COALESCE(feature_tariff_probability, 0.0) AS feature_tariff_probability,
+    COALESCE(ice_labor_shortage_risk_score, 0.0) AS feature_labor_stress,
+    COALESCE(feature_geopolitical_volatility, 0.0) AS feature_geopolitical_volatility,
+    COALESCE(feature_biofuel_cascade, 0.0) AS feature_biofuel_cascade,
+    COALESCE(feature_hidden_correlation, 0.0) AS feature_hidden_correlation,
+    master_regime_classification,
+    crisis_intensity_score
+  FROM `cbi-v14.signals.vw_comprehensive_signal_universe`
+)
+SELECT
+  signal_date,
+  feature_vix_stress,
+  feature_harvest_pace,
+  feature_china_relations,
+  feature_tariff_probability,
+  feature_labor_stress,
+  -- Override flags for attribution and Sharpe slices
+  (feature_vix_stress > 1.5) AS vix_override_flag,
+  (feature_harvest_pace < 0.8) AS harvest_override_flag,
+  (feature_china_relations > 0.8) AS china_override_flag,
+  (feature_tariff_probability > 0.8) AS tariff_override_flag,
+  (feature_labor_stress > 0.7) AS labor_override_flag,
+  -- Primary driver preference order (labor elevated ahead of seasonal drivers)
+  CASE
+    WHEN feature_labor_stress > 0.7 THEN 'LABOR'
+    WHEN feature_vix_stress > 1.5 THEN 'VIX'
+    WHEN feature_harvest_pace < 0.8 THEN 'HARVEST'
+    WHEN feature_china_relations > 0.8 THEN 'CHINA'
+    WHEN feature_tariff_probability > 0.8 THEN 'TARIFF'
+    WHEN feature_geopolitical_volatility > 0.8 THEN 'GEOPOLITICAL'
+    WHEN feature_biofuel_cascade > 0.8 THEN 'BIOFUEL'
+    WHEN ABS(feature_hidden_correlation) > 0.8 THEN 'HIDDEN_CORRELATION'
+    ELSE 'BALANCED'
+  END AS primary_signal_driver,
+  CASE
+    WHEN feature_labor_stress > 0.7 THEN 'LABOR_STRESS_REGIME'
+    ELSE master_regime_classification
+  END AS master_regime_classification,
+  crisis_intensity_score
+FROM base_signals
+WHERE signal_date IS NOT NULL;

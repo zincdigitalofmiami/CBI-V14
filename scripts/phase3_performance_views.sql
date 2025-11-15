@@ -18,7 +18,8 @@ WITH trading_signals AS (
     zl_price_current,
     master_regime_classification,
     crisis_intensity_score,
-    primary_signal_driver
+    primary_signal_driver,
+    labor_override_flag
   FROM `cbi-v14.api.vw_ultimate_adaptive_signal_historical`
   WHERE signal_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY) AND CURRENT_DATE()
 ),
@@ -67,6 +68,7 @@ signal_returns AS (
     t.master_regime_classification,
     t.crisis_intensity_score,
     t.primary_signal_driver,
+    t.labor_override_flag,
     
     -- Position direction based on recommendation
     CASE 
@@ -174,6 +176,15 @@ sharpe_calculations AS (
       SQRT(COUNTIF(primary_signal_driver LIKE '%harvest%' 
         OR primary_signal_driver LIKE '%weather%'
         OR primary_signal_driver LIKE '%HARVEST%')) AS weather_driven_sharpe_1week,
+
+    -- Labor-driven Sharpe
+    (AVG(CASE 
+      WHEN labor_override_flag THEN strategy_return_1week
+    END) - (SELECT avg_rf FROM risk_free)) /
+      NULLIF(STDDEV(CASE
+        WHEN labor_override_flag THEN strategy_return_1week
+      END), 0) *
+      SQRT(COUNTIF(labor_override_flag)) AS labor_sharpe_1week,
     
     -- Seasonal event Sharpe
     (AVG(CASE 
@@ -256,6 +267,7 @@ SELECT
   s.crisis_sharpe_1week,
   s.normal_sharpe_1week,
   s.weather_driven_sharpe_1week,
+  s.labor_sharpe_1week,
   s.seasonal_event_sharpe_1week,
   s.recent_sharpe_1week,
   st.sharpe_trend_ratio,
