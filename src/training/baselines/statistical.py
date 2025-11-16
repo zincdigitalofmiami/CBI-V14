@@ -80,7 +80,7 @@ def train_arima(train, val, target_col, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         
         # Save model (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
-        model_subdir = f"{models_dir}/arima_v001"
+        model_subdir = f"{models_dir}/arima"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         import pickle
@@ -127,7 +127,7 @@ def train_auto_arima(train, val, target_col, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         
         # Save model (new structure)
-        model_subdir = f"{models_dir}/auto_arima_v001"
+        model_subdir = f"{models_dir}/auto_arima"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         import pickle
@@ -180,7 +180,7 @@ def train_prophet(train, val, target_col, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         
         # Save model (new structure)
-        model_subdir = f"{models_dir}/prophet_v001"
+        model_subdir = f"{models_dir}/prophet"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         import pickle
@@ -225,7 +225,7 @@ def train_exponential_smoothing(train, val, target_col, horizon, models_dir):
         mlflow.log_metric("val_mape", val_mape)
         
         # Save model (new structure)
-        model_subdir = f"{models_dir}/exp_smoothing_v001"
+        model_subdir = f"{models_dir}/exp_smoothing"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         import pickle

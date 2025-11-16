@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 ENSO Climate Data Ingestion
 Pulls El Niño Southern Oscillation data for weather forecasting
@@ -158,11 +166,11 @@ class ENSOClimateCollector:
             'Neutral': {'Neutral': 0.4, 'El Niño': 0.3, 'La Niña': 0.3}
         }
 
-        import random
-        random.seed(hash(current_phase + str(datetime.now().date())))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(current_phase + str(datetime.now().date()))) # NO RANDOM SEEDS
         transition_probs = transitions.get(current_phase, transitions['Neutral'])
 
-        rand = random.random()
+# REMOVED:         rand = random.random() # NO FAKE DATA
         cumulative = 0
         for phase, prob in transition_probs.items():
             cumulative += prob

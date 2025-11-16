@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 COMPREHENSIVE DATA ACQUISITION SYSTEM
 Pull EVERYTHING from ALL sources - no shortcuts!
@@ -9,7 +17,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 import time
-import random
+# REMOVED: import random # NO FAKE DATA
 from google.cloud import bigquery
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -154,7 +162,7 @@ SOURCES = {
     'social_twitter': {
         'weight': 0.04,
         'sources': [
-            # Twitter requires API access - placeholder for manual addition
+# REMOVED:             # Twitter requires API access - placeholder for manual addition # NO FAKE DATA
             ('twitter_api', 'Twitter Agriculture', 'api'),
             ('twitter_api', 'Twitter Commodities', 'api'),
         ]
@@ -282,7 +290,7 @@ def extract_full_content_aggressive(url: str, source_type: str) -> str:
     """Aggressively extract content based on source type"""
     try:
         headers = {
-            'User-Agent': random.choice([
+# REMOVED:             'User-Agent': random.choice([ # NO FAKE DATA
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
@@ -295,9 +303,9 @@ def extract_full_content_aggressive(url: str, source_type: str) -> str:
         
         # Add delay for premium sources
         if source_type == 'premium':
-            time.sleep(random.uniform(3, 7))
+# REMOVED:             time.sleep(random.uniform(3, 7)) # NO FAKE DATA
         else:
-            time.sleep(random.uniform(0.5, 2))
+# REMOVED:             time.sleep(random.uniform(0.5, 2)) # NO FAKE DATA
         
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')

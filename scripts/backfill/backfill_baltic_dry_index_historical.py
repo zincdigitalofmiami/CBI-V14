@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 Baltic Dry Index Historical Backfill
 =====================================
@@ -87,7 +95,7 @@ def fetch_bdi_from_alternative_sources(start_date: str, end_date: str) -> Option
         # Try Yahoo Finance
         import yfinance as yf
         # BDI doesn't have a direct ticker, but we can try
-        # This is a placeholder - actual implementation would need research
+# REMOVED:         # This is a placeholder - actual implementation would need research # NO FAKE DATA
         
         logger.warning("⚠️  Alternative BDI sources not fully implemented")
         return None

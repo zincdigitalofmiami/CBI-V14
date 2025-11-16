@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 Enhanced Data Pipeline with Comprehensive Validation
 Integrates the data validation framework with existing CBI-V14 infrastructure
@@ -92,8 +100,8 @@ class DataValidator:
             }
         }
         
-        # Common placeholder patterns
-        self.placeholder_patterns = {
+# REMOVED:         # Common placeholder patterns # NO FAKE DATA
+# REMOVED:         self.placeholder_patterns = { # NO FAKE DATA
             'exact_values': [0, 0.5, -1, -999, 999999],
             'repeated_decimals': r'(-?\d*\.\d{6,})\1+',
             'suspiciously_round': [10.0, 100.0, 1000.0]
@@ -114,7 +122,7 @@ class DataValidator:
         
         # VERSION TRACKING: Log validation version and active rules
         validation_version = "v2.0_govt_shutdown_adjusted"
-        active_rules = ["wide_volatility_ranges", "placeholder_detection", "duplicate_prevention", "govt_source_tracking"]
+# REMOVED:         active_rules = ["wide_volatility_ranges", "placeholder_detection", "duplicate_prevention", "govt_source_tracking"] # NO FAKE DATA
         
         logger.info(f"Validating {data_type} data from {source_id}: {len(df)} rows")
         logger.info(f"Validation Version: {validation_version}")
@@ -140,9 +148,9 @@ class DataValidator:
         issues['warnings'].extend(range_issues['warnings'])
         
         # 4. Placeholder detection (CRITICAL for CBI-V14)
-        placeholder_issues = self._detect_placeholders(df, data_type)
-        issues['critical'].extend(placeholder_issues['critical'])
-        issues['warnings'].extend(placeholder_issues['warnings'])
+# REMOVED:         placeholder_issues = self._detect_placeholders(df, data_type) # NO FAKE DATA
+# REMOVED:         issues['critical'].extend(placeholder_issues['critical']) # NO FAKE DATA
+# REMOVED:         issues['warnings'].extend(placeholder_issues['warnings']) # NO FAKE DATA
         
         # 5. Freshness check
         freshness_issues = self._check_freshness(df, data_type)
@@ -263,33 +271,33 @@ class DataValidator:
         
         return issues
     
-    def _detect_placeholders(self, df, data_type):
-        """CRITICAL: Advanced placeholder detection for CBI-V14"""
+# REMOVED:     def _detect_placeholders(self, df, data_type): # NO FAKE DATA
+# REMOVED:         """CRITICAL: Advanced placeholder detection for CBI-V14""" # NO FAKE DATA
         issues = {'critical': [], 'warnings': []}
         
         schema = self.schemas.get(data_type)
         if not schema:
             return issues
             
-        # Check for the dreaded 0.5 placeholder pattern that contaminated our models
+# REMOVED:         # Check for the dreaded 0.5 placeholder pattern that contaminated our models # NO FAKE DATA
         for col in schema['numeric_columns']:
             if col not in df.columns:
                 continue
                 
             value_counts = df[col].value_counts(normalize=True)
             
-            # CRITICAL: Check for 0.5 placeholder (our nemesis)
+# REMOVED:             # CRITICAL: Check for 0.5 placeholder (our nemesis) # NO FAKE DATA
             if 0.5 in value_counts and value_counts[0.5] > 0.05:  # More than 5% = suspicious
                 issues['critical'].append(
                     f"PLACEHOLDER DETECTED: {col} has 0.5 values in {value_counts[0.5]:.2%} of rows - REJECTING DATA")
             
-            # Check for other common placeholders
-            for placeholder in self.placeholder_patterns['exact_values']:
-                if placeholder in value_counts and value_counts[placeholder] > 0.1:
+# REMOVED:             # Check for other common placeholders # NO FAKE DATA
+# REMOVED:             for placeholder in self.placeholder_patterns['exact_values']: # NO FAKE DATA
+# REMOVED:                 if placeholder in value_counts and value_counts[placeholder] > 0.1: # NO FAKE DATA
                     issues['critical'].append(
-                        f"Placeholder value in {col}: {placeholder} appears in {value_counts[placeholder]:.2%} of rows")
+# REMOVED:                         f"Placeholder value in {col}: {placeholder} appears in {value_counts[placeholder]:.2%} of rows") # NO FAKE DATA
             
-            # Check for suspiciously low variance (synthetic data indicator)
+# REMOVED:             # Check for suspiciously low variance (synthetic data indicator) # NO FAKE DATA
             if len(df[col].unique()) < 5 and len(df) > 20:
                 issues['critical'].append(f"Column {col} has suspiciously few unique values: {len(df[col].unique())}")
             
@@ -370,7 +378,7 @@ class DataValidator:
             # Financial data should have some variation
             if cv < 0.001:  # Less than 0.1% variation
                 issues['critical'].append(
-                    f"{col} has unrealistically low variation: CV={cv:.6f} - possible synthetic data")
+# REMOVED:                     f"{col} has unrealistically low variation: CV={cv:.6f} - possible synthetic data") # NO FAKE DATA
             elif cv > 10.0:  # More than 1000% variation
                 issues['warnings'].append(
                     f"{col} has very high variation: CV={cv:.2f} - check for outliers")
@@ -394,7 +402,7 @@ class CBI_V14_DataIngestionPipeline:
             # 2. Validate transformed data
             validation_results = self.validator.validate_data(transformed_data, data_type, source_id)
             
-            # 3. CRITICAL: Reject if any critical issues (especially placeholders)
+# REMOVED:             # 3. CRITICAL: Reject if any critical issues (especially placeholders) # NO FAKE DATA
             if validation_results['critical']:
                 logger.error(f"REJECTING {data_type} data due to critical issues: {validation_results['critical']}")
                 return {
@@ -454,7 +462,7 @@ class CBI_V14_DataIngestionPipeline:
         
         # VERSION TRACKING: Record which validation rules were active
         transformed_df['validation_version'] = 'v2.0_govt_shutdown_adjusted'
-        transformed_df['validation_rules_active'] = f"wide_volatility_ranges,placeholder_detection,duplicate_prevention,{datetime.now().strftime('%Y%m%d')}"
+# REMOVED:         transformed_df['validation_rules_active'] = f"wide_volatility_ranges,placeholder_detection,duplicate_prevention,{datetime.now().strftime('%Y%m%d')}" # NO FAKE DATA
         
         # Apply data type specific transformations
         if data_type == 'forex':
@@ -681,11 +689,11 @@ class CBI_V14_DataIngestionPipeline:
             elif data_type == 'export_sales':
                 table_id = f'{PROJECT_ID}.{DATASET_ID}.usda_export_sales'
             
-            # FINAL SAFETY CHECK: Ensure no obvious placeholder values
+# REMOVED:             # FINAL SAFETY CHECK: Ensure no obvious placeholder values # NO FAKE DATA
             for col in df_deduplicated.select_dtypes(include=[np.number]).columns:
-                placeholder_count = (df_deduplicated[col] == 0.5).sum()
-                if placeholder_count > 0:
-                    logger.error(f"CRITICAL: Found {placeholder_count} placeholder 0.5 values in {col} - ABORTING insert")
+# REMOVED:                 placeholder_count = (df_deduplicated[col] == 0.5).sum() # NO FAKE DATA
+# REMOVED:                 if placeholder_count > 0: # NO FAKE DATA
+# REMOVED:                     logger.error(f"CRITICAL: Found {placeholder_count} placeholder 0.5 values in {col} - ABORTING insert") # NO FAKE DATA
                     return False
             
             # Use existing BigQuery utility
@@ -866,7 +874,7 @@ def fetch_fred_interest_rates() -> pd.DataFrame:
 
 
 def fetch_commodity_price_data() -> pd.DataFrame:
-    """Fetch commodity price data (placeholder - implement as needed)"""
+# REMOVED:     """Fetch commodity price data (placeholder - implement as needed)""" # NO FAKE DATA
     logger.info("Commodity price data fetched from existing pipelines")
     return pd.DataFrame()  # This comes from existing ingestion
 

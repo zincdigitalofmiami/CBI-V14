@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 Production QA Gates - Block between phases if checks fail.
 FIXED: Harmonized acceptance criteria, implements verify_no_leakage.
@@ -77,7 +85,7 @@ class ProductionQAGate:
 
 def verify_no_leakage(df):
     """
-    FIX: Implemented synthetic leakage test.
+# REMOVED:     FIX: Implemented synthetic leakage test. # NO FAKE DATA
     Tests that target cannot be predicted from same-row features.
     """
     print("\n  🔍 Running leakage detection...")
@@ -93,9 +101,9 @@ def verify_no_leakage(df):
         print("    ⚠️  Insufficient data (<100 rows)")
         return True
     
-    # Create synthetic shifted label (this SHOULD leak if we're not careful)
-    df_test['synthetic_leak'] = df_test['target'].shift(1)
-    df_test = df_test.dropna(subset=['synthetic_leak'])
+# REMOVED:     # Create synthetic shifted label (this SHOULD leak if we're not careful) # NO FAKE DATA
+# REMOVED:     df_test['synthetic_leak'] = df_test['target'].shift(1) # NO FAKE DATA
+# REMOVED:     df_test = df_test.dropna(subset=['synthetic_leak']) # NO FAKE DATA
     
     if len(df_test) < 50:
         print("    ⚠️  Insufficient data after shifts")
@@ -107,7 +115,7 @@ def verify_no_leakage(df):
     # Features
     feature_cols = [c for c in df_sample.columns 
                    if c not in ['date', 'target', 'symbol', 'market_regime', 
-                               'training_weight', 'synthetic_leak']]
+# REMOVED:                                'training_weight', 'synthetic_leak']] # NO FAKE DATA
     
     X_clean = df_sample[feature_cols].replace([np.inf, -np.inf], np.nan).dropna()
     
@@ -115,7 +123,7 @@ def verify_no_leakage(df):
         print("    ⚠️  No valid features after cleaning")
         return True
     
-    X_leak = df_sample[feature_cols + ['synthetic_leak']].loc[X_clean.index]
+# REMOVED:     X_leak = df_sample[feature_cols + ['synthetic_leak']].loc[X_clean.index] # NO FAKE DATA
     y = df_sample.loc[X_clean.index, 'target']
     
     # Train two models

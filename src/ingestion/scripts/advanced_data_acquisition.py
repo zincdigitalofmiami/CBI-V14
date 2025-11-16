@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 ADVANCED DATA ACQUISITION SYSTEM WITH ANTI-DETECTION
 Implements browser fingerprinting, throttling, fallbacks, and multiple extraction strategies
@@ -8,7 +16,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 import time
-import random
+# REMOVED: import random # NO FAKE DATA
 import numpy as np
 from google.cloud import bigquery
 import pandas as pd
@@ -74,7 +82,7 @@ class SmartSession:
         # Setup retry strategy
         retry_strategy = Retry(
             total=MAX_RETRIES,
-            backoff_factor=random.uniform(1, 3),
+# REMOVED:             backoff_factor=random.uniform(1, 3), # NO FAKE DATA
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["GET", "POST"]
         )
@@ -84,12 +92,12 @@ class SmartSession:
     
     def get_random_headers(self) -> Dict[str, str]:
         """Generate randomized headers"""
-        resolution = random.choice(SCREEN_RESOLUTIONS)
+# REMOVED:         resolution = random.choice(SCREEN_RESOLUTIONS) # NO FAKE DATA
         
         return {
-            'User-Agent': random.choice(USER_AGENTS),
+# REMOVED:             'User-Agent': random.choice(USER_AGENTS), # NO FAKE DATA
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': random.choice(ACCEPT_LANGUAGES),
+# REMOVED:             'Accept-Language': random.choice(ACCEPT_LANGUAGES), # NO FAKE DATA
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
@@ -97,8 +105,8 @@ class SmartSession:
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Cache-Control': 'max-age=0',
-            'DNT': random.choice(['1', '0']),
-            'Referer': random.choice([
+# REMOVED:             'DNT': random.choice(['1', '0']), # NO FAKE DATA
+# REMOVED:             'Referer': random.choice([ # NO FAKE DATA
                 'https://www.google.com/',
                 'https://www.bing.com/',
                 'https://www.duckduckgo.com/',
@@ -109,13 +117,13 @@ class SmartSession:
         """Smart GET with throttling and randomization"""
         # Throttle based on source type
         if self.source_type == 'premium':
-            delay = random.uniform(3, 10)
+# REMOVED:             delay = random.uniform(3, 10) # NO FAKE DATA
         elif self.source_type == 'sensitive':
-            delay = random.uniform(5, 15)
+# REMOVED:             delay = random.uniform(5, 15) # NO FAKE DATA
         elif self.source_type == 'standard':
-            delay = random.uniform(0.5, 2)
+# REMOVED:             delay = random.uniform(0.5, 2) # NO FAKE DATA
         else:
-            delay = random.uniform(0.3, 1)
+# REMOVED:             delay = random.uniform(0.3, 1) # NO FAKE DATA
         
         # Exponential backoff if too many requests
         elapsed = time.time() - self.start_time
@@ -454,7 +462,7 @@ for category_name, config in SOURCES.items():
         all_articles.extend(articles)
         
         # Small delay between sources
-        time.sleep(random.uniform(0.5, 1.5))
+# REMOVED:         time.sleep(random.uniform(0.5, 1.5)) # NO FAKE DATA
 
 print(f"\nTOTAL ARTICLES COLLECTED: {len(all_articles)}")
 

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 PRODUCTION ENSEMBLE ENHANCEMENT
 Implements the 4 high-impact improvements for V4 models:
@@ -216,7 +224,7 @@ class ProductionEnsemble:
         Returns importance change percentages for top 10 features
         """
         # This would require feature importance tracking over time
-        # For now, return placeholder - implement based on your feature importance logging
+# REMOVED:         # For now, return placeholder - implement based on your feature importance logging # NO FAKE DATA
         logger.info("Feature stability monitoring - implement based on your logging system")
         return {}
 

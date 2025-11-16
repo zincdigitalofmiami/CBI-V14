@@ -43,7 +43,7 @@ def train_arima(data_path: Path, horizon: str, model_dir: Path):
         fitted = model.fit()
         print(f"ARIMA model fitted for {horizon}.")
 
-        model_subdir = model_dir / "arima_v001"
+        model_subdir = model_dir / "arima"
         model_subdir.mkdir(parents=True, exist_ok=True)
         output_path = model_subdir / "model.bin"
         joblib.dump(fitted, output_path)
@@ -72,7 +72,7 @@ def train_prophet(data_path: Path, horizon: str, model_dir: Path):
         model.fit(prophet_df)
         print(f"Prophet model fitted for {horizon}.")
 
-        model_subdir = model_dir / "prophet_v001"
+        model_subdir = model_dir / "prophet"
         model_subdir.mkdir(parents=True, exist_ok=True)
         output_path = model_subdir / "model.bin"
         joblib.dump(model, output_path)

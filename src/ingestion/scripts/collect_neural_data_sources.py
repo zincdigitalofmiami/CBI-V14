@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 collect_neural_data_sources.py
 Collect deep drivers data for neural model approach
@@ -97,7 +105,7 @@ class NeuralDataCollector:
         if not df.empty:
             df_pivot = df.pivot(index='date', columns='series', values='value')
             
-            # Calculate synthetic spreads
+# REMOVED:             # Calculate synthetic spreads # NO FAKE DATA
             if 'DGS10' in df_pivot.columns and 'DGS2' in df_pivot.columns:
                 df_pivot['yield_curve'] = df_pivot['DGS10'] - df_pivot['DGS2']
                 

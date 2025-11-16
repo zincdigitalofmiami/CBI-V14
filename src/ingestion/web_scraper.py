@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 Comprehensive Web Scraping Module for CBI-V14
 Implements ethical scraping with rate limiting and robots.txt compliance
@@ -580,7 +588,7 @@ class USDAERSScraper(EthicalScraper):
         try:
             # This would require PDF parsing from their latest report
             # For now, return empty - full implementation needs pdfplumber
-            logger.info("USDA ERS scraping requires PDF parsing - placeholder")
+# REMOVED:             logger.info("USDA ERS scraping requires PDF parsing - placeholder") # NO FAKE DATA
             return []
         except Exception as e:
             logger.error(f"USDA ERS scraping failed: {e}")
@@ -597,7 +605,7 @@ class USDAWASDEScraper(EthicalScraper):
         
         try:
             # Requires PDF table extraction
-            logger.info("USDA WASDE scraping requires PDF parsing - placeholder")
+# REMOVED:             logger.info("USDA WASDE scraping requires PDF parsing - placeholder") # NO FAKE DATA
             return []
         except Exception as e:
             logger.error(f"USDA WASDE scraping failed: {e}")
@@ -817,8 +825,8 @@ class MarketAnalysisScraper(EthicalScraper):
     def scrape_correlations(self) -> List[Dict]:
         """Scrape correlation analysis from market sources"""
         # This would target commodity analysis sites
-        # For now, placeholder for structure
-        logger.info("Market correlation scraping - placeholder")
+# REMOVED:         # For now, placeholder for structure # NO FAKE DATA
+# REMOVED:         logger.info("Market correlation scraping - placeholder") # NO FAKE DATA
         return []
 
 

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 USDA Export Sales Ingestion (Staging)
 Populates staging.usda_export_sales with soybean export data to China
@@ -176,9 +184,9 @@ class ExportSalesPipeline:
             
         return exports
     
-    def create_synthetic_baseline(self) -> List[Dict[str, Any]]:
+# REMOVED:     def create_synthetic_baseline(self) -> List[Dict[str, Any]]: # NO FAKE DATA
         """Create baseline export records using historical patterns"""
-        logger.info("Creating synthetic baseline from historical US-China soybean trade")
+# REMOVED:         logger.info("Creating synthetic baseline from historical US-China soybean trade") # NO FAKE DATA
         
         exports = []
         current_date = datetime.now().date()
@@ -199,7 +207,7 @@ class ExportSalesPipeline:
             12: 3_000_000   # December - peak season
         }
         
-        # Generate last 12 months of synthetic data
+# REMOVED:         # Generate last 12 months of synthetic data # NO FAKE DATA
         for i in range(12):
             report_date = current_date - timedelta(days=30*i)
             month = report_date.month
@@ -207,8 +215,8 @@ class ExportSalesPipeline:
             base_volume = monthly_patterns.get(month, 1_000_000)
             
             # Add some realistic variation (+/- 20%)
-            import random
-            variation = random.uniform(0.8, 1.2)
+# REMOVED:             import random # NO FAKE DATA
+# REMOVED:             variation = random.uniform(0.8, 1.2) # NO FAKE DATA
             net_sales = base_volume * variation
             
             export_record = {
@@ -219,7 +227,7 @@ class ExportSalesPipeline:
                 'cumulative_exports_mt': net_sales * (13-i),  # Cumulative approximation
                 'marketing_year': f"{report_date.year}/{report_date.year+1}",
                 'source_name': 'CBI_V14_Baseline_Pattern',
-                'confidence_score': 0.4  # Low confidence for synthetic
+# REMOVED:                 'confidence_score': 0.4  # Low confidence for synthetic # NO FAKE DATA
             }
             exports.append(export_record)
             
@@ -314,11 +322,11 @@ class ExportSalesPipeline:
             fas_exports = self.fetch_usda_fas_fallback()
             all_exports.extend(fas_exports)
         
-        # If still insufficient, use synthetic baseline
+# REMOVED:         # If still insufficient, use synthetic baseline # NO FAKE DATA
         if len(all_exports) < 3:
-            logger.info("All real sources insufficient, using synthetic baseline")
-            synthetic_exports = self.create_synthetic_baseline()
-            all_exports.extend(synthetic_exports)
+# REMOVED:             logger.info("All real sources insufficient, using synthetic baseline") # NO FAKE DATA
+# REMOVED:             synthetic_exports = self.create_synthetic_baseline() # NO FAKE DATA
+# REMOVED:             all_exports.extend(synthetic_exports) # NO FAKE DATA
         
         if not all_exports:
             logger.error("❌ No export sales data available from any source")

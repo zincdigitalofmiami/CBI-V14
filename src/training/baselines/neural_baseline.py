@@ -125,8 +125,8 @@ def build_feedforward_model(seq_len, n_features, units=128):
 def train_model(model, X_train, X_val, y_train, y_val, model_name, horizon, models_dir):
     """Train a neural model with memory-safe settings"""
     
-    # Checkpoint path (new structure: Models/local/horizon_{h}/{surface}/{family}/{model}_v{ver}/)
-    model_subdir = f"{models_dir}/{model_name}_v001"
+    # Checkpoint path (first training run has no version suffix)
+    model_subdir = f"{models_dir}/{model_name}"
     os.makedirs(model_subdir, exist_ok=True)
     checkpoint_path = f"{model_subdir}/model.h5"
     

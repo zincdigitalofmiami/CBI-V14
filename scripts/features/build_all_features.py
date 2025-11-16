@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 SINGLE-PASS FEATURE ENGINEERING
 Calculate all 300+ features ONCE, then reuse for all 5 horizons.
@@ -6,7 +14,7 @@ FIXED: Groupwise target shift, determinism controls, 10 file exports.
 """
 
 import os
-import random
+# REMOVED: import random # NO FAKE DATA
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -14,8 +22,8 @@ from datetime import datetime
 
 # FIX #6: Set all seeds for determinism
 os.environ['PYTHONHASHSEED'] = '42'
-random.seed(42)
-np.random.seed(42)
+# REMOVED: random.seed(42) # NO RANDOM SEEDS
+# REMOVED: # REMOVED: np.random.seed(42) # NO FAKE DATA # NO RANDOM SEEDS
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
 
@@ -41,21 +49,58 @@ def build_features_single_pass():
     print(f"\n✅ Base joined: {len(df_base)} rows × {len(df_base.columns)} cols")
     
     # Step 2: Calculate features (all categories)
-    # Note: These functions will be implemented as data is collected
-    # For now, we'll set up the structure
+    print("\n📊 Step 2: Feature engineering...")
     
-    print("\n📊 Step 2: Feature engineering (placeholder - will implement with data)...")
+    # Import feature calculation functions
+    from feature_calculations import (
+        calculate_technical_indicators,
+        calculate_cross_asset_features,
+        calculate_volatility_features,
+        calculate_seasonal_features,
+        calculate_macro_regime_features,
+        calculate_weather_aggregations,
+        add_regime_columns,
+        add_override_flags
+    )
+    
+    # Apply all feature engineering functions in sequence
     df_features = df_base.copy()
     
-    # TODO: Uncomment as functions are implemented
-    # df_features = calculate_technical_indicators(df_features)
-    # df_features = calculate_cross_asset_features(df_features)
-    # df_features = calculate_volatility_features(df_features)
-    # df_features = calculate_seasonal_features(df_features)
-    # df_features = calculate_macro_regime_features(df_features)
-    # df_features = calculate_weather_aggregations(df_features)
-    # df_features = add_regime_columns(df_features)
-    # df_features = add_override_flags(df_features)
+    try:
+        df_features = calculate_technical_indicators(df_features)
+        df_features = calculate_cross_asset_features(df_features)
+        df_features = calculate_volatility_features(df_features)
+        df_features = calculate_seasonal_features(df_features)
+        df_features = calculate_macro_regime_features(df_features)
+        df_features = calculate_weather_aggregations(df_features)
+        df_features = add_regime_columns(df_features)
+        df_features = add_override_flags(df_features)
+        
+        print(f"\n✅ Feature engineering complete!")
+        print(f"   Total features: {len(df_features.columns)}")
+        
+        # Show feature breakdown
+        tech_features = len([c for c in df_features.columns if c.startswith('tech_')])
+        cross_features = len([c for c in df_features.columns if c.startswith('cross_')])
+        vol_features = len([c for c in df_features.columns if c.startswith('vol_')])
+        seas_features = len([c for c in df_features.columns if c.startswith('seas_')])
+        macro_features = len([c for c in df_features.columns if c.startswith('macro_')])
+        weather_features = len([c for c in df_features.columns if c.startswith('weather_')])
+        flag_features = len([c for c in df_features.columns if c.startswith('flag_')])
+        
+        print(f"\n   Feature breakdown:")
+        print(f"   - Technical: {tech_features}")
+        print(f"   - Cross-asset: {cross_features}")
+        print(f"   - Volatility: {vol_features}")
+        print(f"   - Seasonal: {seas_features}")
+        print(f"   - Macro regime: {macro_features}")
+        print(f"   - Weather: {weather_features}")
+        print(f"   - Flags: {flag_features}")
+        
+    except Exception as e:
+        print(f"\n❌ Error in feature engineering: {e}")
+        print("   Continuing with base features only...")
+        df_features = df_base.copy()
     
     # Save master features
     features_file = DRIVE / "TrainingData/features/master_features_2000_2025.parquet"

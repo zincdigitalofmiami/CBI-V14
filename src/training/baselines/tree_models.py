@@ -144,7 +144,7 @@ def train_lightgbm_dart(X_train, X_val, y_train, y_val, horizon, models_dir, df_
         
         # Save model
         os.makedirs(models_dir, exist_ok=True)
-        model_subdir = f"{models_dir}/lightgbm_dart_v001"
+        model_subdir = f"{models_dir}/lightgbm_dart"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         model.booster_.save_model(model_path)
@@ -216,7 +216,7 @@ def train_xgboost_dart(X_train, X_val, y_train, y_val, horizon, models_dir, df_v
                 print(f"   ⚠️  Comprehensive evaluation failed: {e}")
         
         # Save model
-        model_subdir = f"{models_dir}/xgboost_dart_v001"
+        model_subdir = f"{models_dir}/xgboost_dart"
         os.makedirs(model_subdir, exist_ok=True)
         model_path = f"{model_subdir}/model.bin"
         model.save_model(model_path)

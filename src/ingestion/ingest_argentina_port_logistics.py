@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 Argentina Port Logistics Scraper
 Scrapes Argentina port logistics data (vessel queues, port throughput)
@@ -97,7 +105,7 @@ class ArgentinaPortLogisticsScraper:
             return []
     
     def scrape_port_rosario(self):
-        """Scrape Port of Rosario vessel line-up (placeholder - may require Selenium)"""
+# REMOVED:         """Scrape Port of Rosario vessel line-up (placeholder - may require Selenium)""" # NO FAKE DATA
         # Port of Rosario often requires JavaScript rendering
         # For now, return empty - can be enhanced with Selenium later
         logger.info("Port of Rosario scraping requires Selenium - skipping for now")

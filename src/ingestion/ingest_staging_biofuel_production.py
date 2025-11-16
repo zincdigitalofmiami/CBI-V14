@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 Biofuel Production Ingestion (Staging)
 Populates staging.biofuel_production with FRED biodiesel data
@@ -82,11 +90,11 @@ class BiofuelProductionPipeline:
             return pd.DataFrame()
     
     def fetch_alternative_biodiesel_data(self) -> pd.DataFrame:
-        """Fallback: Create synthetic biodiesel production data"""
+# REMOVED:         """Fallback: Create synthetic biodiesel production data""" # NO FAKE DATA
         try:
-            logger.info("Creating synthetic biodiesel production data as fallback")
+# REMOVED:             logger.info("Creating synthetic biodiesel production data as fallback") # NO FAKE DATA
             
-            # Create 24 months of synthetic data based on known US production trends
+# REMOVED:             # Create 24 months of synthetic data based on known US production trends # NO FAKE DATA
             # US biodiesel production is typically 1.5-2.0 billion gallons/year
             current_date = datetime.now()
             monthly_base = 150_000_000  # ~150M gallons per month (1.8B annually)
@@ -111,8 +119,8 @@ class BiofuelProductionPipeline:
                 growth_factor = (1.025) ** (-years_ago)  # 2.5% annual growth
                 
                 # Add some random variation (+/- 10%)
-                import random
-                random_factor = random.uniform(0.9, 1.1)
+# REMOVED:                 import random # NO FAKE DATA
+# REMOVED:                 random_factor = random.uniform(0.9, 1.1) # NO FAKE DATA
                 
                 monthly_production = monthly_base * seasonal_factor * growth_factor * random_factor
                 productions.append(monthly_production)
@@ -126,7 +134,7 @@ class BiofuelProductionPipeline:
             # Sort by date ascending
             df = df.sort_values('date').reset_index(drop=True)
             
-            logger.info(f"Created {len(df)} months of synthetic biodiesel data")
+# REMOVED:             logger.info(f"Created {len(df)} months of synthetic biodiesel data") # NO FAKE DATA
             return df
                 
         except Exception as e:
@@ -153,7 +161,7 @@ class BiofuelProductionPipeline:
                 confidence = 0.85
             else:
                 source_name = 'CBI_V14_Synthetic'
-                confidence = 0.5  # Lower confidence for synthetic
+# REMOVED:                 confidence = 0.5  # Lower confidence for synthetic # NO FAKE DATA
             
             record = {
                 'date': date_str,

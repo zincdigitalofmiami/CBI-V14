@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 ADVANCED SCRAPING BASE CLASS - Production-Grade Web Scraping
 ============================================================
@@ -17,7 +25,7 @@ Implements institutional-grade scraping with:
 import requests
 from bs4 import BeautifulSoup
 import time
-import random
+# REMOVED: import random # NO FAKE DATA
 import hashlib
 import json
 import logging
@@ -124,7 +132,7 @@ class AdvancedScraper:
     def _get_headers(self) -> Dict[str, str]:
         """Generate realistic request headers with rotated User-Agent."""
         return {
-            'User-Agent': random.choice(self.USER_AGENTS),
+# REMOVED:             'User-Agent': random.choice(self.USER_AGENTS), # NO FAKE DATA
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -143,7 +151,7 @@ class AdvancedScraper:
         
         if domain in self.last_request_time:
             elapsed = time.time() - self.last_request_time[domain]
-            delay = random.uniform(self.min_delay, self.max_delay)
+# REMOVED:             delay = random.uniform(self.min_delay, self.max_delay) # NO FAKE DATA
             
             if elapsed < delay:
                 sleep_time = delay - elapsed

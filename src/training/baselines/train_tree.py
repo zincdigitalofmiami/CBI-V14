@@ -81,7 +81,6 @@ def train_lightgbm(data_path: Path, horizon: str, model_dir: Path):
             model=model,
             model_dir=model_dir,
             model_name="lightgbm_dart",
-            version="v001",
             feature_cols=feature_cols,
             feature_importance=feature_importance,
             training_config={
@@ -161,7 +160,6 @@ def train_xgboost(data_path: Path, horizon: str, model_dir: Path):
             model=model,
             model_dir=model_dir,
             model_name="xgboost_dart",
-            version="v001",
             feature_cols=feature_cols,
             feature_importance=feature_importance,
             training_config={

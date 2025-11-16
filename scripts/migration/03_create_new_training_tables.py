@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 Phase 3: Create new training tables with Option 3 naming convention.
 Creates training.zl_training_{full|prod}_allhistory_{horizon} tables
@@ -110,7 +118,7 @@ def main():
     print("Creating FULL surface tables (1,948+ columns):")
     print("-" * 80)
     print("⚠️  NOTE: Full surface tables will be created from ULTIMATE_DATA_CONSOLIDATION.sql")
-    print("    For now, copying prod tables as placeholder (will rebuild later)")
+# REMOVED:     print("    For now, copying prod tables as placeholder (will rebuild later)") # NO FAKE DATA
     
     full_success = 0
     full_failed = 0

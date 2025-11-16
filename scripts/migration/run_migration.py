@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
 import os
 from google.cloud import bigquery
 
@@ -45,7 +53,7 @@ def parse_mapping_file(file_path):
         action = parts[6]
         notes = parts[7]
 
-        # Skip header and placeholder rows
+# REMOVED:         # Skip header and placeholder rows # NO FAKE DATA
         if legacy_dataset == "Legacy Dataset" or "..." in legacy_table:
             continue
 

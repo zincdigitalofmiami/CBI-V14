@@ -13,7 +13,7 @@ def save_model_with_metadata(
     model: Any,
     model_dir: Path,
     model_name: str,
-    version: str = "v001",
+    version: Optional[str] = None,
     feature_cols: Optional[List[str]] = None,
     feature_importance: Optional[pd.DataFrame] = None,
     training_config: Optional[Dict] = None,
@@ -27,7 +27,7 @@ def save_model_with_metadata(
         model: Trained model object
         model_dir: Base directory (e.g., Models/local/horizon_1m/prod/baselines)
         model_name: Model name (e.g., lightgbm_dart)
-        version: Version string (e.g., v001)
+        version: Optional version string (e.g., v2). First training run should pass None.
         feature_cols: List of feature column names used
         feature_importance: DataFrame with feature importance
         training_config: Dictionary of training hyperparameters
@@ -37,8 +37,9 @@ def save_model_with_metadata(
     Returns:
         Path to model subdirectory
     """
-    # Create version directory
-    model_subdir = model_dir / f"{model_name}_{version}"
+    # Create model directory (append version suffix only if provided)
+    dir_name = f"{model_name}_{version}" if version else model_name
+    model_subdir = model_dir / dir_name
     model_subdir.mkdir(parents=True, exist_ok=True)
     
     # Save model based on type
@@ -102,8 +103,9 @@ def save_model_with_metadata(
     
     # 6. model_info.txt (summary)
     info_file = model_subdir / "model_info.txt"
+    version_display = version if version else "initial"
     info_content = f"""Model: {model_name}
-Version: {version}
+Version: {version_display}
 Run ID: {run_id}
 Model Type: {model_type}
 Created: {datetime.now().isoformat()}

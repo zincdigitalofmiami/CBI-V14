@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 REBUILD TRAINING DATASET - THE RIGHT WAY
 =========================================
@@ -6,7 +14,7 @@ One atomic query, no bandaids, no dependencies on old datasets
 Builds directly from warehouse + working views
 Uses working dataset as template
 
-NO shortcuts, NO placeholders, NO fake data
+# REMOVED: NO shortcuts, NO placeholders, NO fake data # NO FAKE DATA
 """
 
 from google.cloud import bigquery

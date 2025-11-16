@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 BI-DAILY NEWS SCRAPER
 Automated news collection every 2 days for continuous signal updates
@@ -7,7 +15,7 @@ Automated news collection every 2 days for continuous signal updates
 import requests
 from datetime import datetime, timedelta
 import time
-import random
+# REMOVED: import random # NO FAKE DATA
 from google.cloud import bigquery
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -64,7 +72,7 @@ BIDAILY_SOURCES = [
 def get_headers():
     """Random headers for requests"""
     return {
-        'User-Agent': random.choice([
+# REMOVED:         'User-Agent': random.choice([ # NO FAKE DATA
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         ]),
@@ -74,7 +82,7 @@ def get_headers():
 def extract_content(url, max_length=5000):
     """Extract article content"""
     try:
-        time.sleep(random.uniform(0.5, 2))
+# REMOVED:         time.sleep(random.uniform(0.5, 2)) # NO FAKE DATA
         response = requests.get(url, headers=get_headers(), timeout=10)
         
         if response.status_code == 200:

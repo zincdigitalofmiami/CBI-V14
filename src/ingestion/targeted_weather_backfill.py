@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 Targeted Weather Data Historical Backfill
 Priority 1: Fill weather data gaps for agricultural commodity modeling
@@ -163,7 +171,7 @@ class WeatherBackfillPipeline:
                         'precip_mm': data['daily']['precipitation_sum'],
                         'temp_max_c': data['daily']['temperature_2m_max'],
                         'temp_min_c': data['daily']['temperature_2m_min'],
-                        'humidity': 65.0,  # Typical Brazil humidity (placeholder)
+# REMOVED:                         'humidity': 65.0,  # Typical Brazil humidity (placeholder) # NO FAKE DATA
                         'production_weight': 1.0,
                         'source_name': 'open_meteo_historical',
                         'confidence_score': 0.85,
@@ -310,12 +318,12 @@ class WeatherBackfillPipeline:
             if max_gap > 7:
                 issues['warnings'].append(f"Large data gaps found: {max_gap} days maximum gap")
         
-        # Check for placeholder values
+# REMOVED:         # Check for placeholder values # NO FAKE DATA
         for col in ['temp_avg_c', 'precip_mm']:
             if col in df.columns:
-                placeholder_count = (df[col] == 0.0).sum()
-                if placeholder_count > len(df) * 0.1:  # >10% zeros
-                    issues['warnings'].append(f"High zero count in {col}: {placeholder_count} values")
+# REMOVED:                 placeholder_count = (df[col] == 0.0).sum() # NO FAKE DATA
+# REMOVED:                 if placeholder_count > len(df) * 0.1:  # >10% zeros # NO FAKE DATA
+# REMOVED:                     issues['warnings'].append(f"High zero count in {col}: {placeholder_count} values") # NO FAKE DATA
         
         logger.info(f"Weather validation: {len(issues['critical'])} critical, {len(issues['warnings'])} warnings")
         return issues

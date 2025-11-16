@@ -251,6 +251,7 @@ A model qualifies for dashboard production use if:
 - `TrainingData/raw/` - Raw exports from BigQuery
 - `TrainingData/processed/` - Preprocessed/engineered features
 - `TrainingData/exports/` - Ready-to-train Parquet files
+- `TrainingData/precalc/` - Mac-side precalc bundle (`surfaces/`, `metrics/`, `regimes/`, `logs/`, `qc/`)
 
 ### Documentation
 - `active-plans/` - This file + related execution plans

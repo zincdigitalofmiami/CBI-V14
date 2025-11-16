@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 VERIFY REAL DATA - Run this to prove all data is real
 Date: November 15, 2025
@@ -107,7 +115,7 @@ if os.path.exists(export_dir):
 else:
     print("  ❌ Export directory not found")
 
-# Check 6: Verify no placeholder calculations
+# REMOVED: # Check 6: Verify no placeholder calculations # NO FAKE DATA
 print("\n6. CHECKING FOR FAKE/PLACEHOLDER VALUES:")
 fake_check = """
 SELECT 

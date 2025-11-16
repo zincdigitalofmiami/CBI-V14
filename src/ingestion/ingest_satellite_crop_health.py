@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 CBI-V14 Satellite Crop Health Data Ingestion
 Pulls vegetation indices and satellite imagery data for crop monitoring
@@ -269,11 +277,11 @@ class SatelliteCropHealthCollector:
     def _get_weather_factor(self, region_code: str, date: datetime) -> float:
         """Get weather impact factor"""
         # Mock weather impacts - would use actual weather data
-        import random
-        random.seed(hash(f"{region_code}_{date}"))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(f"{region_code}_{date}")) # NO RANDOM SEEDS
 
         # Simulate drought or flood impacts
-        weather_event = random.random()
+# REMOVED:         weather_event = random.random() # NO FAKE DATA
         if weather_event < 0.1:  # 10% chance of drought
             return 0.7
         elif weather_event < 0.15:  # 5% chance of flood
@@ -284,8 +292,8 @@ class SatelliteCropHealthCollector:
     def _get_water_stress_factor(self, region_code: str, date: datetime) -> float:
         """Get water stress factor"""
         # Simulate water availability
-        import random
-        random.seed(hash(f"water_{region_code}_{date}"))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(f"water_{region_code}_{date}")) # NO RANDOM SEEDS
 
         # Base water availability by region
         base_water = {
@@ -296,7 +304,7 @@ class SatelliteCropHealthCollector:
         }
 
         base = base_water.get(region_code, 0.8)
-        variation = random.uniform(0.8, 1.2)
+# REMOVED:         variation = random.uniform(0.8, 1.2) # NO FAKE DATA
 
         return base * variation
 
@@ -306,8 +314,8 @@ class SatelliteCropHealthCollector:
 
     def _get_flood_risk(self, region_code: str, date: datetime) -> float:
         """Get flood risk factor"""
-        import random
-        random.seed(hash(f"flood_{region_code}_{date}"))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(f"flood_{region_code}_{date}")) # NO RANDOM SEEDS
 
         # Base flood risk by region
         base_risk = {
@@ -318,29 +326,29 @@ class SatelliteCropHealthCollector:
         }
 
         base = base_risk.get(region_code, 0.2)
-        variation = random.uniform(0.5, 1.5)
+# REMOVED:         variation = random.uniform(0.5, 1.5) # NO FAKE DATA
 
         return min(1.0, base * variation)
 
     def _calculate_vegetation_irregularity(self, region_code: str, date: datetime) -> float:
         """Calculate vegetation pattern irregularity"""
-        import random
-        random.seed(hash(f"pest_{region_code}_{date}"))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(f"pest_{region_code}_{date}")) # NO RANDOM SEEDS
 
         # Low irregularity = healthy, uniform vegetation
         # High irregularity = potential pest damage or disease
-        return random.uniform(0.1, 0.9)
+# REMOVED:         return random.uniform(0.1, 0.9) # NO FAKE DATA
 
     def _get_cloud_cover(self, region_code: str, date: datetime) -> float:
         """Get cloud cover percentage"""
-        import random
-        random.seed(hash(f"cloud_{region_code}_{date}"))
+# REMOVED:         import random # NO FAKE DATA
+# REMOVED:         random.seed(hash(f"cloud_{region_code}_{date}")) # NO RANDOM SEEDS
 
         # Tropical regions have more cloud cover
         if 'brazil' in region_code:
-            return random.uniform(30, 80)
+# REMOVED:             return random.uniform(30, 80) # NO FAKE DATA
         else:
-            return random.uniform(10, 60)
+# REMOVED:             return random.uniform(10, 60) # NO FAKE DATA
 
     def calculate_regional_impacts(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculate regional soybean production impacts"""

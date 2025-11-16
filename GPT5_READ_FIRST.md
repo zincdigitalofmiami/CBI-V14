@@ -1,127 +1,85 @@
 # GPT-5 / FUTURE AI: READ THIS FIRST
-**Critical: Current vs Legacy Work**
+**Critical context for all assistants touching CBI-V14**
 
 ---
 
-## 🎯 **CURRENT ARCHITECTURE** (Use This)
+## 🎯 Current Architecture (November 15, 2025)
+- Apple M4 Mac handles every training and inference task (TensorFlow Metal + CPU tree libs).
+- BigQuery = storage plus dashboard read layer only; no BigQuery ML, no AutoML jobs.
+- Predictions generated locally, uploaded with `scripts/upload_predictions.py`, then read by the Vercel dashboard.
+- The `vertex-ai/` directory is kept for reference. See `vertex-ai/LEGACY_MARKER.md`. Do **not** run anything in there.
+- First-run models save to `Models/local/.../{model}` without version suffix. Pass an explicit `version` only when promoting a later retrain.
 
-### **Source of Truth**
-- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` - **PRIMARY SOURCE**
-- `CURRENT_WORK.md` - Current active work summary
-- `README_CURRENT.md` - Current state overview
+### Primary Documents
+- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` – Source of truth (updated Nov 15, 2025).
+- `docs/plans/IMPLEMENTATION_PLAN_BIG8_UPDATE.md` – Active work on Big 8 labor pillar rollout.
+- `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md` & `COMPREHENSIVE_AUDIT_20251115_FRESH.md` – Latest data verification status.
+- `README_CURRENT.md` – Repo map, workflows, and architecture recap.
 
-### **Current Training Strategy** (November 2025)
-- **100% Local M4 Mac training** (TensorFlow Metal GPU)
-- **BigQuery for storage only** (training data + predictions)
-- **NO Vertex AI** (not used for training or inference)
-- **NO BQML training** (deprecated, local training only)
-
-### **Core Workflow**
-1. BigQuery exports training data → Parquet
-2. Mac M4 trains all models locally (baselines + advanced)
-3. Mac M4 generates all predictions locally
-4. Predictions uploaded to BigQuery via scripts
-5. Vercel dashboard reads from BigQuery
-
-### **Current Files**
-- `scripts/export_training_data.py` - Export training data from BigQuery
-- `scripts/upload_predictions.py` - Upload local predictions to BigQuery
-- `src/training/baselines/*.py` - Local baseline training
-- `src/training/advanced/*.py` - Local advanced models
-- `src/prediction/generate_local_predictions.py` - Local prediction generation
+### Workflow Snapshot
+1. Run `scripts/data_quality_checks.py` before exports or training.
+2. Export Parquet datasets with `scripts/export_training_data.py` (us-central1 tables).
+3. Train under `src/training/` (baselines, advanced, regime-aware). Use `training/utils/model_saver.py` for metadata.
+4. Generate forecasts locally using `src/prediction/generate_forecasts.py`.
+5. Upload predictions with `scripts/upload_predictions.py`.
+6. Validate BigQuery views (COUNT, null, regime coverage, MAPE/Sharpe) prior to dashboard release.
 
 ---
 
-## ❌ **LEGACY WORK** (Do NOT Use)
-
-### **Legacy Locations**
-- `archive/` - All old attempts
-- `legacy/` - Very old work
-- `docs/plans/archive/` - Old plans
-- `scripts/deprecated/` - Deprecated scripts
-- `vertex-ai/` - **NO LONGER USED** (kept for reference only)
-
-### **Legacy Approaches**
-- ❌ **Vertex AI training** - Replaced by local M4 training
-- ❌ **Vertex AI inference** - Replaced by local prediction generation
-- ❌ **BQML training** - Deprecated (BigQuery is storage only)
-- ❌ **AutoML** - Replaced by custom local models
-- ❌ **Cloud-first training** - Replaced by local-first approach
+## ✅ Active Code Paths
+- `scripts/`: `data_quality_checks.py`, `export_training_data.py`, `upload_predictions.py`, `post_migration_audit.py`.
+- `src/training/`: baselines, advanced, regime, utils (`model_saver` optional `version`).
+- `src/prediction/`: forecasts, SHAP, ensemble, uncertainty, news impact.
+- `src/analysis/backtesting_engine.py`, `scripts/daily_model_validation.py`, `scripts/performance_alerts.py`.
+- `TrainingData/` + `Models/local/` – obey new directory naming with versionless first runs.
 
 ---
 
-## 🚨 **CRITICAL RULES**
-
-1. **ONLY reference** files in `docs/plans/` that are NOT in `archive/`
-2. **ONLY use** scripts in `scripts/` that are NOT in `deprecated/`
-3. **IGNORE** everything in `archive/` and `legacy/`
-4. **IGNORE** Vertex AI references (local training only)
-5. **IGNORE** BQML training plans (BigQuery is storage, not compute)
-6. **USE** `TRAINING_MASTER_EXECUTION_PLAN.md` as source of truth
+## ❌ Legacy / Ignore
+- `archive/`, `legacy/`, `docs/plans/archive/`, `scripts/deprecated/`.
+- Any doc or script pushing Vertex AI training, BQML, or AutoML.
+- `vertex-ai/` (reference only, never execute).
 
 ---
 
-## 📋 **QUICK CHECKLIST**
-
-Before referencing any file, check:
-- [ ] Is it in `archive/`? → **IGNORE**
-- [ ] Is it in `legacy/`? → **IGNORE**
-- [ ] Is it in `docs/plans/archive/`? → **IGNORE**
-- [ ] Does it reference Vertex AI for training? → **IGNORE** (local only)
-- [ ] Does it reference BQML training? → **IGNORE** (deprecated)
-- [ ] Is it dated before November 12, 2025? → **Check if legacy**
+## 🚨 Critical Rules
+1. Keep `TRAINING_MASTER_EXECUTION_PLAN.md` synced with reality after every major change.
+2. Use the naming convention `{asset}_{function}_{scope}_{regime}_{horizon}` everywhere (SQL, exports, directories).
+3. Stay inside existing us-central1 datasets; do not create new datasets/tables without sign-off.
+4. Run data quality checks plus BigQuery verification before training, uploading, or publishing results.
+5. Save models with `version=None` on first run; create `_v002` style directories only when explicitly versioning a retrain.
 
 ---
 
-## ✅ **SAFE TO USE**
-
-- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` ✅
-- `docs/plans/BASELINE_STRATEGY.md` ✅
-- `scripts/export_training_data.py` ✅
-- `scripts/upload_predictions.py` ✅
-- `src/training/` ✅ (all local training)
-- `src/prediction/` ✅ (local prediction generation)
+## 📋 Quick Checklist
+- [ ] File lives outside `archive/` and `legacy/`.
+- [ ] No Vertex AI / BQML / AutoML assumptions.
+- [ ] Dated on or after 12 Nov 2025 unless explicitly flagged as reference.
+- [ ] Uses correct naming architecture and versionless first-run rule.
+- [ ] Data quality + BigQuery verification documented before outputs ship.
 
 ---
 
-## 🏗️ **ARCHITECTURE SUMMARY**
-
-**Storage**: BigQuery (training data, predictions, monitoring)  
-**Compute**: Mac M4 with TensorFlow Metal (all training + inference)  
-**UI**: Vercel dashboard (reads BigQuery only)  
-**Workflow**: Export → Train Local → Predict Local → Upload → Dashboard
-
-**No cloud compute. No Vertex AI. No BQML training. 100% local control.**
-
----
-
-**Last Updated**: November 14, 2025  
-**Status**: Active work - Local M4 training architecture (local-first, cloud for storage only)
-
+## 📂 Safe References
+- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md`
+- `docs/plans/IMPLEMENTATION_PLAN_BIG8_UPDATE.md`
+- `COMPREHENSIVE_AUDIT_20251115_FRESH.md`, `FINAL_MIGRATION_COMPLETENESS_REPORT.md`, `MIGRATION_RECONCILIATION_FINAL.md`
+- `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md`
+- `README_CURRENT.md`, `docs/reference/INSTITUTIONAL_FRAMEWORK_COMPLETE.md`
+- `scripts/export_training_data.py`, `scripts/upload_predictions.py`, `scripts/data_quality_checks.py`
+- `src/training/`, `src/prediction/`, `src/analysis/`
 
 ---
 
-## Migration Audit Reports (November 14, 2025)
+## ⚠️ Data & Verification Status (Nov 15, 2025)
+- Training tables (`zl_training_*`) still missing pre-2020 history (20-year gap) – join fixes pending.
+- Regime assignments incomplete (`allhistory` placeholders) – update joins and weight application.
+- Missing joins: `raw_intelligence.commodity_soybean_oil_prices`, `forecasting_data_warehouse.vix_data`.
+- ✅ No 0.5 placeholder patterns in production price data.
+- ✅ Historical and Yahoo Finance datasets validated (see verification report).
 
-**Location**: `docs/audits/20251114_*` and `scripts/migration/*AUDIT*.md`
+---
 
-After completing the naming architecture migration, comprehensive audit reports were generated to verify the migration state and identify remaining issues.
-
-### Quick Access:
-- **Index**: `docs/audits/20251114_MIGRATION_AUDIT_INDEX.md`
-- **Pre-Fix Audit**: `docs/audits/20251114_PRE_FIX_AUDIT.md` (start here)
-- **Final Audit**: `docs/audits/20251114_FINAL_AUDIT.md` (complete analysis)
-- **Naming Structure**: `docs/audits/20251114_NAMING_STRUCTURE_AUDIT.md` (naming rules)
-
-### Key Findings:
-- Migration Status: 98% complete
-- Critical Issues: 3 (all fixable, <20 minutes)
-- Naming Compliance: ✅ All verified
-- Data Integrity: ✅ All data exists
-
-**Before making any changes**, review the audit reports to understand:
-1. Current migration state
-2. Naming convention requirements
-3. Remaining issues and fixes
-4. Verification procedures
+**Last Updated**: November 15, 2025  
+**Action**: Update this file whenever architecture, guardrails, or verification status changes.
 

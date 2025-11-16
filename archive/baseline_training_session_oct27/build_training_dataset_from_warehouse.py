@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 BUILD TRAINING DATASET FROM WAREHOUSE - NO FAKE DATA
 ====================================================
 Builds training dataset directly from warehouse tables with:
 - NO COALESCE with 0 (no fake data)
-- NO placeholders
+# REMOVED: - NO placeholders # NO FAKE DATA
 - Proper joins validated
 - Current data (through Oct 27, 2025)
 - All math calculated correctly

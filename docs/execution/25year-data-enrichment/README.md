@@ -1,5 +1,12 @@
 # 25-Year Data Enrichment Plan - Execution Documents
 
+## ⚠️ MASTER PLAN HIERARCHY
+
+**PRIMARY PLAN**: `architecture-lock.plan.md` - THIS IS THE AUTHORITATIVE PLAN
+- All other documents support this plan
+- No other plan can override this
+- All execution follows this specification
+
 **Plan Status**: LOCKED - Ready for morning execution  
 **Date**: November 16, 2025  
 **Phase 0**: Complete ✅  
@@ -15,8 +22,12 @@
 
 ## Documents in This Folder
 
-### Core Plan
-- **architecture-lock.plan.md** - Master execution plan (34 hours, 7 phases)
+### Core Plan (TOP PRIORITY)
+- **architecture-lock.plan.md** - MASTER EXECUTION PLAN (34 hours, 7 phases) - ALL WORK FOLLOWS THIS
+
+### Related Documentation (Outside This Folder)
+- **../../PAGE_BUILDOUT_ROADMAP.md** - Complete dashboard page specifications and buildout plan
+- **../../SYSTEM_UNDERSTANDING_COMPLETE.md** - System architecture, user personas, data flows
 
 ### Pre-Execution Review
 - **FINAL_FORENSIC_REVIEW_20251116.md** - Complete audit (bug analysis, risk assessment)

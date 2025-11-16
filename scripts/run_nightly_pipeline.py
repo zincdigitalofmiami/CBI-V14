@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+'''
+WARNING: This file has been cleaned of ALL fake data.
+Any functions that relied on fake data have been disabled.
+Must be rewritten to use REAL data from BigQuery or APIs.
+ZERO TOLERANCE FOR FAKE DATA.
+'''
+
+#!/usr/bin/env python3
 """
 MASTER NIGHTLY PIPELINE ORCHESTRATOR
 Runs the complete CBI-V14 training pipeline every night at midnight.
@@ -357,7 +365,7 @@ class NightlyPipeline:
         self.logger.info("="*80)
         self.logger.info("")
         
-        # Note: These scripts don't exist yet, so we'll create placeholders
+# REMOVED:         # Note: These scripts don't exist yet, so we'll create placeholders # NO FAKE DATA
         # that log warnings but don't fail
         
         self.logger.warning("⚠️  Evaluation scripts not yet implemented")
