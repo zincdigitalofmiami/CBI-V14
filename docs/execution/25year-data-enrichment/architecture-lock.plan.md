@@ -17,6 +17,16 @@
 
 ## Related Plans & Documentation
 
+**🧠 Complete System Knowledge**: See `COMPLETE_SYSTEM_KNOWLEDGE.md` for EVERYTHING you need to know:
+- Core mission and architecture
+- Data source structure (local drive, not BigQuery)
+- Zero tolerance fake data policy
+- All scripts and their purposes
+- User personas (Chris, Kevin)
+- Page structure and buildout status
+- Key decisions and rationale
+- Quick reference guide
+
 **📋 Page Buildout Roadmap**: See `../../PAGE_BUILDOUT_ROADMAP.md` for complete dashboard page specifications, including:
 - Completed pages (Dashboard, Legislative, Strategy, Vegas Intel)
 - Planned pages (Sentiment page - future buildout)

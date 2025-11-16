@@ -29,6 +29,16 @@
 - **../../PAGE_BUILDOUT_ROADMAP.md** - Complete dashboard page specifications and buildout plan
 - **../../SYSTEM_UNDERSTANDING_COMPLETE.md** - System architecture, user personas, data flows
 
+### Master Knowledge Document
+- **COMPLETE_SYSTEM_KNOWLEDGE.md** - 🧠 COMPLETE SYSTEM KNOWLEDGE - Everything you need to know about CBI-V14
+  - Core mission and architecture
+  - Data source structure (local drive, not BigQuery)
+  - Zero tolerance fake data policy
+  - All scripts and their purposes
+  - User personas and page structure
+  - Key decisions and rationale
+  - Quick reference guide
+
 ### Pre-Execution Review
 - **FINAL_FORENSIC_REVIEW_20251116.md** - Complete audit (bug analysis, risk assessment)
 - **CRITICAL_FIXES_APPLIED.md** - Technical details of all 8 bug fixes
