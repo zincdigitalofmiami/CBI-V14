@@ -277,31 +277,41 @@ def collect_symbol(symbol: str, category: str) -> bool:
             else:
                 time.sleep(1.0)  # 1 second delay between symbols (respectful)
             
+            # Fetch historical data from Yahoo Finance
             df = ticker.history(start=START_DATE, end=END_DATE, auto_adjust=True, prepost=True, timeout=30)
             
             if df.empty:
                 logger.warning(f"  ⚠️  No data for {symbol}")
                 return False
             
-            # Standardize column names
-            df.columns = [col.replace(' ', '_') for col in df.columns]
-            df = df.rename(columns={
-                'Open': 'Open',
-                'High': 'High',
-                'Low': 'Low',
-                'Close': 'Close',
-                'Volume': 'Volume'
-            })
-            
-            # Add symbol and date
-            df['Symbol'] = symbol
+            # STEP 1: Reset index (DatetimeIndex 'Date' becomes column 'Date')
             df = df.reset_index()
+            
+            # STEP 2: Clean Date column - remove timezone
             if 'Date' in df.columns:
-                pass  # Already has Date column from reset_index
-            elif df.index.name == 'Date':
-                df = df.reset_index()
+                df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None)
             else:
-                df['Date'] = df.index
+                logger.error(f"  ❌ No Date column after reset_index for {symbol}")
+                return False
+            
+            # STEP 3: Add Symbol column
+            df['Symbol'] = symbol
+            
+            # STEP 4: Verify required OHLCV columns exist
+            required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            if missing_cols:
+                logger.warning(f"  ⚠️  Missing columns for {symbol}: {missing_cols}")
+                # Continue anyway - some symbols may not have all columns
+            
+            # STEP 5: Drop unnecessary columns (Dividends, Stock Splits, etc.)
+            df = df.drop(columns=['Dividends', 'Stock_Splits'], errors='ignore')
+            
+            # STEP 6: Ensure proper column order (Date, Symbol, OHLCV, then indicators)
+            base_cols = ['Date', 'Symbol']
+            ohlcv_cols = [col for col in ['Open', 'High', 'Low', 'Close', 'Volume'] if col in df.columns]
+            other_cols = [col for col in df.columns if col not in base_cols + ohlcv_cols]
+            df = df[base_cols + ohlcv_cols + other_cols]
             
             # Calculate technical indicators
             df_with_indicators = calculate_technical_indicators(df)
