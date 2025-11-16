@@ -68,11 +68,20 @@ Historical data exists in **TWO locations**:
 ### Path: `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/`
 
 ### Current Status
-- **Raw Directory**: 332 parquet files
-- **Exports Directory**: 19 parquet files
-- **Staging Directory**: Empty (needs data from raw)
+- **Raw Directory**: 332 parquet files (267MB)
+- **Exports Directory**: 19 parquet files (23MB)
+- **Staging Directory**: Empty (needs conformance from raw)
 - **Features Directory**: Empty (needs processing)
 - **Labels Directory**: Empty (needs generation)
+
+### ⚠️ Data Format Issue
+**Problem**: Some files have BigQuery-specific data types (`dbdate`, `dbdatetime`) that pandas cannot read directly.
+
+**Error**: `TypeError: data type 'dbdate' not understood`
+
+**Solution**: Conformance step (raw → staging) converts BigQuery types to pandas-compatible types.
+
+**Status**: Data exists but needs type conversion before use.
 
 ### Existing Files on External Drive
 
