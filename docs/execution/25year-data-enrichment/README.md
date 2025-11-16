@@ -39,6 +39,12 @@
   - Key decisions and rationale
   - Quick reference guide
 
+- **HISTORICAL_DATA_LOCATIONS.md** - 📊 HISTORICAL DATA LOCATIONS - Complete inventory of where all data is stored
+  - BigQuery legacy data (yahoo_finance_comprehensive, forecasting_data_warehouse)
+  - External drive current data (332 files in raw/, 19 in exports/)
+  - Data gaps and backfill requirements
+  - Migration strategy from BigQuery to local drive
+
 ### Pre-Execution Review
 - **FINAL_FORENSIC_REVIEW_20251116.md** - Complete audit (bug analysis, risk assessment)
 - **CRITICAL_FIXES_APPLIED.md** - Technical details of all 8 bug fixes

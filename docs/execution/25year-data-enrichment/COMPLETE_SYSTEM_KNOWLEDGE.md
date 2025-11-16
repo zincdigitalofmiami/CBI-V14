@@ -704,6 +704,18 @@ Before starting any work, verify:
 
 ## 📚 QUICK REFERENCE
 
+### Historical Data Locations
+**See**: `HISTORICAL_DATA_LOCATIONS.md` for complete inventory
+
+**Summary**:
+- **BigQuery (Legacy)**: 
+  - `yahoo_finance_comprehensive`: 20+ years, 57,397+ rows
+  - `forecasting_data_warehouse`: 108,487+ rows across 99 tables
+- **External Drive (Primary)**: 
+  - `TrainingData/raw/`: 332 files (267MB)
+  - `TrainingData/exports/`: 19 files (23MB)
+  - **Status**: Partially populated, needs 25-year backfill
+
 ### Data Paths
 - **Raw Data**: `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/raw/`
 - **Staging Data**: `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/staging/`
