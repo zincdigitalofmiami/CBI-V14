@@ -256,77 +256,135 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 def collect_symbol(symbol: str, category: str) -> bool:
     """
     Collect all data for a single symbol
+    SEQUENTIAL PROCESSING: Delete old file → Write new file → Wait
+    Respectful rate limiting to avoid getting blocked
     """
-    try:
-        logger.info(f"Collecting {symbol} ({category})...")
-        
-        # Download historical data
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(start=START_DATE, end=END_DATE, auto_adjust=True, prepost=True)
-        
-        if df.empty:
-            logger.warning(f"No data for {symbol}")
-            return False
-        
-        # Standardize column names
-        df.columns = [col.replace(' ', '_') for col in df.columns]
-        df = df.rename(columns={
-            'Open': 'Open',
-            'High': 'High',
-            'Low': 'Low',
-            'Close': 'Close',
-            'Volume': 'Volume'
-        })
-        
-        # Add symbol and date
-        df['Symbol'] = symbol
-        df['Date'] = df.index
-        df = df.reset_index(drop=False)
-        if 'Date' not in df.columns:
-            df['Date'] = df.index
-        
-        # Calculate technical indicators
-        df_with_indicators = calculate_technical_indicators(df)
-        
-        # Save price data
-        price_dir = YAHOO_DIR / "prices" / category
-        price_dir.mkdir(parents=True, exist_ok=True)
-        price_file = price_dir / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}.parquet"
-        df_with_indicators.to_parquet(price_file, index=False)
-        logger.info(f"✅ Saved {len(df_with_indicators)} rows for {symbol}")
-        
-        # Save technical indicators separately
-        indicator_cols = [col for col in df_with_indicators.columns 
-                         if any(x in col for x in ['SMA', 'EMA', 'RSI', 'MACD', 'BB', 'Stoch', 
-                                                   'ATR', 'ADX', 'OBV', 'CCI', 'Williams', 'ROC', 
-                                                   'Momentum', 'Return', 'Volatility'])]
-        if indicator_cols:
-            indicators_df = df_with_indicators[['Date', 'Symbol'] + indicator_cols].copy()
-            indicator_file = YAHOO_DIR / "technical" / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}_indicators.parquet"
-            indicators_df.to_parquet(indicator_file, index=False)
-        
-        # Get fundamental data (if available)
+    max_retries = 3
+    retry_delay = 2  # Start with 2 seconds
+    
+    for attempt in range(max_retries):
         try:
-            info = ticker.info
-            if info:
-                fundamentals_df = pd.DataFrame([{
-                    'Symbol': symbol,
-                    'Date': datetime.now().date(),
-                    **{k: v for k, v in info.items() if isinstance(v, (int, float, str))}
-                }])
-                fundamentals_file = YAHOO_DIR / "fundamentals" / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}_fundamentals.parquet"
-                fundamentals_df.to_parquet(fundamentals_file, index=False)
-        except:
-            pass  # Not all symbols have fundamentals
-        
-        # Rate limiting
-        time.sleep(0.5)
-        
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Error collecting {symbol}: {e}")
-        return False
+            logger.info(f"Collecting {symbol} ({category})... [Attempt {attempt + 1}/{max_retries}]")
+            
+            # Download historical data with timeout
+            ticker = yf.Ticker(symbol)
+            
+            # Respectful delay before request
+            if attempt > 0:
+                wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                logger.info(f"  Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+            else:
+                time.sleep(1.0)  # 1 second delay between symbols (respectful)
+            
+            df = ticker.history(start=START_DATE, end=END_DATE, auto_adjust=True, prepost=True, timeout=30)
+            
+            if df.empty:
+                logger.warning(f"  ⚠️  No data for {symbol}")
+                return False
+            
+            # Standardize column names
+            df.columns = [col.replace(' ', '_') for col in df.columns]
+            df = df.rename(columns={
+                'Open': 'Open',
+                'High': 'High',
+                'Low': 'Low',
+                'Close': 'Close',
+                'Volume': 'Volume'
+            })
+            
+            # Add symbol and date
+            df['Symbol'] = symbol
+            df['Date'] = df.index
+            df = df.reset_index(drop=False)
+            if 'Date' not in df.columns:
+                df['Date'] = df.index
+            
+            # Calculate technical indicators
+            df_with_indicators = calculate_technical_indicators(df)
+            
+            # SEQUENTIAL REPLACEMENT: Delete old file → Write new file
+            price_dir = YAHOO_DIR / "prices" / category
+            price_dir.mkdir(parents=True, exist_ok=True)
+            price_file = price_dir / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}.parquet"
+            
+            # Delete old file if exists
+            if price_file.exists():
+                price_file.unlink()
+                logger.info(f"  🗑️  Deleted old file: {price_file.name}")
+            
+            # Write new file immediately
+            df_with_indicators.to_parquet(price_file, index=False)
+            logger.info(f"  ✅ Saved {len(df_with_indicators)} rows for {symbol}")
+            
+            # Save technical indicators separately (same pattern: delete → write)
+            indicator_cols = [col for col in df_with_indicators.columns 
+                             if any(x in col for x in ['SMA', 'EMA', 'RSI', 'MACD', 'BB', 'Stoch', 
+                                                       'ATR', 'ADX', 'OBV', 'CCI', 'Williams', 'ROC', 
+                                                       'Momentum', 'Return', 'Volatility'])]
+            if indicator_cols:
+                indicators_df = df_with_indicators[['Date', 'Symbol'] + indicator_cols].copy()
+                indicator_file = YAHOO_DIR / "technical" / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}_indicators.parquet"
+                
+                # Delete old indicator file if exists
+                if indicator_file.exists():
+                    indicator_file.unlink()
+                
+                # Write new indicator file
+                indicators_df.to_parquet(indicator_file, index=False)
+            
+            # Get fundamental data (if available) - same pattern
+            try:
+                time.sleep(0.5)  # Small delay before info request
+                info = ticker.info
+                if info:
+                    fundamentals_df = pd.DataFrame([{
+                        'Symbol': symbol,
+                        'Date': datetime.now().date(),
+                        **{k: v for k, v in info.items() if isinstance(v, (int, float, str))}
+                    }])
+                    fundamentals_file = YAHOO_DIR / "fundamentals" / f"{symbol.replace('=', '_').replace('^', '').replace('-', '_')}_fundamentals.parquet"
+                    
+                    # Delete old fundamentals file if exists
+                    if fundamentals_file.exists():
+                        fundamentals_file.unlink()
+                    
+                    # Write new fundamentals file
+                    fundamentals_df.to_parquet(fundamentals_file, index=False)
+            except Exception as e:
+                logger.debug(f"  No fundamentals for {symbol}: {e}")
+            
+            # Success - return
+            return True
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            
+            # Check for rate limiting errors
+            if any(keyword in error_msg for keyword in ['rate limit', 'too many requests', '429', 'blocked', 'forbidden']):
+                wait_time = retry_delay * (2 ** (attempt + 1))  # Exponential backoff
+                logger.warning(f"  ⚠️  Rate limit detected for {symbol}. Waiting {wait_time}s...")
+                time.sleep(wait_time)
+                continue  # Retry
+            
+            # Check for timeout errors
+            elif 'timeout' in error_msg or 'timed out' in error_msg:
+                wait_time = retry_delay * (2 ** attempt)
+                logger.warning(f"  ⚠️  Timeout for {symbol}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+                continue  # Retry
+            
+            # Other errors - log and retry once
+            elif attempt < max_retries - 1:
+                wait_time = retry_delay * (2 ** attempt)
+                logger.warning(f"  ⚠️  Error for {symbol}: {e}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+                continue  # Retry
+            else:
+                logger.error(f"  ❌ Failed to collect {symbol} after {max_retries} attempts: {e}")
+                return False
+    
+    return False
 
 
 def main():
@@ -341,29 +399,11 @@ def main():
     logger.info(f"Output Directory: {YAHOO_DIR}")
     logger.info("")
     
-    # Delete old Yahoo Finance data (REPLACE, not append)
-    logger.info("🗑️  Cleaning old Yahoo Finance data...")
-    if YAHOO_DIR.exists():
-        for old_file in YAHOO_DIR.rglob("*.parquet"):
-            if old_file.exists():
-                old_file.unlink()
-        logger.info("✅ Old Yahoo Finance data deleted")
-    
-    # Also clean old BigQuery export files that are Yahoo-related
-    logger.info("🗑️  Cleaning old BigQuery export files...")
-    old_yahoo_files = [
-        RAW_DIR / "models_v4" / "yahoo_finance_weekend_complete.parquet",
-        RAW_DIR / "models_v4" / "yahoo_indicators_wide.parquet",
-        RAW_DIR / "models_v4" / "baseline_1m_comprehensive_2yr.parquet",
-        RAW_DIR / "models_v4" / "full_220_comprehensive_2yr.parquet",
-        RAW_DIR / "models_v4" / "treasury_10y_yahoo_complete.parquet",
-        RAW_DIR / "forecasting_data_warehouse" / "yahoo_finance_historical.parquet",
-        RAW_DIR / "forecasting_data_warehouse" / "yahoo_finance_enhanced.parquet",
-    ]
-    for old_file in old_yahoo_files:
-        if old_file.exists():
-            old_file.unlink()
-            logger.info(f"Deleted: {old_file.name}")
+    # Note: We do NOT batch delete - we delete files one at a time as we replace them
+    # This is handled in collect_symbol() function for each symbol
+    logger.info("📋 Sequential processing: Files will be deleted and replaced one at a time")
+    logger.info("   This prevents data loss and respects Yahoo Finance rate limits")
+    logger.info("")
     
     # Collect all symbols
     total_symbols = sum(len(symbols) for symbols in SYMBOLS.values())
@@ -378,12 +418,18 @@ def main():
         logger.info(f"Category: {category.upper()} ({len(symbols)} symbols)")
         logger.info(f"{'='*80}")
         
-        for symbol in symbols:
+        # SEQUENTIAL PROCESSING: One symbol at a time
+        for i, symbol in enumerate(symbols, 1):
+            logger.info(f"\n[{i}/{len(symbols)}] Processing {symbol}...")
             success = collect_symbol(symbol, category)
             if success:
                 collected += 1
             else:
                 failed += 1
+            
+            # Respectful delay between symbols (already handled in collect_symbol, but extra safety)
+            if i < len(symbols):  # Don't wait after last symbol
+                time.sleep(0.5)  # Additional small delay between symbols
     
     # Summary
     logger.info("")
