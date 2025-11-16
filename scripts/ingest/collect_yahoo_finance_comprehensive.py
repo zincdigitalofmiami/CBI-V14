@@ -295,9 +295,12 @@ def collect_symbol(symbol: str, category: str) -> bool:
             
             # Add symbol and date
             df['Symbol'] = symbol
-            df['Date'] = df.index
-            df = df.reset_index(drop=False)
-            if 'Date' not in df.columns:
+            df = df.reset_index()
+            if 'Date' in df.columns:
+                pass  # Already has Date column from reset_index
+            elif df.index.name == 'Date':
+                df = df.reset_index()
+            else:
                 df['Date'] = df.index
             
             # Calculate technical indicators
