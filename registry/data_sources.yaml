@@ -1,0 +1,134 @@
+version: "1.0"
+description: "Centralized data source registry - add new sources by editing this file"
+last_updated: "2025-11-16"
+
+# === CURRENT ACTIVE SOURCES ===
+sources:
+  
+  # === DAILY SOURCES (FREE, HIGH RELIABILITY) ===
+  
+  fred_macro:
+    script: "scripts/ingest/collect_fred_historical.py"
+    schedule: "daily"
+    time: "06:10"
+    args: ["--mode", "incremental", "--lookback-days", "10"]
+    priority: "P0"
+    reliability: 0.98
+    free: true
+    description: "Federal Reserve Economic Data - macro indicators"
+    
+  yahoo_prices:
+    script: "scripts/ingest/collect_yahoo_prices.py"
+    schedule: "daily"
+    time: "07:00"
+    args: ["--symbols", "all", "--lookback-days", "7"]
+    priority: "P0"
+    reliability: 0.95
+    free: true
+    description: "Yahoo Finance - 55 symbols OHLCV + technicals"
+    
+  noaa_weather:
+    script: "scripts/ingest/collect_noaa_historical.py"
+    schedule: "daily"
+    time: "06:40"
+    args: ["--mode", "incremental", "--lookback-days", "14"]
+    priority: "P0"
+    reliability: 0.95
+    free: true
+    description: "NOAA CDO - weather for soybean regions"
+  
+  # === WEEKLY SOURCES (FREE, GOVERNMENT) ===
+  
+  cftc_cot:
+    script: "scripts/backfill/backfill_cftc_cot_historical.py"
+    schedule: "weekly"
+    time: "09:15"
+    day_of_week: "Saturday"
+    args: ["2006", "now", "--mode", "incremental"]
+    priority: "P0"
+    reliability: 0.99
+    free: true
+    description: "CFTC Commitment of Traders - positioning data"
+    
+  eia_biofuels:
+    script: "scripts/ingest/collect_eia_biofuels.py"
+    schedule: "weekly"
+    time: "07:10"
+    day_of_week: "Thursday"
+    args: ["--lookback-weeks", "4"]
+    priority: "P1"
+    reliability: 0.95
+    free: true
+    description: "EIA - biodiesel production and stocks"
+    
+  usda_exports:
+    script: "scripts/ingest/collect_usda_exports.py"
+    schedule: "weekly"
+    time: "08:00"
+    day_of_week: "Thursday"
+    args: ["--lookback-weeks", "8"]
+    priority: "P1"
+    reliability: 0.95
+    free: true
+    description: "USDA - weekly export sales"
+  
+  # === MONTHLY SOURCES (FREE, GOVERNMENT) ===
+  
+  usda_nass:
+    script: "scripts/ingest/collect_usda_nass.py"
+    schedule: "monthly"
+    time: "08:05"
+    day_of_month: 15
+    args: ["--lookback-months", "3"]
+    priority: "P1"
+    reliability: 0.95
+    free: true
+    description: "USDA NASS - crop reports, acreage, yield"
+    
+  bls_indicators:
+    script: "scripts/ingest/collect_bls_data.py"
+    schedule: "monthly"
+    time: "09:00"
+    day_of_month: 15
+    args: ["--series", "CPIAUCSL,APU0000701111"]
+    priority: "P1"
+    reliability: 0.98
+    free: true
+    description: "BLS - inflation and agricultural prices"
+
+# === FUTURE SOURCES TEMPLATE ===
+# Uncomment and customize to add new sources
+#
+# future_sources:
+#   
+#   china_customs:
+#     script: "scripts/ingest/collect_china_customs.py"
+#     schedule: "monthly"
+#     time: "10:30"
+#     day_of_month: 10
+#     args: ["--commodities", "soybean,soy_oil", "--lookback-months", "6"]
+#     priority: "P1"
+#     reliability: 0.85
+#     free: true
+#     description: "China Customs - soybean import data"
+#   
+#   inmet_brazil:
+#     script: "scripts/ingest/collect_inmet_brazil.py"
+#     schedule: "daily"
+#     time: "07:30"
+#     args: ["--stations", "all", "--lookback-days", "10"]
+#     priority: "P1"
+#     reliability: 0.90
+#     free: true
+#     description: "INMET Brazil - weather stations"
+#   
+#   palm_oil_prices:
+#     script: "scripts/ingest/collect_palm_oil_mpob.py"
+#     schedule: "daily"
+#     time: "08:00"
+#     args: ["--lookback-days", "10"]
+#     priority: "P1"
+#     reliability: 0.85
+#     free: false
+#     description: "MPOB Malaysia - palm oil prices"
+

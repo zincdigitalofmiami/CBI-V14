@@ -1,0 +1,100 @@
+version: "1.0"
+description: "Declarative join specification with automated tests for 25-year data pipeline"
+last_updated: "2025-11-16"
+
+joins:
+  # === BASE: Yahoo Historical Data (All 55 Symbols, 2000-2025) ===
+  - name: "base_prices"
+    source: "staging/yahoo_historical_all_symbols.parquet"
+    tests:
+      - expect_date_range: ["2000-11-13", "2025-11-30"]
+      - expect_symbols_count_gte: 55
+      - expect_zl_rows_gte: 6000
+
+  # === JOIN: FRED Macro Data ===
+  - name: "add_macro"
+    left: "<<base_prices>>"
+    right: "staging/fred_macro_2000_2025.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["fed_funds_rate", "vix", "treasury_10y", "usd_broad_index"]
+      - expect_null_rate_below: {"fed_funds_rate": 0.05, "vix": 0.05}
+
+  # === JOIN: NOAA Weather Data ===
+  - name: "add_weather"
+    left: "<<add_macro>>"
+    right: "staging/noaa_weather_2000_2025.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill: {"us_midwest_precip_30d": 0.0, "us_midwest_temp_avg": 10.0}
+    tests:
+      - expect_rows_preserved
+      - expect_null_rate_below: {"us_midwest_precip_30d": 0.30}
+
+  # === JOIN: CFTC Positioning (2006+) ===
+  - name: "add_cftc"
+    left: "<<add_weather>>"
+    right: "staging/cftc_cot_2006_2025.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true  # Only available 2006+
+      fill: {}
+    tests:
+      - expect_rows_preserved
+      - expect_cftc_available_after: "2006-01-01"
+
+  # === JOIN: USDA Data (Monthly/Weekly) ===
+  - name: "add_usda"
+    left: "<<add_cftc>>"
+    right: "staging/usda_nass_2000_2025.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+
+  # === JOIN: EIA Biofuels (2010+) ===
+  - name: "add_biofuels"
+    left: "<<add_usda>>"
+    right: "staging/eia_biofuels_2010_2025.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill: {}
+    tests:
+      - expect_rows_preserved
+
+  # === JOIN: Regime Assignments (CRITICAL) ===
+  - name: "add_regimes"
+    left: "<<add_biofuels>>"
+    right: "registry/regime_calendar.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: false  # Every date MUST have a regime
+      fill: {"market_regime": "allhistory", "training_weight": 1}
+    tests:
+      - expect_rows_preserved
+      - expect_regime_cardinality_gte: 7
+      - expect_columns_present: ["market_regime", "training_weight"]
+
+# === FINAL TESTS (Must Pass Before Feature Engineering) ===
+final_tests:
+  - expect_total_rows_gte: 6000
+  - expect_total_cols_gte: 100
+  - expect_no_duplicate_dates
+  - expect_date_range: ["2000-01-01", "2025-12-31"]
+  - expect_regime_cardinality_gte: 7
+  - expect_weight_range: [50, 500]
+

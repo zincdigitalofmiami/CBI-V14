@@ -1,5 +1,5 @@
 # CBI-V14 Training & Prediction Requirements
-# Updated: 2025-01-XX
+# Updated: 2025-11-16 (Added YAML and automation support)
 # Python 3.12 compatible
 
 # Core ML Libraries
@@ -42,8 +42,16 @@ mlflow>=3.6.0
 pandas>=2.3.3
 scipy>=1.16.2
 protobuf>=3.20.3,<5.0.0  # TensorFlow compatibility
+pyarrow>=14.0.0
+
+# Configuration & Automation (NEW)
+pyyaml>=6.0
+jinja2>=3.1.0
+requests>=2.31.0
+
+# Explainability
+shap>=0.44.0
 
 # Note: OpenMP runtime required for LightGBM/XGBoost on macOS:
 # Run: brew install libomp
 # Or: sudo chown -R $(whoami) /opt/homebrew && brew install libomp
-
