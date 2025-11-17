@@ -4,11 +4,12 @@
 ---
 
 ## 🎯 Current Architecture (November 17, 2025)
-- Apple M4 Mac handles every training and inference task (TensorFlow Metal + CPU tree libs).
+- Apple M4 Mac handles every training and inference task (TensorFlow Metal + PyTorch MPS + CPU tree libs).
 - BigQuery = storage plus dashboard read layer only; no BigQuery ML, no AutoML jobs.
 - Predictions generated locally, uploaded with `scripts/upload_predictions.py`, then read by the Vercel dashboard.
 - The `vertex-ai/` directory is kept for reference. See `vertex-ai/LEGACY_MARKER.md`. Do **not** run anything in there.
 - First-run models save to `Models/local/.../{model}` without version suffix. Pass an explicit `version` only when promoting a later retrain.
+- **ZL = Soybean Oil Futures** (CBOT ticker) - NOT corn. Primary commodity for single-asset baseline.
 
 ### Architecture Pattern: Hybrid Python + BigQuery SQL
 **Data Collection**: Python scripts → External drive (`/Volumes/Satechi Hub/`) + BigQuery  
@@ -31,6 +32,23 @@
 - `docs/plans/IMPLEMENTATION_PLAN_BIG8_UPDATE.md` – Active work on Big 8 labor pillar rollout.
 - `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md` & `COMPREHENSIVE_AUDIT_20251115_FRESH.md` – Latest data verification status.
 - `README_CURRENT.md` – Repo map, workflows, and architecture recap.
+
+### PyTorch Knowledge Base (November 2025)
+- `Py Knowledge/` – Comprehensive PyTorch documentation tailored for CBI-V14
+  - **01_pytorch_fundamentals.md** – Core concepts for commodity forecasting
+  - **02_deep_dive_optimizations.md** – MPS backend, torch.compile, mixed precision
+  - **03_extensions_custom_ops.md** – Custom operators for commodity-specific calculations
+  - **04_neural_network_recipes.md** – Practical patterns and best practices
+  - **05_torchcodec.md** – Video/multimedia (future enhancement potential)
+  - **06_executorch_deployment.md** – On-device deployment strategies
+  - **07_coreml_integration.md** – Apple Silicon optimization (optional, not primary)
+  - **08_cbi_v14_implementation.md** – Complete implementation guide
+  - **09_best_practices.md** – Do's and don'ts for commodity forecasting
+  - **10_performance_benchmarks.md** – M4 Mac specific optimizations
+  - **11_quantitative_finance_libraries.md** – QuantLib, TA-Lib, FinGPT integration
+  - **12_research_insights.md** – Dual-stream LSTM, sentiment analysis research
+  - **13_REFINED_ARCHITECTURE.md** – Production-ready architecture (CRITICAL)
+  - **ZL_SOYBEAN_OIL_CLARIFICATION.md** – ZL = Soybean Oil Futures details
 
 ### Alpha Vantage Integration Documents (November 17, 2025)
 - `docs/plans/ALPHA_VANTAGE_EVALUATION.md` – Complete API evaluation and integration strategy
@@ -74,6 +92,8 @@
 6. **API Keys MUST be stored in macOS Keychain** - Use `src/utils/keychain_manager.py` to retrieve keys. Never hardcode keys or use environment variables. See Security section in `TRAINING_MASTER_EXECUTION_PLAN.md`.
 7. **Alpha Vantage technicals are pre-calculated** - Don't recalculate SMA, EMA, RSI, MACD, etc. from API. Use Alpha Vantage for gap-filling and validation only.
 8. **Follow existing collection patterns** - New collectors (like Alpha Vantage) should follow the same pattern as `collect_fred_comprehensive.py`: Python → External drive + BigQuery.
+9. **PyTorch architecture decisions** - Follow `Py Knowledge/13_REFINED_ARCHITECTURE.md`: TCN vs LSTM bake-off, 30-60 curated features, single-asset (ZL) first, PyTorch → BigQuery inference path (NOT CoreML primary), focus on MAPE/Sharpe quality not throughput.
+10. **ZL = Soybean Oil Futures** - NOT corn. Primary commodity for single-asset baseline. See `Py Knowledge/ZL_SOYBEAN_OIL_CLARIFICATION.md` for details.
 
 ---
 
@@ -94,6 +114,8 @@
 - `README_CURRENT.md`, `docs/reference/INSTITUTIONAL_FRAMEWORK_COMPLETE.md`
 - `scripts/export_training_data.py`, `scripts/upload_predictions.py`, `scripts/data_quality_checks.py`
 - `src/training/`, `src/prediction/`, `src/analysis/`
+- `Py Knowledge/13_REFINED_ARCHITECTURE.md` – Production-ready PyTorch architecture (CRITICAL)
+- `Py Knowledge/ZL_SOYBEAN_OIL_CLARIFICATION.md` – ZL commodity details
 
 ---
 
@@ -154,6 +176,81 @@
 
 ---
 
+## 🧠 PyTorch Architecture Refinements (November 2025)
+
+### Critical Architecture Decisions
+
+**Model Family**: Run bake-off with 2-3 baselines:
+- **TCN (Temporal Convolutional Network)** – Often best for commodity data, compiles cleaner on MPS
+- **LSTM + Scaled Dot-Product Attention** – Solid baseline, proven architecture
+- **N-BEATSx** (Optional) – Interpretable trend/seasonal blocks
+
+**Feature Set**: **30-60 curated features** (NOT 15, NOT 290)
+- Prices: ZL level/returns, limited technicals (RSI, MACD, ATR)
+- Substitution & Macro: Palm oil spread (critical for ZL), WTI, USD/BRL, VIX
+- Weather: Brazil/Argentina precip/GDD (primary for ZL), Midwest (secondary)
+- Positioning: CFTC managed money flows, regime flags
+- **Lock feature order** after SHAP/MI selection to avoid drift
+
+**Commodity Strategy**: **Single-asset multi-horizon** (ZL = Soybean Oil Futures)
+- Start with ZL only (soybean oil futures)
+- Add palm oil, crude oil as **context inputs**, not separate targets
+- Multi-commodity outputs only after single-asset proven
+
+**Training Optimizations**:
+- **MPS backend**: `torch.backends.mps.allow_tf32 = True`
+- **Mixed precision**: `autocast(dtype=torch.float16)` with `GradScaler`
+- **torch.compile**: Feature flag with fallback (1.2-2.0x speedup, not guaranteed 2.5x)
+- **Gradient clipping**: `clip_grad_norm_(max_norm=1.0)` – mandatory for RNNs
+- **Walk-forward CV**: Never shuffle across time, rolling origin validation
+
+**Loss Function**: Huber loss (δ=1.0) with horizon weights + directionality penalty
+
+**Inference Path**: **PyTorch on M4 → BigQuery** (NOT CoreML primary)
+- Daily: Load parquet → PyTorch inference → Upload to BigQuery → Dashboard reads views
+- CoreML optional for demos/on-device, not canonical serving path
+- Focus on **MAPE/Sharpe parity**, not throughput (35k preds/s unnecessary for daily batch)
+
+### BigQuery/Mac Integration Pattern
+
+**Cloud Side (BigQuery)**:
+- Data collection, feature engineering, scheduling, state management
+- Export parquet bundles with manifest.json + `_SUCCESS` markers
+- Store predictions, performance views, dashboard reads
+
+**Mac Side (M4)**:
+- Training with PyTorch MPS backend
+- Inference using PyTorch (not CoreML primary)
+- Upload predictions to BigQuery
+- Quality gates: MAPE/Sharpe parity checks before deployment
+
+**Pattern**: BigQuery owns clocks/state/backups; Mac owns training/compute
+
+### Library Enhancements (Investigated, Not Yet Implemented)
+
+**QuantLib**: Derivatives pricing, Monte Carlo simulations, risk metrics
+**TA-Lib**: 150+ technical indicators, 60+ candlestick patterns
+**FinGPT/FinBERT**: Financial sentiment analysis from news
+**QuantRocket**: Professional data pipeline (free tier available)
+**Finance-Python**: VaR, CVaR, Sharpe ratio calculations
+
+All libraries are M4 Mac compatible and can enhance features WITHOUT disrupting existing structure.
+
+### Research Integration
+
+**Dual-Stream LSTM** (arXiv:2508.06497): Achieved 0.94 AUC by fusing price signals with news sentiment
+- Architecture: Price stream + News stream → Cross-modal attention → Temporal attention
+- Critical finding: Without news component, AUC drops to 0.46
+- Implementation: Add after single-asset baseline proven
+
+**Sentiment Analysis** (GitHub: dipakml/Sentiment-analysis-of-commodity-news-using-NLP)
+- 10,000+ manually annotated commodity news headlines (2000-2021)
+- Can enhance existing features with sentiment scores
+
+**Supply Chain NLP** (MIT Thesis): Techniques for long-horizon forecasting improvements
+
+---
+
 ## 📊 Architecture Audit Findings (Nov 17, 2025)
 
 ### Actual System Pattern
@@ -167,7 +264,7 @@ Feature Engineering: HYBRID (already in use!)
     - Python: Sentiment (NLP), policy extraction, complex interactions
     - Alpha Vantage: Pre-calculated technicals (NEW - store as-is, don't recalculate)
     ↓
-Training: Local Mac M4 (TensorFlow Metal)
+Training: Local Mac M4 (TensorFlow Metal + PyTorch MPS)
     ↓
 Predictions: Upload to BigQuery → Dashboard
 ```
@@ -191,7 +288,13 @@ Predictions: Upload to BigQuery → Dashboard
 
 ---
 
-**Last Updated**: November 17, 2025  
+**Last Updated**: November 2025  
 **Action**: Update this file whenever architecture, guardrails, or verification status changes.  
-**Recent Changes**: Added Alpha Vantage integration status, hybrid architecture findings, Phase 1/2 approach, formalized data sources
+**Recent Changes**: 
+- Added PyTorch knowledge base documentation (`Py Knowledge/`)
+- Added refined architecture recommendations (TCN vs LSTM, 30-60 features, single-asset strategy)
+- Clarified ZL = Soybean Oil Futures (NOT corn)
+- Added BigQuery/Mac integration pattern
+- Added library enhancements investigation (QuantLib, TA-Lib, FinGPT)
+- Added research insights integration (dual-stream LSTM, sentiment analysis)
 
