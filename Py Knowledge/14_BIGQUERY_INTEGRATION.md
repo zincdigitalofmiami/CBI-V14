@@ -426,4 +426,22 @@ write_to_bq(final_features, 'training.zl_training_prod_allhistory_1m')
 
 ---
 
-*Updated: November 2025 - Based on FINAL_GPT_INTEGRATION_DIRECTIVE.md*
+*Updated: November 17, 2025 - Based on complete architecture audit*
+
+## Architecture Audit Confirmation (Nov 17, 2025)
+
+**VERIFIED**: The hybrid architecture described in this document is the ACTUAL production system:
+- External drive usage: `/Volumes/Satechi Hub/` (620MB raw data)
+- BigQuery SQL features: `advanced_feature_engineering.sql`, `create_big8_signal_views.sql`
+- Python features: `feature_calculations.py` (900+ lines)
+- Training tables: `training.zl_training_prod_allhistory_*` (305-449 features)
+- No Cloud Run jobs (all local/cron currently)
+
+**Alpha Vantage Status**:
+- Collection script: To be created (`collect_alpha_vantage_master.py`)
+- BQ tables: To be created (`raw_intelligence.alpha_vantage_*`)
+- Integration: Follows existing pattern (Python → External drive + BQ)
+- Premium Plan75: 75 API calls/minute
+- MCP server: Configured and tested
+
+See `docs/plans/ARCHITECTURE_REVIEW_REPORT.md` for complete audit findings.

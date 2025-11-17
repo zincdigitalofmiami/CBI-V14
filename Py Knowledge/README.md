@@ -127,7 +127,15 @@ Start with [PyTorch Fundamentals](./01_pytorch_fundamentals.md) for core concept
 
 ---
 
-*Last Updated: November 2024*
+*Last Updated: November 17, 2025*
 *Tailored for CBI-V14 Commodity Price Forecasting Project*
+
+## Recent Updates (November 17, 2025)
+- ✅ Alpha Vantage integration strategy finalized (see `docs/plans/ALPHA_VANTAGE_EVALUATION.md`)
+- ✅ MCP server configured for interactive Alpha Vantage testing
+- ✅ Architecture audit completed - confirmed hybrid Python + BigQuery SQL pattern
+- ✅ Data source responsibilities formalized (FRED, Yahoo, Alpha Vantage)
+- ✅ Phase 1: ZL Alpha Vantage integration, Phase 2: ES futures system
+- See `docs/plans/FINAL_GPT_INTEGRATION_DIRECTIVE.md` for complete integration plan
 
 
