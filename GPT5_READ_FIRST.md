@@ -48,6 +48,7 @@
 3. Stay inside existing us-central1 datasets; do not create new datasets/tables without sign-off.
 4. Run data quality checks plus BigQuery verification before training, uploading, or publishing results.
 5. Save models with `version=None` on first run; create `_v002` style directories only when explicitly versioning a retrain.
+6. **API Keys MUST be stored in macOS Keychain** - Use `src/utils/keychain_manager.py` to retrieve keys. Never hardcode keys or use environment variables. See Security section in `TRAINING_MASTER_EXECUTION_PLAN.md`.
 
 ---
 

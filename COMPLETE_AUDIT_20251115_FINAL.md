@@ -1,24 +1,20 @@
 # 📊 COMPLETE BIGQUERY DATASET AUDIT - FINAL REPORT
 **Audit Date**: November 15, 2025 10:57:32 UTC  
-**Last Updated**: November 15, 2025 (Post-Migration)  
 **Status**: ✅ COMPREHENSIVE AUDIT COMPLETE  
-**Migration Status**: ✅ 100% COMPLETE (All active datasets in us-central1)
+**Migration Status**: ⚠️ 65.7% COMPLETE (23/35 datasets in us-central1)
 
 ---
 
 ## 🎯 EXECUTIVE SUMMARY
 
-### Current State (Post-Migration Update: Nov 15, 2025)
+### Current State
 - **Total Datasets**: 35
 - **Total Tables**: 432
-- **us-central1**: 29 datasets (82.9%) ✅ **UPDATED**
-- **US region**: 6 datasets (17.1%) ✅ **BACKUPS ONLY**
-  - 0 critical datasets need migration ✅
-  - 6 backup datasets (intentional, for rollback)
-  - 0 empty datasets in US
-
-### Migration Status: ✅ COMPLETE
-All active datasets migrated to us-central1. Zero cross-region joins.
+- **us-central1**: 23 datasets (65.7%) ✅
+- **US region**: 12 datasets (34.3%) ⚠️
+  - 3 critical datasets with data need migration
+  - 7 backup datasets (expected in US)
+  - 2 empty datasets (low priority)
 
 ### Key Findings
 ✅ **yahoo_finance_comprehensive VERIFIED**
@@ -223,22 +219,65 @@ All active datasets migrated to us-central1. Zero cross-region joins.
 - 💾 7 backup datasets (intentionally in US)
 - 📦 2 empty datasets (low priority)
 
-### ✅ MIGRATION COMPLETED (November 15, 2025)
+### 🎯 PRIORITY MIGRATION TASKS
 
-**All 6 critical datasets migrated:**
-1. ✅ `raw_intelligence` (7 tables) → us-central1
-2. ✅ `training` (18 tables) → us-central1
-3. ✅ `features` (2 tables) → us-central1
-4. ✅ `predictions` (5 tables) → us-central1
-5. ✅ `monitoring` (1 table) → us-central1
-6. ✅ `archive` (11 tables) → us-central1
+#### 1. 🔴 HIGH PRIORITY: market_data
 
-**Naming compliance achieved:**
-- ✅ Prediction tables renamed to spec
-- ✅ Prediction horizon views created (1w, 3m, 6m, 12m)
-- ✅ 100% Option 3 naming compliance
+**Data**: 155,075 rows, ~35 MB  
+**Impact**: Medium (contains market data, but duplicates exist)  
+**Complexity**: Medium (4 tables, some archived)
 
-**Result**: Zero cross-region joins, all active data in us-central1.
+**Migration Steps**:
+```bash
+# 1. Create backup
+bq mk --dataset --location=US cbi-v14:market_data_backup_temp
+bq cp cbi-v14:market_data.* cbi-v14:market_data_backup_temp.
+
+# 2. Create new dataset in us-central1
+bq mk --dataset --location=us-central1 cbi-v14:market_data_new
+
+# 3. Copy tables cross-region
+for table in yahoo_finance_enhanced _ARCHIVED_yahoo_finance_enhanced_20251102 \
+             yahoo_finance_20yr_STAGING hourly_prices; do
+  bq cp --location=US \
+    cbi-v14:market_data.$table \
+    cbi-v14:market_data_new.$table
+done
+
+# 4. Verify row counts
+# 5. Rename datasets
+# 6. Update application configs
+```
+
+#### 2. 🟡 MEDIUM PRIORITY: dashboard
+
+**Data**: 4 rows total  
+**Impact**: High (dashboard displays)  
+**Complexity**: Low (3 tables, minimal data)
+
+**Migration Steps**:
+```bash
+bq mk --dataset --location=us-central1 cbi-v14:dashboard_new
+bq cp cbi-v14:dashboard.* cbi-v14:dashboard_new.
+# Verify and swap
+```
+
+#### 3. 🟡 MEDIUM PRIORITY: weather
+
+**Data**: 3 rows  
+**Impact**: Low (minimal data)  
+**Complexity**: Very Low (1 table)
+
+**Migration Steps**:
+```bash
+bq mk --dataset --location=us-central1 cbi-v14:weather_new
+bq cp cbi-v14:weather.daily_updates cbi-v14:weather_new.daily_updates
+# Verify and swap
+```
+
+#### 4. 📦 LOW PRIORITY: Empty Datasets
+
+**vegas_intelligence** and **models_v5**: Can be recreated directly in us-central1 when needed.
 
 ### 💾 Backup Datasets: NO ACTION NEEDED
 
@@ -309,22 +348,20 @@ The 7 backup datasets (`*_backup_20251115`) are intentionally in US region:
 
 ## ✅ FINAL CONCLUSIONS
 
-### Migration Assessment (UPDATED: Nov 15, 2025 - POST-MIGRATION)
-**Status**: ✅ **COMPLETE** (100%)  
-**Grade**: **A+** (All active datasets in us-central1)
+### Migration Assessment
+**Status**: ⚠️ **PARTIALLY COMPLETE** (65.7%)  
+**Grade**: **A-** (23/35 datasets migrated, all critical data safe)
 
 **Completed**:
-- ✅ All production datasets migrated to us-central1
-- ✅ All training data migrated to us-central1
+- ✅ All production datasets migrated
+- ✅ All training data migrated
 - ✅ All historical data migrated (including yahoo_finance_comprehensive)
-- ✅ All raw intelligence migrated to us-central1
-- ✅ All predictions migrated and renamed to spec
-- ✅ Robust backup strategy implemented (6 datasets in US for rollback)
-- ✅ Zero cross-region joins remaining
+- ✅ Robust backup strategy implemented
 
-**Backups** (intentional, in US for 7 days):
-- 💾 6 backup datasets (*_backup_20251115)
-- 📦 Delete after Nov 22 if stable
+**Remaining**:
+- ⚠️ 3 datasets with data need migration (~35 MB total)
+- 💾 7 backup datasets (expected in US region)
+- 📦 2 empty datasets (can be recreated)
 
 ### Data Integrity Assessment
 **Status**: ✅ **100% VERIFIED**  
@@ -347,15 +384,13 @@ The 7 backup datasets (`*_backup_20251115`) are intentionally in US region:
 - Architecture aligned with local M4 strategy
 
 ### Recommendation
-**MIGRATION COMPLETE** ✅:
-1. ✅ All 6 new architecture datasets migrated to us-central1
-2. ✅ All prediction tables renamed to spec
-3. ✅ Prediction horizon views created (1w, 3m, 6m, 12m)
-4. ✅ Zero cross-region joins remaining
-5. 💾 Delete backup datasets after Nov 22 if stable
-6. 📦 Optional: Migrate market_data, dashboard, weather (non-critical)
+**PROCEED WITH REMAINING MIGRATION**:
+1. **This Week**: Migrate market_data (HIGH priority)
+2. **This Week**: Migrate dashboard and weather (MEDIUM priority)
+3. **When Convenient**: Migrate empty datasets
+4. **After 1-2 Weeks**: Delete backup datasets if migration is stable
 
-**Overall Assessment**: ✅ **MIGRATION COMPLETE** - System ready, all active data in us-central1, naming 100% compliant.
+**Overall Assessment**: System is healthy, migration is progressing well, no critical issues detected.
 
 ---
 
@@ -375,4 +410,3 @@ Complete dataset inventory saved to: `full_dataset_audit_20251115.json`
 **Total Verified Rows**: 1,500,000+ (estimated)
 
 All data verified and accessible as of November 15, 2025 10:57 UTC.
-

@@ -64,6 +64,63 @@ Train the most accurate ZL (soybean oil) forecasting models possible using **25 
 
 ---
 
+## Security & API Key Management
+
+### macOS Keychain Storage (MANDATORY)
+
+**All API keys MUST be stored in macOS Keychain, never in code or environment variables.**
+
+**Keychain Utility**: `src/utils/keychain_manager.py`
+
+**Usage in Python scripts**:
+```python
+from src.utils.keychain_manager import get_api_key
+
+# Retrieve API key from Keychain
+fred_key = get_api_key('FRED_API_KEY')
+if not fred_key:
+    raise RuntimeError("FRED_API_KEY not found in Keychain. "
+                     "Store it using: security add-generic-password -a default -s cbi-v14.FRED_API_KEY -w <key> -U")
+```
+
+**Storing keys in Keychain**:
+```bash
+# Store FRED API key
+security add-generic-password -a default -s cbi-v14.FRED_API_KEY -w "your_key_here" -U
+
+# Store NewsAPI key
+security add-generic-password -a default -s cbi-v14.NEWSAPI_KEY -w "your_key_here" -U
+
+# Store ScrapeCreators key
+security add-generic-password -a default -s cbi-v14.SCRAPE_CREATORS_API_KEY -w "your_key_here" -U
+```
+
+**Key Naming Convention**:
+- Service name: `cbi-v14.{KEY_NAME}`
+- Account: `default` (unless specific account needed)
+- Key names: `FRED_API_KEY`, `NEWSAPI_KEY`, `SCRAPE_CREATORS_API_KEY`, `ALPHA_VANTAGE_API_KEY`, etc.
+
+**Migration from Environment Variables**:
+- Scripts should use `get_api_key()` from `keychain_manager.py`
+- Temporary fallback to `os.getenv()` is allowed during migration but will log warnings
+- All new scripts MUST use Keychain only
+- No hardcoded keys in source code (zero tolerance)
+
+**Security Benefits**:
+- Keys encrypted by macOS Keychain
+- No keys in git history or environment variables
+- Keys accessible only to user account
+- Automatic keychain locking after inactivity
+
+**Required Keys** (store in Keychain):
+- `FRED_API_KEY` - Federal Reserve Economic Data
+- `NEWSAPI_KEY` - News API for sentiment analysis
+- `SCRAPE_CREATORS_API_KEY` - ScrapeCreators social media scraping
+- `ALPHA_VANTAGE_API_KEY` - Alpha Vantage market data (if used)
+- Any other external API keys
+
+---
+
 ## Training Strategy
 
 ### Phase 1: Local Baselines (Current Focus - Enhanced with Historical Data)
@@ -640,4 +697,32 @@ A model qualifies for dashboard production use if:
 ---
 
 **Review Cadence**: Update this file weekly or after major milestones.
+
+---
+
+## Future Enhancement Ideas (Reference)
+
+**Strategic Concepts Document**: `docs/plans/CRYSTAL_BALL_ENHANCEMENT_IDEAS.md`
+
+This document captures enhancement ideas from the "Crystal Ball" AI strategic proposal, including:
+- Proactive intelligence ("reverse Google search")
+- Standardized market pulse indicators (red/yellow/green)
+- Advanced correlation analysis
+- Conversational interface concepts
+- Cost avoidance tracking & ROI
+- Enterprise scalability considerations
+
+**Note**: These are reference ideas for future consideration, not blocking dependencies for current training work. Review when planning app refinements.
+
+**Data Sources Catalog**: `docs/plans/DATA_SOURCES_REFERENCE.md`
+
+Comprehensive catalog of data sources, APIs, and scraping endpoints including:
+- Weather and climate APIs (INMET, NOAA, Argentina SMN)
+- Economic data sources (FRED, Treasury, Central Banks)
+- Market data APIs (TradingEconomics, Polygon.io)
+- Social media and sentiment sources
+- Trade policy and news sources
+- Security notes on API key management
+
+**Note**: Review security section for hardcoded API keys that need migration to Keychain.
 

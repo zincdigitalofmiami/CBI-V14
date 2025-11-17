@@ -418,6 +418,32 @@ def main():
     logger.info("   This prevents data loss and respects Yahoo Finance rate limits")
     logger.info("")
     
+    # Clean up specific old Yahoo-related files that will be replaced
+    logger.info("🗑️  Cleaning old BigQuery export files that will be replaced...")
+    old_files_to_clean = [
+        RAW_DIR / "models_v4" / "yahoo_finance_weekend_complete.parquet",
+        RAW_DIR / "models_v4" / "yahoo_indicators_wide.parquet",
+        RAW_DIR / "models_v4" / "baseline_1m_comprehensive_2yr.parquet",
+        RAW_DIR / "models_v4" / "full_220_comprehensive_2yr.parquet",
+        RAW_DIR / "models_v4" / "treasury_10y_yahoo_complete.parquet",
+        RAW_DIR / "forecasting_data_warehouse" / "yahoo_finance_historical.parquet",
+        RAW_DIR / "forecasting_data_warehouse" / "yahoo_finance_enhanced.parquet",
+    ]
+    
+    cleaned_count = 0
+    for old_file in old_files_to_clean:
+        if old_file.exists():
+            try:
+                old_file.unlink()
+                logger.info(f"  ✅ Deleted: {old_file.name}")
+                cleaned_count += 1
+            except Exception as e:
+                logger.warning(f"  ⚠️  Could not delete {old_file.name}: {e}")
+    
+    if cleaned_count > 0:
+        logger.info(f"  🧹 Cleaned {cleaned_count} old files")
+    logger.info("")
+    
     # Collect all symbols
     total_symbols = sum(len(symbols) for symbols in SYMBOLS.values())
     collected = 0

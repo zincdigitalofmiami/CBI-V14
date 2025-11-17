@@ -17,17 +17,22 @@ warnings.filterwarnings('ignore')
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
 
 
-def validate_jumps_bps(df, col, threshold_bps=50, verbose=True):
+def validate_jumps_bps(df, col, threshold_bps=50, sigma=4, lookback=60, verbose=True):
     """
-    Flag jumps >50 basis points (not percentage) for rate columns.
-    Prevents false positives when rates are near zero.
+    Flag extreme jumps using volatility-aware rules (rolling z-score > 4σ).
+    Prevents false positives from legitimate volatility spikes (VIX, Fed Funds).
     
-    For price columns, uses percentage threshold.
+    Uses instrument-specific thresholds:
+    - Rate columns: basis points with volatility-aware threshold
+    - Price columns: percentage with volatility-aware threshold
+    - VIX: higher threshold (volatility can spike legitimately)
     
     Args:
         df: DataFrame with the column to validate
         col: Column name to check
-        threshold_bps: Threshold in basis points for rate columns (default 50)
+        threshold_bps: Base threshold in basis points for rate columns (default 50)
+        sigma: Number of standard deviations for volatility-aware threshold (default 4)
+        lookback: Rolling window for volatility calculation (default 60 days)
         verbose: Whether to print results
         
     Returns:
@@ -40,55 +45,94 @@ def validate_jumps_bps(df, col, threshold_bps=50, verbose=True):
             print(f"⚠️ Column {col} not found in DataFrame")
         return df, pd.DataFrame()
     
-    # Make a copy to avoid modifying original
+    # Make a copy and ensure sorted by date
     df = df.copy()
+    if 'date' in df.columns:
+        df = df.sort_values('date')
     
     # Determine if this is a rate column
     rate_columns = ['fed_funds_rate', 'treasury_10y', 'treasury_2y', 
                     'libor_3m', 'sofr', 'prime_rate', 'mortgage_rate_30y']
     
+    # Special handling for VIX (higher volatility expected)
+    is_vix = 'vix' in col.lower()
+    
     if col in rate_columns or 'rate' in col.lower() or 'yield' in col.lower():
-        # Convert to basis points for rate columns
+        # Rate column: use basis points with volatility-aware threshold
         if verbose:
-            print(f"Validating {col} as rate column (basis points threshold: {threshold_bps})")
+            print(f"Validating {col} as rate column (volatility-aware, σ={sigma})")
         
-        # Calculate absolute change in basis points
-        abs_change = df[col].diff().abs() * 100  # Convert to basis points
-        mask = abs_change > threshold_bps
+        # Calculate returns (basis points)
+        returns = df[col].diff() * 100  # Convert to basis points
+        
+        # Calculate rolling volatility
+        rolling_std = returns.rolling(window=lookback, min_periods=lookback//2).std()
+        
+        # Dynamic threshold: base threshold OR 4σ, whichever is higher
+        dynamic_threshold = np.maximum(
+            threshold_bps,
+            rolling_std * sigma
+        )
+        
+        # Flag extreme moves
+        mask = returns.abs() > dynamic_threshold.fillna(np.inf)
         
         if verbose and mask.sum() > 0:
-            print(f"  Found {mask.sum()} jumps > {threshold_bps} bps")
-            print(f"  Max jump: {abs_change.max():.1f} bps")
-            
-            # Show examples
-            jump_examples = df[mask].head(3)
-            for idx in jump_examples.index:
-                if idx > 0:
-                    prev_val = df.loc[idx-1, col]
-                    curr_val = df.loc[idx, col]
-                    change_bps = abs(curr_val - prev_val) * 100
-                    print(f"    {df.loc[idx, 'date']}: {prev_val:.3f} → {curr_val:.3f} ({change_bps:.1f} bps)")
+            print(f"  Found {mask.sum()} extreme jumps (>{sigma}σ or >{threshold_bps}bps)")
+            print(f"  Max jump: {returns.abs().max():.1f} bps")
+            print(f"  Max threshold: {dynamic_threshold.max():.1f} bps")
+    
+    elif is_vix:
+        # VIX: Use percentage with higher volatility tolerance
+        if verbose:
+            print(f"Validating {col} as VIX (volatility-aware, σ={sigma}, higher tolerance)")
+        
+        # Calculate returns (percentage)
+        returns = df[col].pct_change()
+        
+        # Calculate rolling volatility
+        rolling_std = returns.rolling(window=lookback, min_periods=lookback//2).std()
+        
+        # Dynamic threshold: 4σ (VIX can spike legitimately)
+        dynamic_threshold = rolling_std * sigma
+        
+        # Flag extreme moves
+        mask = returns.abs() > dynamic_threshold.fillna(np.inf)
+        
+        if verbose and mask.sum() > 0:
+            print(f"  Found {mask.sum()} extreme VIX moves (>{sigma}σ)")
+            print(f"  Max move: {returns.abs().max()*100:.1f}%")
+            print(f"  Max threshold: {dynamic_threshold.max()*100:.1f}%")
+    
     else:
-        # Use percentage threshold for price columns
-        threshold_pct = 0.30  # 30% threshold for prices
+        # Price column: use percentage with volatility-aware threshold
         if verbose:
-            print(f"Validating {col} as price column (percentage threshold: {threshold_pct*100:.0f}%)")
+            print(f"Validating {col} as price column (volatility-aware, σ={sigma})")
         
-        # Calculate percentage change
-        pct_change = df[col].pct_change().abs()
-        mask = pct_change > threshold_pct
+        # Calculate returns (percentage)
+        returns = df[col].pct_change()
+        
+        # Calculate rolling volatility
+        rolling_std = returns.rolling(window=lookback, min_periods=lookback//2).std()
+        
+        # Dynamic threshold: 4σ (prevents false positives from normal volatility)
+        dynamic_threshold = rolling_std * sigma
+        
+        # Flag extreme moves
+        mask = returns.abs() > dynamic_threshold.fillna(np.inf)
         
         if verbose and mask.sum() > 0:
-            print(f"  Found {mask.sum()} jumps > {threshold_pct*100:.0f}%")
-            print(f"  Max jump: {pct_change.max()*100:.1f}%")
+            print(f"  Found {mask.sum()} extreme price moves (>{sigma}σ)")
+            print(f"  Max move: {returns.abs().max()*100:.1f}%")
+            print(f"  Max threshold: {dynamic_threshold.max()*100:.1f}%")
     
     # Split into clean and quarantine
     clean_df = df[~mask]
     quarantine_df = df[mask]
     
     if verbose:
-        print(f"  Clean rows: {len(clean_df):,}")
-        print(f"  Quarantined rows: {len(quarantine_df):,}")
+        print(f"  Clean rows: {len(clean_df):,} ({len(clean_df)/len(df)*100:.1f}%)")
+        print(f"  Quarantined rows: {len(quarantine_df):,} ({len(quarantine_df)/len(df)*100:.1f}%)")
     
     return clean_df, quarantine_df
 

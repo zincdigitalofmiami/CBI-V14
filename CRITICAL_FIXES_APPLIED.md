@@ -1,12 +1,13 @@
 # Critical Fixes Applied - Pre-Execution
 **Date**: November 16, 2025  
-**Status**: ✅ **ALL 8 BLOCKERS FIXED**  
+**Status**: ✅ **ALL 8 BLOCKERS VERIFIED**  
 
 ---
 
 ## Summary of Fixes
 
-All critical bugs from FINAL_FORENSIC_REVIEW_20251116.md have been addressed.
+All critical bugs from FINAL_FORENSIC_REVIEW_20251116.md have been addressed and verified in the codebase.
+**Note**: This document verifies that fixes exist in the codebase. Some fixes may have been applied in previous commits.
 
 ---
 
@@ -14,13 +15,13 @@ All critical bugs from FINAL_FORENSIC_REVIEW_20251116.md have been addressed.
 
 **Problem**: Loaded wrong horizon (_1m) but compared to 1-week MAPE. Used in-sample evaluation.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Now loads `zl_training_prod_allhistory_1w_price.parquet` (correct horizon)
 - ✅ Uses walk-forward evaluation (12m train → 1m test, rolling monthly)
 - ✅ Mirrors exact BQ MAPE view logic (forecast vs actual at +7 days)
 - ✅ No in-sample evaluation
 
-**File**: `scripts/qa/pre_flight_harness.py`
+**File**: `scripts/qa/pre_flight_harness.py` (verified in codebase)
 
 **Code changes**:
 ```python
@@ -43,7 +44,7 @@ for cut_date in pd.date_range(start, end, freq='30D'):
 
 **Problem**: Didn't implement null_policy handlers or most test types.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Implemented `_apply_null_policy()` method (ffill, bfill, constant fills)
 - ✅ Added ALL missing test types:
   - `expect_columns_added`
@@ -56,7 +57,7 @@ for cut_date in pd.date_range(start, end, freq='30D'):
   - `expect_cftc_available_after`
   - `expect_weight_range`
 
-**File**: `scripts/assemble/execute_joins.py`
+**File**: `scripts/assemble/execute_joins.py` (verified in codebase)
 
 **Code changes**:
 ```python
@@ -80,11 +81,11 @@ elif 'expect_columns_added' in test:
 
 **Problem**: `shift(-days)` without `groupby(symbol)` leaks across symbols.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Added `groupby('symbol')` before shift
 - ✅ Handles both multi-symbol and single-series data
 
-**File**: `scripts/features/build_all_features.py`
+**File**: `scripts/features/build_all_features.py` (verified in codebase)
 
 **Code changes**:
 ```python
@@ -103,19 +104,19 @@ else:
 
 ## Fix #4: Environment Variable Secrets ✅
 
-**Problem**: Hardcoded `FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"`
+**Problem**: Hardcoded API keys in source code (security vulnerability)
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Changed to `os.getenv("FRED_API_KEY")`
 - ✅ Raises error if not set
 - ✅ Integrated with Keychain in Phase 7
 
-**File**: All collection scripts
+**File**: All collection scripts (verified in codebase)
 
 **Code pattern**:
 ```python
 # BEFORE:
-FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"
+FRED_API_KEY = "<REDACTED_API_KEY>"  # Hardcoded secret
 
 # AFTER:
 import os
@@ -130,12 +131,12 @@ if not FRED_API_KEY:
 
 **Problem**: Saved `fred_{series_id}.pkl` but fallback looked for `{func.__name__}_last_good.pkl`.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Now saves BOTH filenames
 - ✅ Retry checks both locations
 - ✅ Cache actually works
 
-**File**: Collection scripts
+**File**: Collection scripts (verified in codebase)
 
 **Code pattern**:
 ```python
@@ -158,7 +159,7 @@ for cache_file in [f"fred_{series_id}.pkl", f"last_good_{series_id}.pkl"]:
 
 **Problem**: No seeds set for Python, NumPy, TensorFlow, LightGBM.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Set `PYTHONHASHSEED=42`
 - ✅ Set `random.seed(42)`
 - ✅ Set `np.random.seed(42)`
@@ -166,7 +167,7 @@ for cache_file in [f"fred_{series_id}.pkl", f"last_good_{series_id}.pkl"]:
 - ✅ LightGBM: `deterministic=True, force_row_wise=True`
 - ✅ Documented tolerance: ±0.1-0.3% MAPE variance expected
 
-**Files**: `build_all_features.py`, `pre_flight_harness.py`
+**Files**: `build_all_features.py`, `pre_flight_harness.py` (verified in codebase)
 
 **Code added**:
 ```python
@@ -193,12 +194,12 @@ LGBMRegressor(random_state=42, deterministic=True, force_row_wise=True)
 
 **Problem**: QA gate said 50-500 weights, acceptance said 50-5000. Said "10 files" but made 5.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Standardized weight range: **50-500** (tempered from 50-5000)
 - ✅ Export 10 files: 5 horizons × 2 label types (price + return)
 - ✅ Updated all references to match
 
-**Files**: `production_qa_gates.py`, `build_all_features.py`, `join_spec.yaml`
+**Files**: `production_qa_gates.py`, `build_all_features.py`, `join_spec.yaml` (verified in codebase)
 
 **Changes**:
 - Weight range: 50-500 everywhere
@@ -211,12 +212,12 @@ LGBMRegressor(random_state=42, deterministic=True, force_row_wise=True)
 
 **Problem**: Used `y.fillna(method='ffill')` and `X.fillna(0)` which hides missingness.
 
-**Fix Applied**:
+**Fix Verified**:
 - ✅ Changed to `.dropna()` - removes NA rows instead of imputing
 - ✅ No zero-filling of features
 - ✅ Mirrors production join logic (ffill only where economically justified)
 
-**File**: `pre_flight_harness.py`
+**File**: `pre_flight_harness.py` (verified in codebase)
 
 **Code changes**:
 ```python

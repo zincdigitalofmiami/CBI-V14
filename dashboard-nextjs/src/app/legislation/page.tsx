@@ -1,14 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
-import { Card } from '@/components/ui/card'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { Badge } from '@/components/ui/badge'
-import { 
-  AlertTriangle, TrendingUp, TrendingDown, Activity, AlertCircle,
-  Lock, Clock, DollarSign, Package, BarChart3, Target
+import { Card } from '@/components/ui/card'
+import {
+  BarChart3,
+  Clock, DollarSign,
+  Lock,
+  Package,
+  Target,
+  TrendingUp
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface TrumpPrediction {
   generated_at: string
@@ -125,7 +129,7 @@ export default function LegislationPage() {
   }, [])
 
   const getRiskColor = (level: string) => {
-    switch(level?.toUpperCase()) {
+    switch (level?.toUpperCase()) {
       case 'EXTREME': return 'text-red-500'
       case 'HIGH': return 'text-orange-500'
       case 'MODERATE': return 'text-yellow-500'
@@ -135,7 +139,7 @@ export default function LegislationPage() {
   }
 
   const getUrgencyColor = (urgency: string) => {
-    switch(urgency?.toUpperCase()) {
+    switch (urgency?.toUpperCase()) {
       case 'URGENT': return 'bg-red-500 text-white'
       case 'HIGH': return 'bg-orange-500 text-white'
       case 'MODERATE': return 'bg-yellow-500 text-black'
@@ -157,10 +161,10 @@ export default function LegislationPage() {
   return (
     <div className="flex h-screen bg-background-primary">
       <Sidebar />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        
+
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
@@ -222,9 +226,8 @@ export default function LegislationPage() {
                           <TrendingUp className="w-4 h-4 text-text-tertiary" />
                           <span className="text-xs text-text-tertiary">Expected Move</span>
                         </div>
-                        <p className={`text-lg font-bold ${
-                          zlImpact.primary_impact.impact_direction === 'DOWN' ? 'text-red-500' : 'text-green-500'
-                        }`}>
+                        <p className={`text-lg font-bold ${zlImpact.primary_impact.impact_direction === 'DOWN' ? 'text-red-500' : 'text-green-500'
+                          }`}>
                           {zlImpact.procurement_summary.expected_move}
                         </p>
                       </div>
@@ -253,7 +256,7 @@ export default function LegislationPage() {
                       <div className="mt-4 p-3 bg-background-secondary/50 rounded-lg">
                         <p className="text-xs text-text-tertiary mb-1">Historical Pattern</p>
                         <p className="text-sm text-text-primary">
-                          {zlImpact.primary_impact.historical_similar.context} ({zlImpact.primary_impact.historical_similar.date}): 
+                          {zlImpact.primary_impact.historical_similar.context} ({zlImpact.primary_impact.historical_similar.date}):
                           <span className="font-semibold ml-2">{zlImpact.primary_impact.historical_similar.result}</span>
                         </p>
                       </div>
@@ -295,7 +298,7 @@ export default function LegislationPage() {
                               <div className="text-xs text-text-tertiary">Probability</div>
                             </div>
                           </div>
-                          
+
                           {trumpPrediction.prediction.triggers.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-border-primary">
                               <p className="text-xs text-text-tertiary mb-1">Triggers:</p>
@@ -405,7 +408,7 @@ export default function LegislationPage() {
                               </span>
                             </div>
                             <div className="w-full bg-background-primary rounded-full h-2">
-                              <div 
+                              <div
                                 className="bg-accent-primary h-2 rounded-full"
                                 style={{ width: `${Math.min(trumpPrediction.key_indicators.posting_velocity_24h * 10, 100)}%` }}
                               />
@@ -419,10 +422,9 @@ export default function LegislationPage() {
                               </span>
                             </div>
                             <div className="w-full bg-background-primary rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  trumpPrediction.key_indicators.threat_level > 10 ? 'bg-red-500' : 'bg-yellow-500'
-                                }`}
+                              <div
+                                className={`h-2 rounded-full ${trumpPrediction.key_indicators.threat_level > 10 ? 'bg-red-500' : 'bg-yellow-500'
+                                  }`}
                                 style={{ width: `${Math.min(trumpPrediction.key_indicators.threat_level * 5, 100)}%` }}
                               />
                             </div>

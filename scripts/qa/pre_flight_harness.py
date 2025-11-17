@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-'''
-WARNING: This file has been cleaned of ALL fake data.
-Any functions that relied on fake data have been disabled.
-Must be rewritten to use REAL data from BigQuery or APIs.
-ZERO TOLERANCE FOR FAKE DATA.
-'''
-
-#!/usr/bin/env python3
 """
 Pre-flight validation harness for 25-year data enrichment plan.
 Includes data leakage checks and parity validation (MAPE + Sharpe).
@@ -26,10 +18,10 @@ warnings.filterwarnings('ignore')
 
 # Set seeds for reproducibility
 import os
-# REMOVED: import random # NO FAKE DATA
+import random
 os.environ['PYTHONHASHSEED'] = '42'
-# REMOVED: random.seed(42) # NO RANDOM SEEDS
-# REMOVED: # REMOVED: np.random.seed(42) # NO FAKE DATA # NO RANDOM SEEDS
+random.seed(42)
+np.random.seed(42)
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
 
@@ -77,7 +69,7 @@ def verify_no_leakage(df, verbose=True):
                 
                 # Check a sample of rows
                 sample_size = min(1000, len(df))
-# REMOVED: # REMOVED:                 sample_indices = np.random.choice(df.index[:-horizon_days], sample_size, replace=False) # NO FAKE DATA # NO FAKE DATA
+                sample_indices = np.random.choice(df.index[:-horizon_days], sample_size, replace=False)
                 
                 for idx in sample_indices[:10]:  # Check first 10 samples
                     current_price = df.loc[idx, price_col]
@@ -177,7 +169,7 @@ def verify_no_leakage(df, verbose=True):
     if 'target' in df.columns:
         # High correlation with target might indicate leakage
         feature_cols = [col for col in df.columns if any(col.startswith(prefix) for prefix in 
-                       ['tech_', 'cross_', 'vol_', 'seas_', 'macro_', 'weather_']]
+                       ['tech_', 'cross_', 'vol_', 'seas_', 'macro_', 'weather_'])]
         
         if feature_cols:
             # Check correlation with target
@@ -205,6 +197,10 @@ def get_bq_metrics(horizon='1w'):
     """
     Get MAPE and Sharpe ratio from BigQuery for comparison.
     
+    CRITICAL: Horizon must match training data horizon.
+    - If training on 1w data, query overall_mape_1week
+    - If training on 1m data, query overall_mape_1month
+    
     Args:
         horizon: Prediction horizon ('1w', '1m', '3m', '6m', '12m')
         
@@ -213,14 +209,27 @@ def get_bq_metrics(horizon='1w'):
     """
     client = bigquery.Client(project='cbi-v14')
     
-    # Query for MAPE
+    # Map horizon to BigQuery column name
+    # CRITICAL: Align with training data horizon
+    horizon_map = {
+        '1w': 'overall_mape_1week',
+        '1m': 'overall_mape_1month',
+        '3m': 'overall_mape_3month',
+        '6m': 'overall_mape_6month',
+        '12m': 'overall_mape_12month'
+    }
+    
+    bq_column = horizon_map.get(horizon, 'overall_mape_1week')
+    
+    # Query for MAPE from the correct view
+    # Using the platform's MAPE implementation view as source of truth
     mape_query = f"""
     SELECT 
-        AVG(ABS((predicted - actual) / actual)) * 100 as mape
-    FROM `cbi-v14.predictions.vw_zl_{horizon}_latest`
-    WHERE actual IS NOT NULL 
-    AND actual != 0
-    AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+        {bq_column} as mape
+    FROM `cbi-v14.predictions.vw_zl_mape_summary`
+    WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+    ORDER BY date DESC
+    LIMIT 1
     """
     
     # Query for Sharpe ratio
@@ -242,17 +251,24 @@ def get_bq_metrics(horizon='1w'):
     try:
         # Get MAPE
         mape_result = client.query(mape_query).result()
-        mape = list(mape_result)[0].mape
+        mape_rows = list(mape_result)
+        if mape_rows:
+            mape = mape_rows[0].mape
+        else:
+            raise ValueError(f"No MAPE data found for {horizon} horizon")
         
         # Get Sharpe
         sharpe_result = client.query(sharpe_query).result()
-        sharpe = list(sharpe_result)[0].sharpe_ratio
+        sharpe_rows = list(sharpe_result)
+        if sharpe_rows:
+            sharpe = sharpe_rows[0].sharpe_ratio
+        else:
+            sharpe = None
         
         return {'mape': mape, 'sharpe': sharpe}
     except Exception as e:
         print(f"⚠️ Warning: Could not fetch BQ metrics: {e}")
-        # Return dummy values for testing
-        return {'mape': 15.0, 'sharpe': 0.8}
+        raise RuntimeError(f"Failed to fetch BigQuery metrics for {horizon}: {e}")
 
 
 def pre_flight_check(horizon='1w', check_sharpe=True):
@@ -278,14 +294,23 @@ def pre_flight_check(horizon='1w', check_sharpe=True):
     if horizon not in horizon_days:
         raise ValueError(f"Invalid horizon: {horizon}")
     
-    # Load data
+    # Load data - use absolute path to avoid CWD issues
+    # CRITICAL: Path must be root-relative or absolute
     file_path = DRIVE / f"TrainingData/exports/zl_training_prod_allhistory_{horizon}.parquet"
     if not file_path.exists():
         # Try with _price suffix
         file_path = DRIVE / f"TrainingData/exports/zl_training_prod_allhistory_{horizon}_price.parquet"
     
     if not file_path.exists():
-        raise FileNotFoundError(f"Training data not found: {file_path}")
+        # Try alternative naming
+        alt_path = DRIVE / f"TrainingData/exports/zl_training_{horizon}.parquet"
+        if alt_path.exists():
+            file_path = alt_path
+        else:
+            raise FileNotFoundError(
+                f"Training data not found for {horizon} horizon. "
+                f"Checked: {DRIVE / 'TrainingData/exports/zl_training_prod_allhistory_' + horizon + '.parquet'}"
+            )
     
     print(f"Loading data from: {file_path}")
     df = pd.read_parquet(file_path)
@@ -294,17 +319,33 @@ def pre_flight_check(horizon='1w', check_sharpe=True):
     df = df.dropna(subset=['target'])
     print(f"Loaded {len(df):,} rows with valid targets")
     
-    # Walk-forward evaluation
-    print("\nPerforming walk-forward validation...")
+    # CRITICAL: Use proper holdout (last 20% of data) instead of in-sample
+    # This prevents overfitting and gives realistic parity comparison
+    print("\nPerforming walk-forward validation with proper holdout...")
     preds, actuals = [], []
     returns_pred, returns_actual = [], []
     
     dates = df['date'].sort_values().unique()
     
+    # Use last 20% as holdout (not used for training)
+    holdout_start_idx = int(len(dates) * 0.8)
+    holdout_start_date = dates[holdout_start_idx]
+    
+    print(f"  Holdout period: {holdout_start_date.date()} to {dates.max().date()}")
+    print(f"  Training period: {dates.min().date()} to {holdout_start_date.date()}")
+    
     # Walk-forward: 12 months train → 1 month test, rolling
+    # Only use data BEFORE holdout_start_date for training
+    train_dates = dates[dates < holdout_start_date]
+    test_dates = dates[dates >= holdout_start_date]
+    
+    if len(train_dates) < 365:
+        raise ValueError(f"Insufficient training data: {len(train_dates)} days (need >= 365)")
+    
+    # Walk-forward windows within training period
     for i, cut_date in enumerate(pd.date_range(
-        dates.min() + pd.Timedelta(days=365),
-        dates.max() - pd.Timedelta(days=30),
+        train_dates.min() + pd.Timedelta(days=365),
+        train_dates.max() - pd.Timedelta(days=30),
         freq='30D'
     )):
         train_df = df[df['date'] < cut_date]

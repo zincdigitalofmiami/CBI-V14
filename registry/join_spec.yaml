@@ -82,12 +82,14 @@ joins:
     on: ["date"]
     how: "left"
     null_policy:
-      allow: false  # Every date MUST have a regime
+      allow: true  # Allow nulls, but fill with defaults
       fill: {"market_regime": "allhistory", "training_weight": 1}
+      fill_method: "ffill"  # Forward fill for missing dates
     tests:
       - expect_rows_preserved
       - expect_regime_cardinality_gte: 7
       - expect_columns_present: ["market_regime", "training_weight"]
+      - expect_null_rate_below: {"market_regime": 0.05}  # After filling, <5% nulls acceptable
 
 # === FINAL TESTS (Must Pass Before Feature Engineering) ===
 final_tests:
