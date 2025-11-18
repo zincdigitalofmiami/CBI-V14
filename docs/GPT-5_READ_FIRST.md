@@ -145,3 +145,5 @@ docs: add GPT‑5_READ_FIRST; neural: add labor detector view; api: surface MAPE
 - UI hooks for weather heatmaps/anomalies/time-animation and substitution economics are codified in your dashboard specs and should not be reinvented.
 - News/Sentiment taxonomy and event-impact heuristics remain the canonical classifier seed list.
 
+
+

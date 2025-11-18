@@ -95,3 +95,5 @@ echo "To verify Polars:"
 echo "  python -c 'import polars as pl; print(pl.__version__)'"
 echo ""
 
+
+

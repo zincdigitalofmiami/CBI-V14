@@ -377,3 +377,5 @@ python3 scripts/export_training_data.py
 **Confidence:** HIGH (following proven patterns)  
 **Next Step:** Execute Phase 1.1 - Create Baltic Dry Index table
 
+
+

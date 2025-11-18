@@ -53,3 +53,5 @@ If you still see errors after installation:
 2. Check library path: `echo $DYLD_LIBRARY_PATH`
 3. Reinstall LightGBM/XGBoost: `pip3 install --force-reinstall lightgbm xgboost`
 
+
+

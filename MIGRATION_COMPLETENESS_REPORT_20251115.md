@@ -278,3 +278,5 @@ FROM `cbi-v14.raw_intelligence.commodity_soybean_oil_prices`;
 **Report Generated:** November 15, 2025  
 **Data Sources:** Direct BigQuery queries + verification audit  
 **Next Review:** After critical fixes are applied
+
+

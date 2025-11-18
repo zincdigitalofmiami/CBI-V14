@@ -475,3 +475,5 @@ WHERE table_name = 'vw_soybean_sharpe_metrics'
 **Grade**: **A** (98% complete, easily → A+ with 1 view creation)  
 **Next Review**: After creating vw_chris_priority_regime_detector
 
+
+

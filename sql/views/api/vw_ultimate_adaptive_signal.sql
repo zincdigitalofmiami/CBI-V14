@@ -84,3 +84,5 @@ FROM final_forecasts f
 CROSS JOIN mape_metrics m
 CROSS JOIN soybean_sharpe s;
 
+
+

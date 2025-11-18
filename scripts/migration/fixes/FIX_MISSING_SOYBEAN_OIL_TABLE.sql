@@ -9,3 +9,5 @@ CLUSTER BY
 AS
 SELECT *
 FROM `cbi-v14.forecasting_data_warehouse.soybean_oil_prices`;
+
+

@@ -235,3 +235,5 @@ SELECT
 FROM `cbi-v14.training.__TABLES__`
 WHERE table_id LIKE 'zl_training_%'
 ORDER BY table_id;
+
+

@@ -114,3 +114,5 @@ WHERE date NOT IN (SELECT date FROM `cbi-v14.training.zl_training_prod_allhistor
 3. Fix missing join table references (P0)
 4. Create missing API view (P1)
 5. Review Sharpe view definition (P2)
+
+

@@ -195,3 +195,5 @@ cd /Users/kirkmusick/Documents/GitHub/CBI-V14 && ./morning_preflight.sh
 
 Good night! All prep work done. Ready to execute in the morning.
 
+
+

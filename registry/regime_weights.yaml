@@ -1,0 +1,96 @@
+metadata:
+  description: Regime Weights - Canonical Source of Truth
+  updated: '2025-11-17'
+  weight_scale: 50-1000 (50=historical baseline, 1000=current regime)
+  source: Generated from registry/regime_weights.parquet
+regimes:
+  tech_bubble_1998_2000:
+    name: tech_bubble_1998_2000
+    start_date: '1998-01-01'
+    end_date: '2000-03-31'
+    weight: 50
+    description: Tech bubble period, commodity bear market, strong USD
+  commodity_emergence_2000_2003:
+    name: commodity_emergence_2000_2003
+    start_date: '2000-04-01'
+    end_date: '2003-12-31'
+    weight: 75
+    description: Tech crash, weak USD, early China demand growth
+  china_supercycle_2004_2007:
+    name: china_supercycle_2004_2007
+    start_date: '2004-01-01'
+    end_date: '2007-07-31'
+    weight: 100
+    description: China WTO effect, commodity supercycle, biofuel mandate start
+  financial_crisis_2008_2009:
+    name: financial_crisis_2008_2009
+    start_date: '2007-08-01'
+    end_date: '2009-06-30'
+    weight: 200
+    description: Global financial crisis, commodity crash and recovery
+  qe_commodity_boom_2010_2011:
+    name: qe_commodity_boom_2010_2011
+    start_date: '2009-07-01'
+    end_date: '2011-12-31'
+    weight: 150
+    description: QE-driven commodity boom, Arab Spring, food crisis
+  plateau_transition_2012_2014:
+    name: plateau_transition_2012_2014
+    start_date: '2012-01-01'
+    end_date: '2014-06-30'
+    weight: 100
+    description: High plateau prices, US shale revolution beginning
+  commodity_crash_2014_2016:
+    name: commodity_crash_2014_2016
+    start_date: '2014-07-01'
+    end_date: '2016-12-31'
+    weight: 250
+    description: Oil crash, China slowdown, strong USD, deflation fears
+  pre_tradewar_2017:
+    name: pre_tradewar_2017
+    start_date: '2017-01-01'
+    end_date: '2017-12-31'
+    weight: 125
+    description: Trump inauguration, pre-trade war positioning
+  tradewar_escalation_2018_2019:
+    name: tradewar_escalation_2018_2019
+    start_date: '2018-01-01'
+    end_date: '2019-12-31'
+    weight: 300
+    description: US-China trade war, tariffs, soybean demand destruction
+  covid_shock_2020:
+    name: covid_shock_2020
+    start_date: '2020-01-01'
+    end_date: '2020-12-31'
+    weight: 350
+    description: COVID pandemic, negative oil, supply chain chaos
+  covid_recovery_2021:
+    name: covid_recovery_2021
+    start_date: '2021-01-01'
+    end_date: '2021-06-30'
+    weight: 200
+    description: Vaccine rollout, stimulus boom, inflation emergence
+  inflation_surge_2021_2022:
+    name: inflation_surge_2021_2022
+    start_date: '2021-07-01'
+    end_date: '2022-12-31'
+    weight: 400
+    description: Supply chain crisis, Ukraine war, Fed pivot, energy crisis
+  disinflation_2023:
+    name: disinflation_2023
+    start_date: '2023-01-01'
+    end_date: '2023-10-31'
+    weight: 250
+    description: Fed tightening, banking stress, China reopening
+  trump_return_2024_2025:
+    name: trump_return_2024_2025
+    start_date: '2023-11-01'
+    end_date: '2025-12-31'
+    weight: 500
+    description: Trump 2.0 anticipation, tariff threats, biofuel policy shifts
+  baseline:
+    name: baseline
+    start_date: '1900-01-01'
+    end_date: '2099-12-31'
+    weight: 100
+    description: Default regime for any unclassified periods

@@ -210,3 +210,5 @@ SELECT
   'Phase 1 Complete' AS phase,
   CURRENT_TIMESTAMP() AS completion_time,
   'Ready for Phase 2 - Exports' AS next_step;
+
+
