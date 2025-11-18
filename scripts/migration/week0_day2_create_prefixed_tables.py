@@ -29,8 +29,7 @@ def create_yahoo_tables(client: bigquery.Client) -> List[str]:
         yahoo_volume INT64,
         yahoo_adj_close FLOAT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol
+    ) CLUSTER BY date, symbol
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.yahoo_historical_prefixed")
@@ -55,8 +54,7 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         alpha_close FLOAT64,
         alpha_volume INT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol, timeframe
+    ) CLUSTER BY date, symbol, timeframe
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_es_intraday")
@@ -73,8 +71,7 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         alpha_close FLOAT64,
         alpha_volume INT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol
+    ) CLUSTER BY date, symbol
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_commodities_daily")
@@ -90,8 +87,7 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         alpha_low FLOAT64,
         alpha_close FLOAT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY pair
+    ) CLUSTER BY date, pair
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_fx_daily")
@@ -139,11 +135,10 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         
         -- Price Transform
         alpha_midpoint_14 FLOAT64, alpha_midprice_14 FLOAT64,
-        alpha_sar FLOAT64, alpha_sarext FLOAT64,
+        alpha_sar FLOAT64,         alpha_sarext FLOAT64,
         
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol
+    ) CLUSTER BY date, symbol
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_indicators_daily")
@@ -162,7 +157,7 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         tickers ARRAY<STRING>,
         topics ARRAY<STRING>,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_news_sentiment")
@@ -188,8 +183,7 @@ def create_alpha_tables(client: bigquery.Client) -> List[str]:
         alpha_theta FLOAT64,
         alpha_vega FLOAT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY underlier, expiration
+    ) CLUSTER BY date, underlier, expiration
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.alpha_options_snapshot")
@@ -243,10 +237,10 @@ def create_fred_tables(client: bigquery.Client) -> List[str]:
         fred_rsxfs FLOAT64, fred_pce FLOAT64,  -- NEW: Retail sales, PCE
         
         -- Additional Economic
-        fred_cfnai FLOAT64, fred_bbi FLOAT64,  -- NEW: Chicago Fed Index, Book-to-Bill
+        fred_cfnai FLOAT64,         fred_bbi FLOAT64,  -- NEW: Chicago Fed Index, Book-to-Bill
         
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.fred_macro_expanded")
@@ -286,7 +280,7 @@ def create_weather_tables(client: bigquery.Client) -> List[str]:
         weather_ar_entre_rios_tavg_c FLOAT64, weather_ar_entre_rios_prcp_mm FLOAT64,
         
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.weather_granular")
@@ -314,8 +308,7 @@ def create_cftc_tables(client: bigquery.Client) -> List[str]:
         cftc_nonreportable_long INT64,
         cftc_nonreportable_short INT64,
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol
+    ) CLUSTER BY date, symbol
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.cftc_commitments")
@@ -371,7 +364,7 @@ def create_usda_tables(client: bigquery.Client) -> List[str]:
         usda_nass_wheat_stocks FLOAT64,
         
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.usda_reports_granular")
@@ -412,7 +405,7 @@ def create_eia_tables(client: bigquery.Client) -> List[str]:
         eia_ng_production FLOAT64,
         
         ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.eia_energy_granular")
@@ -484,8 +477,7 @@ def create_canonical_features_table(client: bigquery.Client) -> List[str]:
         
         -- Metadata
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) PARTITION BY date
-    CLUSTER BY symbol
+    ) CLUSTER BY date, symbol
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("features.master_features_canonical")
