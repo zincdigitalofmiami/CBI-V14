@@ -292,23 +292,13 @@ def create_cftc_tables(client: bigquery.Client) -> List[str]:
     """Create CFTC-prefixed tables."""
     tables_created = []
     
+    # NOTE: CFTC data uses contract codes, not symbol column
+    # Data has 197 columns from CFTC COT reports (all prefixed with cftc_)
+    # Schema will be inferred from first data load
     ddl = """
     CREATE TABLE IF NOT EXISTS forecasting_data_warehouse.cftc_commitments (
-        date DATE,
-        symbol STRING,
-        cftc_open_interest INT64,
-        cftc_noncommercial_long INT64,
-        cftc_noncommercial_short INT64,
-        cftc_noncommercial_net INT64,
-        cftc_commercial_long INT64,
-        cftc_commercial_short INT64,
-        cftc_commercial_net INT64,
-        cftc_total_long INT64,
-        cftc_total_short INT64,
-        cftc_nonreportable_long INT64,
-        cftc_nonreportable_short INT64,
-        ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    ) CLUSTER BY date, symbol
+        date DATE
+    ) CLUSTER BY date
     """
     client.query(ddl, location=LOCATION).result()
     tables_created.append("forecasting_data_warehouse.cftc_commitments")
