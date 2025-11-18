@@ -119,13 +119,13 @@ def download_cot_file(year: int) -> Optional[pd.DataFrame]:
     Download and parse COT disaggregated futures file for a given year.
     """
     if year == datetime.now().year:
-        # Current year file
+        # Current year file  
         filename = "deacot.txt"
         url = f"https://www.cftc.gov/files/dea/cotarchives/{year}/futures/deacot{year}.zip"
     else:
-        # Historical files
+        # Historical files - updated URL pattern
         filename = f"annual.txt"
-        url = f"{CFTC_BASE_URL}/dea_fut_txt_{year}.zip"
+        url = f"https://www.cftc.gov/files/dea/history/fut_disagg_txt_{year}.zip"
     
     logger.info(f"Downloading COT data for {year}...")
     logger.info(f"  URL: {url}")
