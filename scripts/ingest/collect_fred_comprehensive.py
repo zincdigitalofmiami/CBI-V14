@@ -58,9 +58,9 @@ METADATA_DIR = RAW_DIR / "metadata"
 for dir_path in [RAW_RESPONSES_DIR, PROCESSED_DIR, COMBINED_DIR, METADATA_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
-# COMPLETE list of FRED series (30+ series)
+# EXPANDED FRED series (55-60 series per FRESH_START plan)
 FRED_SERIES = {
-    # Interest Rates (9 series)
+    # Interest Rates (9 series) - EXISTING
     'DFF': 'Federal Funds Rate',
     'DGS10': '10-Year Treasury Constant Maturity Rate',
     'DGS2': '2-Year Treasury Constant Maturity Rate',
@@ -71,48 +71,79 @@ FRED_SERIES = {
     'DFEDTARU': 'Federal Funds Target Range - Upper Limit',
     'DFEDTARL': 'Federal Funds Target Range - Lower Limit',
     
-    # Inflation (4 series)
+    # Inflation (4 series) - EXISTING
     'CPIAUCSL': 'Consumer Price Index for All Urban Consumers',
     'CPILFESL': 'Core CPI (Less Food and Energy)',
     'PCEPI': 'Personal Consumption Expenditures: Chain Price Index',
     'DPCCRV1Q225SBEA': 'Personal Consumption Expenditures Excluding Food and Energy',
     
-    # Employment (4 series)
+    # PPI - Producer Price Index (4 series) - NEW
+    'PPIACO': 'Producer Price Index for All Commodities',
+    'PPICRM': 'PPI for Crude Materials',
+    'PPIFIS': 'PPI for Finished Goods',
+    'PPIIDC': 'PPI for Industrial Commodities',
+    
+    # Employment (6 series) - EXPANDED
     'UNRATE': 'Unemployment Rate',
     'PAYEMS': 'All Employees: Total Nonfarm Payrolls',
     'CIVPART': 'Labor Force Participation Rate',
     'EMRATIO': 'Employment-Population Ratio',
+    'ICSA': 'Initial Unemployment Claims',  # NEW
+    'CCSA': 'Continued Unemployment Claims',  # NEW
     
-    # GDP & Production (4 series)
+    # GDP & Production (6 series) - EXPANDED
     'GDP': 'Gross Domestic Product',
     'GDPC1': 'Real Gross Domestic Product',
     'INDPRO': 'Industrial Production Index',
     'DGORDER': 'Manufacturers New Orders: Durable Goods',
+    'NAPMPI': 'ISM Manufacturing: Production Index',  # NEW
+    'NAPM': 'ISM Manufacturing: PMI Composite Index',  # NEW
     
-    # Money Supply (3 series)
+    # Money Supply (3 series) - EXISTING
     'M2SL': 'M2 Money Stock',
     'M1SL': 'M1 Money Stock',
     'BOGMBASE': 'St. Louis Adjusted Monetary Base',
     
-    # Market Indicators (3 series)
+    # Market Indicators (3 series) - EXISTING
     'VIXCLS': 'CBOE Volatility Index: VIX',
     'DTWEXBGS': 'Trade Weighted U.S. Dollar Index: Broad, Goods',
     'DTWEXEMEGS': 'Trade Weighted U.S. Dollar Index: Emerging Markets',
     
-    # Credit Spreads (3 series)
+    # Credit Spreads (4 series) - EXPANDED
     'BAAFFM': 'Moody\'s Seasoned Baa Corporate Bond Minus Federal Funds Rate',
     'T10Y2Y': '10-Year Treasury Constant Maturity Minus 2-Year',
     'T10Y3M': '10-Year Treasury Constant Maturity Minus 3-Month',
+    'TEDRATE': 'TED Spread',  # NEW
     
-    # Commodity-Related (2 series)
+    # Commodity-Related (2 series) - EXISTING
     'DCOILWTICO': 'Crude Oil Prices: West Texas Intermediate (WTI)',
     'GOLDPMGBD228NLBM': 'Gold Fixing Price 3:00 P.M. (London time) in London Bullion Market',
     
-    # Additional Economic Indicators (3 series)
-    'HOUST': 'Housing Starts: Total',
-    'UMCSENT': 'University of Michigan: Consumer Sentiment',
-    'DEXUSEU': 'U.S. / Euro Foreign Exchange Rate'
+    # Trade/Currency (4 series) - EXPANDED
+    'DEXUSEU': 'U.S. / Euro Foreign Exchange Rate',  # EXISTING
+    'DEXCHUS': 'China / U.S. Foreign Exchange Rate',  # NEW
+    'DEXBZUS': 'Brazil / U.S. Foreign Exchange Rate',  # NEW
+    'DEXMXUS': 'Mexico / U.S. Foreign Exchange Rate',  # NEW
+    
+    # Energy (3 series) - NEW
+    'DCOILBRENTEU': 'Crude Oil Prices: Brent - Europe',
+    'DHHNGSP': 'Henry Hub Natural Gas Spot Price',
+    'GASREGW': 'US Regular All Formulations Gas Price',
+    
+    # Consumer & Housing (4 series) - EXPANDED
+    'HOUST': 'Housing Starts: Total',  # EXISTING
+    'UMCSENT': 'University of Michigan: Consumer Sentiment',  # EXISTING
+    'CSUSHPISA': 'S&P/Case-Shiller U.S. National Home Price Index',  # NEW
+    'RSXFS': 'Retail Sales Excluding Food Services',  # NEW
+    
+    # Economic Activity (4 series) - NEW
+    'CFNAI': 'Chicago Fed National Activity Index',
+    'USSLIND': 'Leading Index for the United States',
+    'USREC': 'NBER Recession Indicators',
+    'STLFSI2': 'St. Louis Fed Financial Stress Index'
 }
+
+# Total: 60 series (9+4+4+6+6+3+3+4+2+4+3+4+4+4 = 60)
 
 def retry_with_backoff(func, cache_key=None, max_retries=3):
     """

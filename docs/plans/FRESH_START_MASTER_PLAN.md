@@ -675,6 +675,152 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 
 ---
 
+## TIERED MODELING ARCHITECTURE (Weeks 1-6)
+
+**Goal:** Progressive modeling stack that respects Mac M4 thermals/memory while driving 60-85% uplift from baseline.
+
+### Tier 0 – Baseline Discovery (Week 1)
+*Purpose:* Fast interpretable benchmarks + feature screening (≤1 hour total, <4 GB RAM).
+
+```python
+# scripts/modeling/tier0_baseline.py
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from pmdarima import auto_arima
+from lightgbm import LGBMRegressor
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+
+baselines = {
+    "naive_seasonal": NaiveSeasonalModel(period=252),
+    "ewma": ExponentialSmoothing(seasonal="add", seasonal_periods=252),
+    "auto_arima": auto_arima(seasonal=True, m=252, max_p=3, max_q=3),
+}
+
+lgb_baseline = LGBMRegressor(
+    n_estimators=100,
+    max_depth=5,
+    learning_rate=0.1,
+    n_jobs=8,
+    random_state=42,
+    verbosity=-1,
+)
+
+linear_suite = {
+    "ridge": Ridge(alpha=1.0),
+    "lasso": Lasso(alpha=0.1),
+    "elastic": ElasticNet(alpha=0.1, l1_ratio=0.5),
+}
+```
+
+Feature importance helper (perm + coefficients) produces Tier 1 feature shortlist:
+
+```python
+def extract_baseline_importance(models, X, y):
+    importance_map = {}
+    for name, model in linear_suite.items():
+        model.fit(X, y)
+        importance_map[f"{name}_coef"] = np.abs(model.coef_)
+
+    lgb_baseline.fit(X, y)
+    importance_map["lgb_gain"] = lgb_baseline.feature_importances_
+
+    from sklearn.inspection import permutation_importance
+    perm = permutation_importance(lgb_baseline, X, y, n_repeats=10)
+    importance_map["permutation"] = perm.importances_mean
+    return importance_map
+```
+
+**Outputs:** Baseline MAPE/directional accuracy + ranked features for downstream tiers.
+
+### Tier 1 – Focused Models (Week 2)
+*Purpose:* Use Tier 0 insights to build optimized tree + linear + lightweight NN models (~3 hours, <8 GB).
+
+Feature tiering:
+
+```python
+def create_tiered_features(importance_map, threshold_percentiles=(90, 70, 50)):
+    composite = np.mean([
+        rankdata(importance_map["lgb_gain"]),
+        rankdata(importance_map["permutation"]),
+        rankdata(np.abs(importance_map["ridge_coef"])),
+    ], axis=0)
+
+    tier1 = composite >= np.percentile(composite, threshold_percentiles[0])
+    tier2 = (composite >= np.percentile(composite, threshold_percentiles[1])) & (~tier1)
+
+    return {
+        "tier1_critical": feature_names[tier1],
+        "tier2_important": feature_names[tier2],
+        "tier3_context": feature_names[~(tier1 | tier2)],
+    }
+```
+
+Optimized learners (LightGBM, XGBoost hist mode, simple Metal-accelerated NN) run on tiered features for each horizon.
+
+### Tier 2 – Regime-Aware Models (Week 3)
+*Purpose:* Specialize per regime cluster (~4 hours, <10 GB). Collapse canonical regimes → 4-5 clusters, train dedicated models, and add a `RegimeRouter` that detects regime and forwards to the right estimator.
+
+```python
+class RegimeRouter:
+    def __init__(self):
+        self.regime_detector = RandomForestClassifier(
+            n_estimators=100, max_depth=5, random_state=42
+        )
+        self.regime_models = {}
+
+    def predict(self, features):
+        regime = self.regime_detector.predict(features)[0]
+        return self.regime_models[regime].predict(features)
+```
+
+### Tier 3 – Advanced Neural (Week 4)
+*Purpose:* Capture temporal structure with Metal-friendly nets (~6 hours w/ cool-down, <12 GB).
+
+- Mixed-precision LSTM and Temporal Convolutional Network (TCN) using 30-day windows × ≤40 features.
+- Lightweight attention layer for interpretability.
+- Sequential training loop with `tf.keras.callbacks.EarlyStopping` + forced `time.sleep(60)` between models to avoid throttling.
+
+### Tier 4 – Ensemble & Meta-Learning (Week 5)
+*Purpose:* Blend tiers into a hierarchical ensemble + meta-learner (~2 hours, <8 GB).
+
+- Weighted averaging with dynamic regime-aware weights.
+- Linear meta-learner (`Ridge`) for stacking.
+- Uncertainty estimator using trimmed means + percentile spread for dashboard confidence bands.
+
+### Tier 5 – Production Optimization (Week 6)
+*Purpose:* Shrink + harden models for inference.
+
+- Quantize neural models via TFLite FP16, convert tree models to ONNX.
+- `ProductionPredictor` class handles scaling, feature selection, regime routing, monotonicity checks, and bounds enforcement (±30% annualized).
+
+### Memory & Scheduling Controls
+
+```python
+FEATURE_COUNTS = {
+    "tier0_baseline": 400,
+    "tier1_focused": 80,
+    "tier2_regime": 60,
+    "tier3_neural": 40,
+    "tier4_ensemble": 100,
+}
+
+TRAINING_SCHEDULE = [
+    ("Mon", "tier0_baseline"),
+    ("Tue", "tier1_focused"),
+    ("Wed", "tier2_regime"),
+    ("Thu", "tier3_neural"),
+    ("Fri", "tier4_ensemble"),
+]
+```
+
+Aggressive GC (`gc.collect()`, `tf.keras.backend.clear_session()`) between runs plus batching helpers (`model.partial_fit`) keep unified memory <16 GB.
+
+### Summary
+- **Total models:** ~65 (Tier 0-3 × 5 horizons) plus ensembles.
+- **Training time:** ~22 hours spread across 6 weeks of the rebuild plan.
+- **Expected uplift:** Tier 0 → Tier 4 yields 60-85% accuracy improvement, with regime-specific + neural tiers contributing incremental gains before the final ensemble.
+
+---
+
 **Last Updated:** November 17, 2025  
 **Status:** Ready for Execution  
 **Next Step:** Delete legacy files, start fresh build
