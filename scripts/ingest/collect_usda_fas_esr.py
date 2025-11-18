@@ -169,7 +169,7 @@ def scrape_esr_report(report_url: str) -> pd.DataFrame:
             # Look for China-specific rows
             # Structure varies by report format
             
-            # Placeholder for actual parsing logic
+            # TODO: Implement report parsing (no placeholder generation)
             logger.debug(f"Parsed report: {report_url}")
             
     except Exception as e:

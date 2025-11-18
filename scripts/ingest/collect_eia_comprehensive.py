@@ -290,8 +290,7 @@ def fetch_eia_series(series_id: str, series_info: dict) -> Optional[pd.DataFrame
 def fetch_rin_prices() -> Optional[pd.DataFrame]:
     """
     Fetch RIN (Renewable Identification Number) prices.
-    Since EIA doesn't provide RIN prices directly, we'll create a placeholder.
-    In production, this would scrape from EPA or market sources.
+    No fabrication: if unavailable from official sources, return an empty frame.
     """
     logger.info("Fetching RIN prices...")
     
@@ -301,14 +300,8 @@ def fetch_rin_prices() -> Optional[pd.DataFrame]:
     # 3. Argus (paid service)
     # 4. S&P Global Platts (paid service)
     
-    # For now, return empty DataFrame with correct structure
-    rin_df = pd.DataFrame({
-        'date': pd.date_range(start=START_DATE, end=END_DATE, freq='D'),
-        'D4_price': None,  # Biodiesel RIN
-        'D5_price': None,  # Advanced biofuel RIN
-        'D6_price': None,  # Conventional ethanol RIN
-        'source': 'EPA_EMTS_placeholder'
-    })
+    # Return empty DataFrame with expected columns (no synthetic rows)
+    rin_df = pd.DataFrame(columns=['date', 'D4_price', 'D5_price', 'D6_price', 'source'])
     
     logger.warning("  ⚠️  RIN prices require EPA EMTS access or paid market data service")
     return rin_df
@@ -433,8 +426,9 @@ def main():
     
     # Fetch RIN prices
     rin_df = fetch_rin_prices()
-    if rin_df is not None:
-        rin_file = RIN_DIR / f"rin_prices_placeholder_{datetime.now().strftime('%Y%m%d')}.parquet"
+    # Do not write placeholder files; only persist if real data available
+    if rin_df is not None and not rin_df.empty:
+        rin_file = RIN_DIR / f"rin_prices_{datetime.now().strftime('%Y%m%d')}.parquet"
         rin_df.to_parquet(rin_file, index=False)
     
     # Calculate margins if possible

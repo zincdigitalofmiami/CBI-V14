@@ -279,8 +279,7 @@ def update_cftc_data():
     logger.info("UPDATING CFTC COT DATA")
     logger.info("="*80)
     
-    # CFTC COT data update would go here
-    # For now, this is a placeholder
+    # CFTC COT data update would go here (not yet implemented)
     logger.info("⚠️ CFTC COT update not yet implemented")
     
     return False

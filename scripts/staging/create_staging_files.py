@@ -9,8 +9,10 @@ CRITICAL: Each source has UNIQUE transformation requirements
 """
 
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from datetime import datetime
+import re
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData")
 
@@ -281,57 +283,93 @@ def create_weather_staging():
 def create_cftc_staging():
     """
     CFTC = Prefix all columns with 'cftc_' except 'date'
-    CRITICAL: Industry best practice - source prefix for multi-provider data warehouses
+    CRITICAL: Filter to soybean contracts and aggregate to one row per date to avoid cartesian products.
+    Since we're modeling ZL=F (soybean oil), we focus on soybean-related contracts.
     """
     
-    print("Creating CFTC staging file (WITH PREFIXES)...")
+    print("Creating CFTC staging file (SOYBEAN CONTRACTS ONLY - ONE ROW PER DATE)...")
     
-    cftc_dir = DRIVE / "raw/cftc"
-    all_cftc = []
-    
-    if not cftc_dir.exists():
-        print(f"⚠️  CFTC directory not found: {cftc_dir}")
+    # Load from existing staging file (raw files don't have proper date columns)
+    existing_staging = DRIVE / "staging/cftc_commitments.parquet"
+    if not existing_staging.exists():
+        print(f"⚠️  CFTC staging file not found: {existing_staging}")
+        print(f"   Note: Raw CFTC files need to be collected first")
         return None
     
-    for parquet_file in cftc_dir.rglob("*.parquet"):
-        try:
-            df = pd.read_parquet(parquet_file)
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date']).dt.date
-            else:
-                print(f"  ⚠️  No date column in {parquet_file.name}")
-                continue
+    print(f"  Loading from existing staging file: {existing_staging.name}")
+    df = pd.read_parquet(existing_staging)
+    
+    # Ensure date is date type
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date']).dt.date
+    else:
+        print(f"  ⚠️  No date column in staging file")
+        return None
+    
+    # Filter to soybean-related contracts
+    market_col = 'cftc_Market_and_Exchange_Names'
+    if market_col in df.columns:
+        # Find soybean contracts (SOYBEANS and SOYBEAN MEAL)
+        soy_mask = df[market_col].str.contains('SOYBEAN', case=False, na=False)
+        df = df[soy_mask].copy()
+        print(f"  ✅ Filtered to soybean contracts: {len(df)} rows")
+        
+        if len(df) == 0:
+            print("⚠️  No soybean contracts found after filtering")
+            return None
+        
+        # Check if we have multiple contracts per date (SOYBEANS + SOYBEAN MEAL = 2 per date)
+        dates_with_multiple = df.groupby('date').size()
+        if (dates_with_multiple > 1).any():
+            print(f"  ⚠️  Multiple contracts per date detected ({dates_with_multiple.max()} contracts). Aggregating...")
             
-            all_cftc.append(df)
-            print(f"  Loaded {parquet_file.name}: {len(df)} rows")
-        except Exception as e:
-            print(f"  ⚠️  Error loading {parquet_file.name}: {e}")
-            continue
+            # Group by date and aggregate
+            # For position columns (long/short/open_interest), sum them
+            # For other numeric columns, take mean
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            non_numeric_cols = [c for c in df.columns if c not in numeric_cols and c != 'date']
+            
+            agg_dict = {}
+            for col in numeric_cols:
+                col_lower = col.lower()
+                if any(kw in col_lower for kw in ['position', 'long', 'short', 'open_interest', 'spread', 'swap']):
+                    agg_dict[col] = 'sum'  # Sum positions
+                else:
+                    agg_dict[col] = 'mean'  # Average rates/prices/other metrics
+            
+            # For non-numeric columns, take first value
+            for col in non_numeric_cols:
+                if col != market_col:
+                    agg_dict[col] = 'first'
+            
+            df = df.groupby('date').agg(agg_dict).reset_index()
+            print(f"  ✅ Aggregated to one row per date: {len(df)} rows")
     
-    if not all_cftc:
-        print("⚠️  No CFTC files found")
-        return None
-    
-    combined = pd.concat(all_cftc, ignore_index=True)
-    
-    # Filter to 2006-2025 (CFTC starts 2006)
-    combined['date'] = pd.to_datetime(combined['date'])
-    combined = combined[(combined['date'] >= '2006-01-01') & (combined['date'] <= '2025-12-31')]
-    combined['date'] = combined['date'].dt.date
-    
-    # CRITICAL: Prefix ALL columns with 'cftc_' except join keys (date)
+    # Ensure all columns are prefixed (should already be, but double-check)
     join_keys = ['date']
-    columns_to_prefix = [c for c in combined.columns if c not in join_keys]
-    rename_dict = {col: f'cftc_{col}' for col in columns_to_prefix}
-    combined = combined.rename(columns=rename_dict)
+    columns_to_prefix = [c for c in df.columns if c not in join_keys and not c.startswith('cftc_')]
+    if columns_to_prefix:
+        rename_dict = {col: f'cftc_{col}' for col in columns_to_prefix}
+        df = df.rename(columns=rename_dict)
     
-    print(f"  ✅ Prefixed {len(columns_to_prefix)} columns with 'cftc_'")
+    # Sort by date
+    df = df.sort_values('date').reset_index(drop=True)
+    
+    # Verify one row per date
+    if df['date'].duplicated().any():
+        print(f"  ⚠️  WARNING: Still have duplicate dates after aggregation")
+        dupes = df[df['date'].duplicated()]['date'].unique()
+        print(f"  Duplicate dates: {dupes[:5]}")
+    else:
+        print(f"  ✅ Verified: One row per date ({len(df)} unique dates)")
+    
+    print(f"  ✅ Prefixed columns: {len([c for c in df.columns if c.startswith('cftc_')])}")
     print(f"  ✅ Join keys remain unprefixed: {join_keys}")
     
-    staging_file = DRIVE / "staging/cftc_cot_2006_2025.parquet"
-    combined.to_parquet(staging_file, index=False)
-    print(f"✅ Created: {staging_file} ({len(combined)} rows × {len(combined.columns)} cols)")
-    return combined
+    staging_file = DRIVE / "staging/cftc_commitments.parquet"
+    df.to_parquet(staging_file, index=False)
+    print(f"✅ Created: {staging_file} ({len(df)} rows × {len(df.columns)} cols)")
+    return df
 
 def create_usda_staging():
     """
@@ -363,12 +401,48 @@ def create_usda_staging():
             # Standardize date column
             if 'date' not in df.columns:
                 if 'Date' in df.columns:
-                    df['date'] = pd.to_datetime(df['Date']).dt.date
+                    df['date'] = pd.to_datetime(df['Date'], errors='coerce')
+                elif 'year' in df.columns:
+                    # USDA data often only has year - create Jan 1 date for each year
+                    df['date'] = pd.to_datetime(df['year'].astype(str) + '-01-01', errors='coerce')
+                    print(f"  ⚠️  No date column, using year column to create dates: {parquet_file.name}")
                 else:
-                    print(f"  ⚠️  No date column in {parquet_file.name}")
+                    print(f"  ⚠️  No date/Date/year column in {parquet_file.name}")
                     continue
             else:
-                df['date'] = pd.to_datetime(df['date']).dt.date
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                # If date column is all null but year exists, use year instead
+                if df['date'].isna().all() and 'year' in df.columns:
+                    print(f"  ⚠️  Date column all null, using year column instead: {parquet_file.name}")
+                    # Use first Monday of January (more likely to be a trading day than Jan 1)
+                    # Jan 1 is often a holiday, so find first Monday
+                    dates = []
+                    for year in df['year']:
+                        # Start with Jan 1 and find first Monday
+                        base_date = pd.Timestamp(year=int(year), month=1, day=1)
+                        # If Jan 1 is not Monday (0), find next Monday
+                        days_until_monday = (7 - base_date.dayofweek) % 7
+                        if days_until_monday == 0 and base_date.dayofweek != 0:
+                            days_until_monday = 7
+                        first_monday = base_date + pd.Timedelta(days=days_until_monday)
+                        dates.append(first_monday)
+                    df['date'] = pd.to_datetime(dates, errors='coerce')
+            
+            # Drop rows with NaT dates
+            before_drop = len(df)
+            df = df.dropna(subset=['date'])
+            after_drop = len(df)
+            if before_drop != after_drop:
+                print(f"  ⚠️  Dropped {before_drop - after_drop} rows with null dates from {parquet_file.name}")
+            
+            if df.empty:
+                print(f"  ⚠️  All rows had null dates: {parquet_file.name}")
+                continue
+            
+            # Check for long-format USDA data (commodity_desc, statisticcat_desc, value)
+            long_format_cols = {'commodity_desc', 'statisticcat_desc', 'value'}
+            # Also support alternative naming
+            long_format_cols_alt = {'commodity', 'statistic', 'value'}
             
             # Identify report type from filename or data structure
             filename = parquet_file.stem.lower()
@@ -383,9 +457,50 @@ def create_usda_staging():
             elif 'nass' in filename:
                 report_type = 'nass'
             
-            # Prefix ALL columns with usda_{report_type}_ except date
+            if long_format_cols.issubset(df.columns) or long_format_cols_alt.issubset(df.columns):
+                def _clean_text(value: str) -> str:
+                    value = str(value).lower().strip()
+                    value = re.sub(r'[^a-z0-9]+', '_', value)
+                    return value.strip('_')
+                
+                # Use actual column names (commodity_desc or commodity)
+                commodity_col = 'commodity_desc' if 'commodity_desc' in df.columns else 'commodity'
+                statistic_col = 'statisticcat_desc' if 'statisticcat_desc' in df.columns else 'statistic'
+                
+                df['pivot_column'] = (
+                    df[commodity_col].apply(_clean_text) + "_" + df[statistic_col].apply(_clean_text)
+                )
+                
+                df_wide = df.pivot_table(
+                    index='date',
+                    columns='pivot_column',
+                    values='value',
+                    aggfunc='first'
+                ).reset_index()
+                df_wide.columns.name = None
+                feature_cols = []
+                for col in df_wide.columns:
+                    if col == 'date':
+                        feature_cols.append('date')
+                    else:
+                        feature_cols.append(f"usda_{report_type}_{col}")
+                df_wide.columns = feature_cols
+                
+                # Basic sanity check: if rows explode beyond expected, bail out
+                original_dates = df['date'].nunique()
+                if original_dates and len(df_wide) > (original_dates * 2):
+                    raise ValueError(
+                        f"Pivoted USDA data produced {len(df_wide)} rows (expected ~{original_dates}). Aborting to avoid cartesian product."
+                    )
+                
+                df = df_wide.copy()
+            
+            # Prefix ALL columns with usda_{report_type}_ except date (skip if already prefixed)
             join_keys = ['date']
-            columns_to_prefix = [c for c in df.columns if c not in join_keys]
+            columns_to_prefix = [
+                c for c in df.columns
+                if c not in join_keys and not c.startswith('usda_')
+            ]
             
             # Create granular column names: usda_{report_type}_{field}
             rename_dict = {}
@@ -394,10 +509,10 @@ def create_usda_staging():
                 clean_col = col.lower().replace(' ', '_').replace('-', '_')
                 rename_dict[col] = f"usda_{report_type}_{clean_col}"
             
-            df = df.rename(columns=rename_dict)
+            if rename_dict:
+                df = df.rename(columns=rename_dict)
             
             # Filter to 2000-2025
-            df['date'] = pd.to_datetime(df['date'])
             df = df[(df['date'] >= '2000-01-01') & (df['date'] <= '2025-12-31')]
             df['date'] = df['date'].dt.date
             
@@ -414,9 +529,22 @@ def create_usda_staging():
     
     # Merge all report DataFrames on date to create one wide table
     print(f"\n  Merging {len(report_dataframes)} USDA report DataFrames...")
-    merged = report_dataframes[0]
-    for df in report_dataframes[1:]:
-        merged = merged.merge(df, on='date', how='outer')
+    # Filter out empty dataframes
+    non_empty = [df for df in report_dataframes if not df.empty]
+    if not non_empty:
+        print("⚠️  All USDA dataframes are empty, skipping merge.")
+        return None
+    
+    merged = non_empty[0].copy()
+    merged_columns = set(merged.columns)
+    for df in non_empty[1:]:
+        # Keep only columns that are not already in merged (besides the join key)
+        new_cols = ['date'] + [c for c in df.columns if c not in merged_columns and c != 'date']
+        if len(new_cols) <= 1:
+            continue  # nothing new to add
+        df_subset = df[new_cols].copy()
+        merged = merged.merge(df_subset, on='date', how='outer')
+        merged_columns.update(new_cols)
     
     # Sort by date
     merged = merged.sort_values('date').reset_index(drop=True)
@@ -536,8 +664,407 @@ def create_eia_staging():
     
     return merged
 
+def create_alpha_staging():
+    """
+    Combines all raw Alpha Vantage data into a single, prefixed, wide-format staging file.
+    CRITICAL: Pivots to ONE ROW PER DATE to avoid cartesian products in joins.
+    
+    - Excludes treasury data (sourced from FRED instead)
+    - Pivots symbol-specific data into wide columns (e.g., alpha_open_eurusd, alpha_rsi_14_spy)
+    - Ensures final output has exactly one row per date
+    """
+    print("Creating Alpha Vantage staging file (PIVOTED TO ONE ROW PER DATE)...")
+    
+    alpha_dir = DRIVE / "raw/alpha_vantage"
+    if not alpha_dir.exists():
+        print(f"⚠️  Alpha Vantage raw data directory not found: {alpha_dir}")
+        return None
+    
+    # Separate data by type for proper handling (store as tuples: (df, filename))
+    forex_files = []
+    technical_files = []
+    commodity_files = []
+    
+    for parquet_file in alpha_dir.glob("*.parquet"):
+        # Skip treasury files (FRED has these)
+        if 'treasury' in parquet_file.name.lower():
+            print(f"  ⏭️  Skipping treasury (sourced from FRED): {parquet_file.name}")
+            continue
+        
+        # Skip ES intraday (needs separate aggregation)
+        if 'es_intraday' in parquet_file.name.lower():
+            print(f"  ⏭️  Skipping ES intraday (needs separate processing): {parquet_file.name}")
+            continue
+        
+        try:
+            df = pd.read_parquet(parquet_file)
+            df['date'] = pd.to_datetime(df['date']).dt.date
+            
+            # Categorize by file type (store filename too)
+            if 'forex' in parquet_file.name.lower():
+                forex_files.append((df, parquet_file.name))
+                print(f"  Loaded forex: {parquet_file.name} ({len(df)} rows)")
+            elif 'technicals' in parquet_file.name.lower():
+                technical_files.append((df, parquet_file.name))
+                print(f"  Loaded technicals: {parquet_file.name} ({len(df)} rows)")
+            elif 'commodity' in parquet_file.name.lower():
+                commodity_files.append((df, parquet_file.name))
+                print(f"  Loaded commodity: {parquet_file.name} ({len(df)} rows)")
+            else:
+                print(f"  ⚠️  Unknown type: {parquet_file.name}")
+        except Exception as e:
+            print(f"  ⚠️  Error loading {parquet_file.name}: {e}")
+    
+    print(f"\n  Loaded: {len(forex_files)} forex, {len(technical_files)} technicals, {len(commodity_files)} commodities")
+    
+    if not (forex_files or technical_files or commodity_files):
+        print("⚠️  No Alpha Vantage files found to stage.")
+        return None
+    
+    # Start with an empty merged DataFrame
+    merged_df = None
+    
+    # Process forex: Pivot each pair into its own columns
+    if forex_files:
+        print(f"\n  Processing {len(forex_files)} forex pairs...")
+        for df, filename in forex_files:
+            if df.empty or 'symbol' not in df.columns:
+                continue
+            
+            symbol = df['symbol'].iloc[0].lower() if not df['symbol'].isna().all() else 'unknown'
+            # Rename value columns to include symbol
+            value_cols = [c for c in df.columns if c not in ['date', 'symbol']]
+            rename_dict = {col: f"alpha_{col}_{symbol}" for col in value_cols}
+            df_pivoted = df[['date'] + value_cols].rename(columns=rename_dict)
+            
+            # Merge into main DataFrame
+            if merged_df is None:
+                merged_df = df_pivoted
+            else:
+                merged_df = merged_df.merge(df_pivoted, on='date', how='outer')
+    
+    # Process technicals: Extract symbol from filename and include in column names
+    if technical_files:
+        print(f"\n  Processing {len(technical_files)} technical indicator files...")
+        for df, filename in technical_files:
+            if df.empty:
+                continue
+            
+            # Extract symbol from filename: technicals_SPY.parquet -> SPY
+            symbol = filename.replace('technicals_', '').replace('.parquet', '').lower()
+            
+            # Rename all value columns to include symbol
+            value_cols = [c for c in df.columns if c != 'date']
+            rename_dict = {col: f"alpha_{col}_{symbol}" for col in value_cols}
+            df_pivoted = df.rename(columns=rename_dict)
+            
+            # Merge into main DataFrame
+            if merged_df is None:
+                merged_df = df_pivoted
+            else:
+                merged_df = merged_df.merge(df_pivoted, on='date', how='outer')
+            
+            print(f"    ✅ Pivoted {symbol.upper()}: {len(value_cols)} indicators")
+    
+    # Process commodities: Each is a separate price series (already unique names like price_wti)
+    if commodity_files:
+        print(f"\n  Processing {len(commodity_files)} commodity files...")
+        for df, filename in commodity_files:
+            if df.empty:
+                continue
+            
+            # Commodities already have unique names (price_wti, price_brent, etc.)
+            value_cols = [c for c in df.columns if c != 'date']
+            rename_dict = {col: f"alpha_{col}" for col in value_cols}
+            df_prefixed = df.rename(columns=rename_dict)
+            
+            # Merge into main DataFrame
+            if merged_df is None:
+                merged_df = df_prefixed
+            else:
+                merged_df = merged_df.merge(df_prefixed, on='date', how='outer')
+    
+    if merged_df is None:
+        print("⚠️  No data to stage")
+        return None
+    
+    # Sort by date
+    merged_df = merged_df.sort_values('date').reset_index(drop=True)
+    
+    # Verify one row per date
+    unique_dates = merged_df['date'].nunique()
+    total_rows = len(merged_df)
+    if total_rows != unique_dates:
+        print(f"  ⚠️  WARNING: {total_rows} rows but {unique_dates} unique dates")
+        dupes = merged_df.groupby('date').size()
+        if (dupes > 1).any():
+            print(f"  ⚠️  {(dupes > 1).sum()} dates have multiple rows - CARTESIAN PRODUCT RISK")
+    else:
+        print(f"  ✅ Verified: One row per date ({unique_dates} unique dates)")
+    
+    staging_file = DRIVE / "staging/alpha_vantage_features.parquet"
+    merged_df.to_parquet(staging_file, index=False)
+    print(f"✅ Created: {staging_file} ({len(merged_df)} rows × {len(merged_df.columns)} cols)")
+    
+    return merged_df
+
+def create_volatility_staging():
+    """
+    Creates volatility staging file from raw volatility data.
+    - Loads raw volatility parquet files (VIX + realized vol)
+    - Applies 'vol_' prefix to all columns except 'date'
+    - Merges multiple files if present
+    """
+    print("Creating volatility staging file (VIX + realized vol)...")
+    
+    volatility_dir = DRIVE / "raw/volatility"
+    if not volatility_dir.exists():
+        print(f"⚠️  Volatility raw data directory not found: {volatility_dir}")
+        return None
+    
+    # Find all volatility parquet files
+    vol_files = list(volatility_dir.glob("volatility_*.parquet"))
+    
+    if not vol_files:
+        print("⚠️  No volatility files found")
+        return None
+    
+    # Load and combine all volatility files
+    all_dfs = []
+    for vol_file in vol_files:
+        try:
+            df = pd.read_parquet(vol_file)
+            # Ensure date column exists and is date type
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date']).dt.date
+            elif 'timestamp' in df.columns:
+                df['date'] = pd.to_datetime(df['timestamp']).dt.date
+                df = df.drop(columns=['timestamp'])
+            all_dfs.append(df)
+            print(f"  ✅ Loaded {vol_file.name}: {len(df)} rows")
+        except Exception as e:
+            print(f"  ⚠️  Error loading {vol_file.name}: {e}")
+            continue
+    
+    if not all_dfs:
+        print("⚠️  No volatility data loaded")
+        return None
+    
+    # Combine all dataframes (merge on date)
+    merged = all_dfs[0].copy()
+    for df in all_dfs[1:]:
+        merged = merged.merge(df, on='date', how='outer', suffixes=('', '_dup'))
+        # Remove duplicate columns
+        merged = merged.loc[:, ~merged.columns.str.endswith('_dup')]
+    
+    # Prefix all columns except 'date' with 'vol_'
+    join_keys = ['date']
+    columns_to_prefix = [c for c in merged.columns if c not in join_keys]
+    rename_dict = {col: f'vol_{col}' if not col.startswith('vol_') else col for col in columns_to_prefix}
+    merged = merged.rename(columns=rename_dict)
+    
+    # Sort by date
+    merged = merged.sort_values('date').reset_index(drop=True)
+    
+    staging_file = DRIVE / "staging/volatility_daily.parquet"
+    merged.to_parquet(staging_file, index=False)
+    print(f"✅ Created: {staging_file} ({len(merged)} rows × {len(merged.columns)} cols)")
+    return merged
+
+def create_policy_trump_staging():
+    """
+    Creates policy/Trump staging file from raw policy data.
+    - Loads raw policy_trump parquet files
+    - Applies 'policy_trump_' prefix (already applied in collector, but ensure consistency)
+    - Merges multiple files if present
+    """
+    print("Creating policy/Trump staging file...")
+    
+    policy_dir = DRIVE / "raw/policy_trump"
+    if not policy_dir.exists():
+        print(f"⚠️  Policy/Trump raw data directory not found: {policy_dir}")
+        return None
+    
+    # Find all policy parquet files
+    policy_files = list(policy_dir.glob("policy_trump_*.parquet"))
+    
+    if not policy_files:
+        print("⚠️  No policy/Trump files found")
+        return None
+    
+    # Load and combine all policy files
+    all_dfs = []
+    for policy_file in policy_files:
+        try:
+            df = pd.read_parquet(policy_file)
+            # Ensure date column exists
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date']).dt.date
+            elif 'timestamp' in df.columns:
+                df['date'] = pd.to_datetime(df['timestamp']).dt.date
+            all_dfs.append(df)
+            print(f"  ✅ Loaded {policy_file.name}: {len(df)} rows")
+        except Exception as e:
+            print(f"  ⚠️  Error loading {policy_file.name}: {e}")
+            continue
+    
+    if not all_dfs:
+        print("⚠️  No policy/Trump data loaded")
+        return None
+    
+    # Combine all dataframes (merge on date, outer join to keep all)
+    merged = all_dfs[0].copy()
+    for df in all_dfs[1:]:
+        # Remove duplicate columns before merging
+        cols_to_drop = [c for c in df.columns if c in merged.columns and c != 'date']
+        df_clean = df.drop(columns=cols_to_drop) if cols_to_drop else df
+        merged = merged.merge(df_clean, on='date', how='outer', suffixes=('', '_dup'))
+        # Remove duplicate columns
+        merged = merged.loc[:, ~merged.columns.str.endswith('_dup')]
+    
+    # Ensure all columns (except date/timestamp) have 'policy_trump_' prefix
+    join_keys = ['date', 'timestamp']
+    columns_to_prefix = [c for c in merged.columns if c not in join_keys and not c.startswith('policy_trump_')]
+    if columns_to_prefix:
+        rename_dict = {col: f'policy_trump_{col}' for col in columns_to_prefix}
+        merged = merged.rename(columns=rename_dict)
+    
+    # Sort by date
+    merged = merged.sort_values('date').reset_index(drop=True)
+    
+    staging_file = DRIVE / "staging/policy_trump_signals.parquet"
+    merged.to_parquet(staging_file, index=False)
+    print(f"✅ Created: {staging_file} ({len(merged)} rows × {len(merged.columns)} cols)")
+    return merged
+
+def create_palm_staging():
+    """
+    Creates palm oil staging file from raw Barchart data.
+    - Loads palm historical + daily files
+    - Applies 'barchart_palm_' prefix (already applied, but ensure consistency)
+    - Merges historical + daily data
+    """
+    print("Creating palm oil staging file (Barchart)...")
+    
+    barchart_dir = DRIVE / "raw/barchart"
+    if not barchart_dir.exists():
+        print(f"⚠️  Barchart raw data directory not found: {barchart_dir}")
+        return None
+    
+    # Find palm files
+    palm_files = list(barchart_dir.glob("*palm*.parquet"))
+    
+    if not palm_files:
+        print("⚠️  No palm oil files found")
+        return None
+    
+    # Load and combine palm files
+    all_dfs = []
+    for palm_file in palm_files:
+        try:
+            df = pd.read_parquet(palm_file)
+            # Ensure date column exists
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date']).dt.date
+            all_dfs.append(df)
+            print(f"  ✅ Loaded {palm_file.name}: {len(df)} rows")
+        except Exception as e:
+            print(f"  ⚠️  Error loading {palm_file.name}: {e}")
+            continue
+    
+    if not all_dfs:
+        print("⚠️  No palm data loaded")
+        return None
+    
+    # Combine all dataframes (merge on date, outer join)
+    merged = all_dfs[0].copy()
+    for df in all_dfs[1:]:
+        # Remove duplicate columns before merging
+        cols_to_drop = [c for c in df.columns if c in merged.columns and c != 'date']
+        df_clean = df.drop(columns=cols_to_drop) if cols_to_drop else df
+        merged = merged.merge(df_clean, on='date', how='outer', suffixes=('', '_dup'))
+        # Remove duplicate columns
+        merged = merged.loc[:, ~merged.columns.str.endswith('_dup')]
+    
+    # Ensure all columns (except date) have 'barchart_palm_' prefix
+    join_keys = ['date']
+    columns_to_prefix = [c for c in merged.columns if c not in join_keys and not c.startswith('barchart_palm_')]
+    if columns_to_prefix:
+        rename_dict = {col: f'barchart_palm_{col}' for col in columns_to_prefix}
+        merged = merged.rename(columns=rename_dict)
+    
+    # Sort by date and remove duplicates
+    merged = merged.sort_values('date').reset_index(drop=True)
+    merged = merged.drop_duplicates(subset=['date'], keep='last')
+    
+    staging_file = DRIVE / "staging/barchart_palm_daily.parquet"
+    merged.to_parquet(staging_file, index=False)
+    print(f"✅ Created: {staging_file} ({len(merged)} rows × {len(merged.columns)} cols)")
+    return merged
+
+def create_es_staging():
+    """
+    Creates ES futures staging file from Yahoo Finance data.
+    - Loads es_daily_yahoo.parquet (25 years of ES data with technical indicators)
+    - All columns already have 'es_' prefix (from collection script)
+    - Ensures one row per date
+    """
+    print("Creating ES futures staging file (Yahoo Finance)...")
+    
+    alpha_dir = DRIVE / "raw/alpha_vantage"
+    es_file = alpha_dir / "es_daily_yahoo.parquet"
+    
+    if not es_file.exists():
+        print(f"⚠️  ES daily file not found: {es_file}")
+        return None
+    
+    try:
+        df = pd.read_parquet(es_file)
+        
+        # Ensure date column
+        if 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date']).dt.date
+        else:
+            print("⚠️  No date column found in ES data")
+            return None
+        
+        # Ensure all columns (except date, symbol) have 'es_' prefix
+        join_keys = ['date', 'symbol']
+        columns_to_prefix = [
+            c for c in df.columns 
+            if c not in join_keys and not c.startswith('es_')
+        ]
+        if columns_to_prefix:
+            rename_dict = {col: f'es_{col}' for col in columns_to_prefix}
+            df = df.rename(columns=rename_dict)
+        
+        # Remove duplicates (keep last)
+        df = df.drop_duplicates(subset=['date'], keep='last')
+        df = df.sort_values('date').reset_index(drop=True)
+        
+        # Filter to 2000-2025
+        df['date'] = pd.to_datetime(df['date'])
+        df = df[(df['date'] >= '2000-01-01') & (df['date'] <= '2025-12-31')].copy()
+        df['date'] = df['date'].dt.date
+        
+        staging_file = DRIVE / "staging/es_futures_daily.parquet"
+        df.to_parquet(staging_file, index=False)
+        
+        es_cols = [c for c in df.columns if c.startswith('es_')]
+        print(f"✅ Created: {staging_file} ({len(df)} rows × {len(df.columns)} cols)")
+        print(f"   ES columns: {len(es_cols)} (OHLCV + technical indicators)")
+        print(f"   Date range: {df['date'].min()} to {df['date'].max()}")
+        
+        return df
+        
+    except Exception as e:
+        print(f"⚠️  Error creating ES staging: {e}")
+        return None
+
 def main():
-    """Create all staging files - each with unique transformation"""
+    """
+    Main function to generate all staging files.
+    """
     
     print("="*80)
     print("CREATING STAGING FILES - UNIQUE PER SOURCE")
@@ -550,12 +1077,17 @@ def main():
     staging_dir.mkdir(parents=True, exist_ok=True)
     
     # Create all staging files (each has unique requirements)
-    create_yahoo_staging()    # ZL=F ONLY, KEEP ALL indicators (Alpha has NO ZL data - totally separate)
-    create_fred_staging()     # Wide format with fred_ prefix
-    create_weather_staging()  # Granular wide format (one column per region)
-    create_cftc_staging()     # With cftc_ prefix
-    create_usda_staging()     # Granular wide format (one column per report/field)
-    create_eia_staging()      # Granular wide format (one column per series ID)
+    create_yahoo_staging()        # ZL=F ONLY, KEEP ALL indicators (Alpha has NO ZL data - totally separate)
+    create_fred_staging()         # Wide format with prefixes
+    create_weather_staging()      # Granular wide format
+    create_cftc_staging()         # Prefixed columns
+    create_usda_staging()         # Granular wide format (one column per report/field)
+    create_eia_staging()          # Granular wide format (one column per series ID)
+    create_alpha_staging()        # Wide format with prefixes
+    create_volatility_staging()   # VIX + realized vol with vol_ prefix
+    create_policy_trump_staging() # Policy/Trump signals with policy_trump_ prefix
+    create_palm_staging()         # Palm oil with barchart_palm_ prefix
+    create_es_staging()           # ES futures with es_ prefix (25 years + technicals)
     
     print("\n" + "="*80)
     print("✅ STAGING FILES CREATED (CORRECTED)")

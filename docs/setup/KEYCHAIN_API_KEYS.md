@@ -21,12 +21,19 @@ All API keys for CBI-V14 MUST be stored in macOS Keychain for security. This ens
 ```bash
 # Store FRED API key
 security add-generic-password -a default -s cbi-v14.FRED_API_KEY -w "your_key_here" -U
+> FRED requires a 32-character lowercase alphanumeric key with no hyphens. If the key includes uppercase or separators, the API will return HTTP 400. Reference: https://fred.stlouisfed.org/docs/api/fred/
 
 # Store NewsAPI key
 security add-generic-password -a default -s cbi-v14.NEWSAPI_KEY -w "your_key_here" -U
 
 # Store ScrapeCreators key
 security add-generic-password -a default -s cbi-v14.SCRAPE_CREATORS_API_KEY -w "your_key_here" -U
+# See docs/setup/SCRAPECREATORS_API.md for full ScrapeCreators integration guide
+
+# Store DataBento API key (GLBX.MDP3 access)
+security add-generic-password -a default -s cbi-v14.DATABENTO_API_KEY -w "your_key_here" -U
+> To use with server processes, export to environment at runtime:
+> export DATABENTO_API_KEY="$(security find-generic-password -a default -s cbi-v14.DATABENTO_API_KEY -w)"
 ```
 
 ### 2. Use Keys in Python Scripts
@@ -66,6 +73,7 @@ Store these keys in Keychain:
 | `NEWSAPI_KEY` | News API | Sentiment analysis |
 | `SCRAPE_CREATORS_API_KEY` | ScrapeCreators | Social media scraping |
 | `ALPHA_VANTAGE_API_KEY` | Alpha Vantage | Market data, technical indicators (Plan75 Premium) ✅ |
+| `DATABENTO_API_KEY` | DataBento | CME/CBOT/NYMEX/COMEX futures historical + live |
 
 ## Migration from Environment Variables
 
@@ -124,4 +132,3 @@ Convenience function with fallback to environment variables (for migration).
 - Keychain utility: `src/utils/keychain_manager.py`
 - Architecture plan: `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` (Security section)
 - Setup script: `scripts/setup/store_keys_in_keychain.sh`
-

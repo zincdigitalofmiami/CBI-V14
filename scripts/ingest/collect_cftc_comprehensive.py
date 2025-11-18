@@ -32,8 +32,10 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 CFTC_BASE_URL = "https://www.cftc.gov/files/dea/history"
-START_YEAR = 2006  # Start of disaggregated data
+START_YEAR = 2010  # Start of disaggregated data (earlier years not available)
 END_YEAR = datetime.now().year
+# Force backfill of historical years (2010-2019) even if some files fail
+FORCE_HISTORICAL_BACKFILL = True
 
 # External drive paths
 EXTERNAL_DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
@@ -309,9 +311,22 @@ def main():
         'years': {}
     }
     
-    # Download data for each year
+    # Download data for each year (FORCE HISTORICAL BACKFILL 2006-2019)
+    logger.info(f"\n{'='*80}")
+    logger.info(f"HISTORICAL BACKFILL: Collecting {START_YEAR}-{END_YEAR} (including 2006-2019)")
+    logger.info(f"{'='*80}\n")
+    
     for year in range(START_YEAR, END_YEAR + 1):
         logger.info(f"\nProcessing year {year}...")
+        
+        # Skip if file already exists and we're not forcing re-download
+        processed_file = PROCESSED_DIR / f"cot_{year}.parquet"
+        if processed_file.exists() and not FORCE_HISTORICAL_BACKFILL:
+            logger.info(f"  ⏭️  Skipping {year} - file already exists: {processed_file}")
+            df_existing = pd.read_parquet(processed_file)
+            all_data.append(df_existing)
+            results['success'].append(year)
+            continue
         
         # Download the file
         df_raw = download_cot_file(year)
@@ -321,11 +336,19 @@ def main():
             df_processed = process_cot_data(df_raw, year)
             
             if not df_processed.empty:
+                # Clean numeric columns (strip whitespace, convert to numeric)
+                numeric_cols = [col for col in df_processed.columns 
+                               if col not in ['report_date', 'CFTC_Contract_Market_Code', 'Contract_Market_Code', 
+                                            'Market_and_Exchange_Names', 'As_of_Date_in_Form_YYYY_MM_DD']]
+                for col in numeric_cols:
+                    if df_processed[col].dtype == 'object':
+                        df_processed[col] = df_processed[col].astype(str).str.strip()
+                        df_processed[col] = pd.to_numeric(df_processed[col], errors='coerce')
+                
                 # Calculate additional metrics
                 df_processed = calculate_net_positions(df_processed)
                 
                 # Save processed data
-                processed_file = PROCESSED_DIR / f"cot_{year}.parquet"
                 df_processed.to_parquet(processed_file, index=False)
                 
                 all_data.append(df_processed)
@@ -341,9 +364,11 @@ def main():
             else:
                 results['no_data'].append(year)
                 collection_metadata['years'][year] = {'status': 'no_data'}
+                logger.warning(f"  ⚠️  No data processed for {year}")
         else:
             results['failed'].append(year)
             collection_metadata['years'][year] = {'status': 'failed'}
+            logger.error(f"  ❌ Failed to download {year}")
     
     # Combine all years
     if all_data:

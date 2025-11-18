@@ -17,7 +17,7 @@ interface BiofuelMandateData {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function BiofuelMandates() {
-  // Placeholder component - will be implemented when biofuel policy data is integrated
+  // TODO: implement when biofuel policy data is integrated
   return (
     <div className="p-6">
       <div className="text-center">
@@ -37,7 +37,6 @@ export default function BiofuelMandates() {
     </div>
   )
 }
-
 
 
 

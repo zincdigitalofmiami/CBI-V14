@@ -30,14 +30,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-FRED_API_KEY = os.getenv('FRED_API_KEY')
+# Try to get from keychain first, then environment
+try:
+    # Add parent directories to path to import keychain_manager
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    from src.utils.keychain_manager import get_api_key
+    FRED_API_KEY = get_api_key('FRED_API_KEY')
+    if FRED_API_KEY:
+        logger.info("Using FRED API key from keychain")
+    else:
+        raise ValueError("Key not found in keychain")
+except Exception as e:
+    logger.warning(f"Could not load from keychain: {e}")
+    # Fallback to environment variable
+    FRED_API_KEY = os.getenv('FRED_API_KEY')
+    if FRED_API_KEY:
+        logger.info("Using FRED API key from environment")
+
 if not FRED_API_KEY:
-    logger.error("FRED_API_KEY not set in environment!")
-    logger.error("Set it with: export FRED_API_KEY='your_key_here'")
-    raise RuntimeError("FRED_API_KEY environment variable is required")
+    logger.error("FRED_API_KEY not found in keychain or environment!")
+    logger.error("Store in keychain: security add-generic-password -a default -s cbi-v14.FRED_API_KEY -w 'your_key' -U")
+    raise RuntimeError("FRED_API_KEY is required")
 
 FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
-START_DATE = "2000-01-01"
+START_DATE = "2020-01-01"  # Focus on 2020-2025 for current needs
 END_DATE = datetime.now().strftime("%Y-%m-%d")
 
 # External drive paths
@@ -91,13 +108,12 @@ FRED_SERIES = {
     'ICSA': 'Initial Unemployment Claims',  # NEW
     'CCSA': 'Continued Unemployment Claims',  # NEW
     
-    # GDP & Production (6 series) - EXPANDED
+    # GDP & Production (4 series) - EXPANDED
     'GDP': 'Gross Domestic Product',
     'GDPC1': 'Real Gross Domestic Product',
     'INDPRO': 'Industrial Production Index',
     'DGORDER': 'Manufacturers New Orders: Durable Goods',
-    'NAPMPI': 'ISM Manufacturing: Production Index',  # NEW
-    'NAPM': 'ISM Manufacturing: PMI Composite Index',  # NEW
+    # Note: NAPMPI and NAPM don't exist in FRED - removed
     
     # Money Supply (3 series) - EXISTING
     'M2SL': 'M2 Money Stock',
@@ -115,9 +131,9 @@ FRED_SERIES = {
     'T10Y3M': '10-Year Treasury Constant Maturity Minus 3-Month',
     'TEDRATE': 'TED Spread',  # NEW
     
-    # Commodity-Related (2 series) - EXISTING
+    # Commodity-Related (1 series) - EXISTING
     'DCOILWTICO': 'Crude Oil Prices: West Texas Intermediate (WTI)',
-    'GOLDPMGBD228NLBM': 'Gold Fixing Price 3:00 P.M. (London time) in London Bullion Market',
+    # Note: GOLDPMGBD228NLBM doesn't exist in FRED - removed
     
     # Trade/Currency (4 series) - EXPANDED
     'DEXUSEU': 'U.S. / Euro Foreign Exchange Rate',  # EXISTING
@@ -250,7 +266,10 @@ def fetch_series(series_id: str, series_name: str) -> dict:
             
             logger.info(f"  ✅ Success: {len(df)} observations saved")
             
-            return df[['date', 'value']].rename(columns={'value': series_name})
+            # Return dataframe with series_id preserved for combining
+            result_df = df[['date', 'value', 'series_id']].copy()
+            result_df = result_df.rename(columns={'value': series_id.lower()})
+            return result_df
         
         elif response.status_code == 429:
             raise Exception(f"Rate limit hit: HTTP 429")
@@ -336,19 +355,21 @@ def validate_series_data(df: pd.DataFrame, series_id: str) -> dict:
         issues.append(f"Large gap of {max_gap.days} days at {gap_location}")
     
     # Check for outliers (basic check)
-    if 'value' in df.columns:
-        mean_val = df['value'].mean()
-        std_val = df['value'].std()
-        outliers = df[(df['value'] < mean_val - 5*std_val) | (df['value'] > mean_val + 5*std_val)]
+    # The value column is named after the series_id (lowercase)
+    value_col = series_id.lower()
+    if value_col in df.columns:
+        mean_val = df[value_col].mean()
+        std_val = df[value_col].std()
+        outliers = df[(df[value_col] < mean_val - 5*std_val) | (df[value_col] > mean_val + 5*std_val)]
         if len(outliers) > 0:
             issues.append(f"Found {len(outliers)} potential outliers")
-    
-    # Check value ranges for specific series
-    if series_id == 'UNRATE' and df['value'].max() > 30:
-        issues.append(f"Unemployment rate unusually high: {df['value'].max()}%")
-    
-    if series_id == 'DFF' and df['value'].min() < 0:
-        issues.append(f"Negative Fed Funds rate: {df['value'].min()}%")
+        
+        # Check value ranges for specific series
+        if series_id == 'UNRATE' and df[value_col].max() > 30:
+            issues.append(f"Unemployment rate unusually high: {df[value_col].max()}%")
+        
+        if series_id == 'DFF' and df[value_col].min() < 0:
+            issues.append(f"Negative Fed Funds rate: {df[value_col].min()}%")
     
     return {
         'series_id': series_id,
@@ -396,7 +417,6 @@ def main():
         # Categorize result
         if result['status'] == 'success':
             results['success'].append(series_id)
-            all_data.append(result['data'])
             
             # Validate the data
             validation = validate_series_data(result['data'], series_id)
@@ -405,6 +425,9 @@ def main():
                 logger.warning(f"  ⚠️  Validation issues for {series_id}:")
                 for issue in validation['issues']:
                     logger.warning(f"     - {issue}")
+            
+            # Store the dataframe for combining (it has date, series_id, and value column)
+            all_data.append(result['data'])
             
             collection_metadata['series'][series_id] = {
                 'name': series_name,
@@ -434,30 +457,27 @@ def main():
         if i < len(FRED_SERIES):
             time.sleep(1.0)
     
-    # Combine all successful data
+    # Combine all successful data into wide format
     if all_data:
         logger.info("\n" + "="*80)
         logger.info("Combining all series into master dataset...")
         
-        combined_df = pd.concat(all_data, ignore_index=True)
-        combined_df = combined_df.sort_values(['date', 'series_id'])
+        # Merge all dataframes on date (each has date + series_id + one value column)
+        # Drop series_id column before merging since we're creating wide format
+        combined_df = all_data[0].drop(columns=['series_id']).copy()
+        for df in all_data[1:]:
+            df_clean = df.drop(columns=['series_id'])
+            combined_df = combined_df.merge(df_clean, on='date', how='outer')
         
-        # Save combined dataset
-        combined_file = COMBINED_DIR / f"fred_all_series_{datetime.now().strftime('%Y%m%d')}.parquet"
+        # Sort by date
+        combined_df = combined_df.sort_values('date')
+        
+        # Save combined dataset (wide format)
+        combined_file = COMBINED_DIR / f"fred_wide_format_{datetime.now().strftime('%Y%m%d')}.parquet"
         combined_df.to_parquet(combined_file, index=False)
         
-        logger.info(f"✅ Combined dataset saved: {len(combined_df)} rows")
-        
-        # Create pivot table (wide format)
-        pivot_df = combined_df.pivot_table(
-            index='date',
-            columns='series_id',
-            values='value',
-            aggfunc='mean'
-        )
-        pivot_file = COMBINED_DIR / f"fred_wide_format_{datetime.now().strftime('%Y%m%d')}.parquet"
-        pivot_df.to_parquet(pivot_file)
-        logger.info(f"✅ Wide format saved: {pivot_df.shape}")
+        logger.info(f"✅ Combined dataset saved: {len(combined_df)} rows × {len(combined_df.columns)} columns")
+        logger.info(f"   Date range: {combined_df['date'].min()} to {combined_df['date'].max()}")
     
     # Save metadata
     metadata_file = METADATA_DIR / f"collection_metadata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"

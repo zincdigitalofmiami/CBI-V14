@@ -5,9 +5,9 @@ last_updated: "2025-11-17"
 joins:
   # === BASE: Yahoo Historical Data (ZL=F ONLY - Alpha is TOTALLY SEPARATE, no ZL data) ===
   - name: "base_prices"
-    source: "staging/yahoo_historical_all_symbols.parquet"
+    source: "staging/yahoo_historical_prefixed.parquet"
     tests:
-      - expect_date_range: ["2000-03-01", "2025-01-01"]  # ZL futures started March 2000
+      - expect_date_range: ["2000-03-15", "2025-01-01"]  # ZL futures started March 15, 2000
       - expect_symbols_count_gte: 1  # Changed from 55 - ZL=F ONLY now
       - expect_zl_rows_gte: 6000
       - expect_columns_prefixed: ["yahoo_"]  # All columns except date, symbol should have yahoo_ prefix
@@ -29,29 +29,30 @@ joins:
   # === JOIN: Weather Data (GRANULAR WIDE FORMAT) ===
   - name: "add_weather"
     left: "<<add_macro>>"
-    right: "staging/weather_granular_daily.parquet"  # UPDATED: New filename (granular format)
+    right: "staging/weather_granular.parquet"  # UPDATED: New filename (granular format)
     on: ["date"]
     how: "left"
     null_policy:
       allow: true
-      fill: {"weather_us_iowa_prcp_mm": 0.0, "weather_us_iowa_tavg_c": 10.0}  # UPDATED: Granular column names
+      fill: {"weather_us_iowa_PRCP": 0.0, "weather_us_iowa_TAVG": 10.0}  # UPDATED: Use actual NOAA column names (uppercase)
     tests:
       - expect_rows_preserved
-      - expect_null_rate_below: {"weather_us_iowa_prcp_mm": 0.30}  # UPDATED: Granular column name
-      - expect_columns_added: ["weather_us_iowa_tavg_c", "weather_us_illinois_tavg_c"]  # Verify granular columns exist
+      - expect_null_rate_below: {"weather_us_iowa_PRCP": 0.30}  # UPDATED: Use actual NOAA column name
+      - expect_columns_added: ["weather_us_iowa_TAVG", "weather_us_illinois_TAVG"]  # Verify granular columns exist
 
-  # === JOIN: CFTC Positioning (2006+) (PREFIXED) ===
+  # === JOIN: CFTC Positioning (2020+) (PREFIXED) ===
+  # NOTE: Using existing cftc_commitments.parquet (2020-2024). Full 2006-2025 backfill pending.
   - name: "add_cftc"
     left: "<<add_weather>>"
-    right: "staging/cftc_cot_2006_2025.parquet"
+    right: "staging/cftc_commitments.parquet"
     on: ["date"]
     how: "left"
     null_policy:
-      allow: true  # Only available 2006+
+      allow: true  # Only available 2020+
       fill: {}
     tests:
       - expect_rows_preserved
-      - expect_cftc_available_after: "2006-01-01"
+      - expect_cftc_available_after: "2015-01-01"  # Updated after backfill  # Updated: actual data starts 2020, not 2006
       - expect_columns_prefixed: ["cftc_"]  # All columns except date should have cftc_ prefix
 
   # === JOIN: USDA Data (GRANULAR WIDE FORMAT) ===
@@ -80,50 +81,158 @@ joins:
       - expect_rows_preserved
       - expect_columns_prefixed: ["eia_"]  # All columns except date should have eia_ prefix
 
-  # === JOIN: Regime Assignments (CRITICAL) ===
+  # === JOIN: Final Regime Weights ===
   - name: "add_regimes"
-    left: "<<add_eia>>"  # UPDATED: Changed from add_biofuels to add_eia
-    right: "registry/regime_calendar.parquet"
+    left: "<<add_eia>>"
+    right: "registry/regime_calendar.parquet" # Note: using the registry file directly
     on: ["date"]
     how: "left"
     null_policy:
-      allow: true  # Allow nulls, but fill with defaults
-      fill: {"market_regime": "allhistory", "training_weight": 1}
-      fill_method: "ffill"  # Forward fill for missing dates
+      allow: true
+      fill_method: "ffill"
     tests:
       - expect_rows_preserved
-      - expect_regime_cardinality_gte: 7
-      - expect_columns_present: ["market_regime", "training_weight"]
-      - expect_null_rate_below: {"market_regime": 0.05}  # After filling, <5% nulls acceptable
+      - expect_columns_added: ["regime", "training_weight"]  # Updated: regime_calendar.parquet has 'training_weight', not separate vol/eng/garch weights
 
-  # === JOIN: Alpha Vantage Combined Data (Prices + 50+ Indicators) ===
-  # POSITION: After add_regimes (last join before feature engineering)
-  # NOTE: Alpha is TOTALLY SEPARATE - has NO ZL data (only CORN, WHEAT, etc.)
-  # NOTE: ZL rows will get NaN for all Alpha columns (this is correct - Alpha has no ZL)
-  # NOTE: This join is optional - only if Alpha data has been collected
-  - name: "add_alpha_enhanced"
-    left: "<<add_regimes>>"  # Join after regimes, not after FRED!
-    right: "staging/alpha/daily/alpha_complete_ready_for_join.parquet"
-    on: ["date", "symbol"]  # Multi-key join!
+  # === JOIN: Alpha Vantage Features ===
+  - name: "add_alpha_vantage"
+    left: "<<add_regimes>>"
+    right: "staging/alpha_vantage_features.parquet"
+    on: ["date"] # Assuming a simple date join for now
     how: "left"
     null_policy:
       allow: true
-      fill_method: "ffill"  # Forward fill indicators (only for non-ZL symbols)
+      fill_method: "ffill"
     tests:
       - expect_rows_preserved
-      - expect_indicators_count_gte: 50  # Verify 50+ indicators added (only for non-ZL symbols)
-      - expect_columns_added: ["alpha_RSI_14", "alpha_MACD_line", "alpha_ATR_14", "alpha_BBANDS_upper_20"]  # Optional - only for non-ZL symbols (prefixed)
-      - expect_null_rate_below: {"alpha_RSI_14": 0.10}  # <10% nulls after ffill (only for non-ZL symbols)
-      - expect_date_range: ["2000-01-01", "2025-12-31"]  # Must maintain date range
+      - expect_columns_prefixed: ["alpha_"]
+
+  # === JOIN: Volatility & VIX ===
+  - name: "add_volatility"
+    left: "<<add_alpha_vantage>>"
+    right: "staging/volatility_features.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_prefixed: ["vol_"]
+      - expect_columns_added: ["vol_vix_level", "vol_regime"]
+
+  # === JOIN: Palm Oil (Barchart) ===
+  - name: "add_palm"
+    left: "<<add_volatility>>"
+    right: "staging/palm_oil_daily.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_prefixed: ["barchart_palm_"]
+
+  # === JOIN: Policy & Trump Intelligence ===
+  - name: "add_policy_trump"
+    left: "<<add_palm>>"
+    right: "staging/policy_trump_signals.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"  # Policy signals persist until new announcement
+    tests:
+      - expect_rows_preserved
+      - expect_columns_prefixed: ["policy_trump_"]
+  
+  # === JOIN: ES Futures (25 years + 50+ technical indicators) ===
+  - name: "add_es_futures"
+    left: "<<add_policy_trump>>"
+    right: "staging/es_futures_daily.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"  # ES data available from 2000-11-24
+    tests:
+      - expect_rows_preserved
+      - expect_columns_prefixed: ["es_"]
+      - expect_columns_added: ["es_close", "es_rsi_14", "es_macd"]  # Sample ES indicators
+
+  # === JOIN: ES Intraday Aggregated Features ===
+  - name: "add_es_intraday_features"
+    left: "<<add_es_futures>>"
+    right: "staging/es_daily_aggregated.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"] # Sample of new features
+
+  # === JOIN: MES Futures (daily) ===
+  - name: "add_mes_futures"
+    left: "<<add_es_intraday_features>>"
+    right: "staging/mes_futures_daily.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_prefixed: ["mes_"]
+      - expect_columns_added: ["mes_close"]
+
+  # === JOIN: MES Intraday Aggregated Features ===
+  - name: "add_mes_intraday_features"
+    left: "<<add_mes_futures>>"
+    right: "staging/mes_daily_aggregated.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["mes_5min_realized_vol", "mes_30min_realized_vol", "mes_60min_realized_vol", "mes_240min_realized_vol"]
+
+  # === JOIN: MES Correlation Confirmation Features (VIX/USD/10Y) ===
+  - name: "add_mes_confirmation_features"
+    left: "<<add_mes_intraday_features>>"
+    right: "staging/mes_confirmation_features.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["mes_corr_vix_ret_30d", "mes_corr_usd_ret_30d", "mes_corr_t10y_ret_30d"]
+
+  # === JOIN: ZL Intraday Aggregated Features (from Databento) ===
+  - name: "add_zl_intraday_features"
+    left: "<<add_mes_intraday_features>>"
+    right: "staging/zl_daily_aggregated.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["zl_60min_realized_vol", "zl_60min_hl_vol", "zl_60min_vwap"]
 
 # === FINAL TESTS (Must Pass Before Feature Engineering) ===
 final_tests:
   - expect_total_rows_gte: 6000
   - expect_total_cols_gte: 100
   - expect_no_duplicate_dates
-  - expect_date_range: ["2000-01-01", "2025-12-31"]
+  - expect_date_range: ["2000-03-15", "2025-11-14"]  # Updated: ZL=F trading started March 15, 2000; end date matches current data availability
   - expect_regime_cardinality_gte: 7
   - expect_weight_range: [50, 1000]  # Updated Nov 17, 2025: Changed from 50-5000 to 50-1000
-
-
-
+  - expect_columns_present: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"]

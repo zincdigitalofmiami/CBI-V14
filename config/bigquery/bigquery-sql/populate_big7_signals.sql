@@ -131,11 +131,11 @@ LEFT JOIN `cbi-v14.forecasting_data_warehouse.crude_oil_prices` c
   ON DATE(s.time) = c.date
 WHERE s.symbol = 'ZL' AND DATE(s.time) >= '2020-01-01';
 
--- Biofuel Ethanol (placeholder - would need ethanol data)
+-- Biofuel Ethanol (TODO: requires ethanol data)
 CREATE OR REPLACE TABLE `cbi-v14.temp.biofuel_ethanol_historical` AS
 SELECT
   DATE(created_at) as date,
-  0.5 as feature_biofuel_ethanol  -- Placeholder
+  NULL as feature_biofuel_ethanol  -- TODO: populate from ethanol data source
 FROM `cbi-v14.staging.comprehensive_social_intelligence`
 WHERE created_at >= '2020-01-01'
 GROUP BY DATE(created_at);

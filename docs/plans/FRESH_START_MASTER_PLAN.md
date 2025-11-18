@@ -20,7 +20,64 @@
 
 ---
 
+## QUICK DATA SOURCES OVERVIEW
+
+- New live source: DataBento GLBX.MDP3 (CME/CBOT/NYMEX/COMEX)
+  - Schemas: `ohlcv-1m`, `ohlcv-1h`, `ohlcv-1d`
+  - Usage: forward-only from cutover; store local Parquet under `TrainingData/live/` and `TrainingData/live_continuous/`
+  - Symbology: `{ROOT}.FUT` via `stype_in='parent'` (e.g., `ES.FUT`, `ZL.FUT`); exclude spreads (`symbol` contains `-`)
+
+- Existing pulls (historical remains in place):
+  - Yahoo Finance: ZL=F OHLCV + indicators (46+)
+  - Alpha Vantage: ES futures + commodities/FX/indices daily + indicators
+  - FRED: 55–60 macro series
+  - EIA / USDA / EPA / World Bank / CFTC: domain‑specific datasets (biofuels, exports, RINs, pink sheet, positioning)
+
+- What we have now (high level):
+  - Historical OHLCV + indicators (ZL via Yahoo; ES/others via Alpha)
+  - Macro (FRED) and domain series (EIA/USDA/etc.) staged and/or mirrored
+  - New forward live futures via DataBento (Phase‑A roots), continuous front built hourly/daily
+
+- Vercel (serverless) API endpoints (basic):
+  - `GET https://<your-app>.vercel.app/api/v1/market/ohlcv?root=ES&tf=1m&minutes=90`
+  - `GET https://<your-app>.vercel.app/api/v1/market/latest-1m?root=ES`
+  - Server env: set `DATABENTO_API_KEY` (server‑only). No client secrets.
+
+---
+
 ## DATA SOURCE RESPONSIBILITIES
+
+### DataBento (Futures Live + Forward)
+**Role:** Primary live futures provider (CME/CBOT/NYMEX/COMEX) from cutover date forward  
+**Scope:** 15 years available; preserve all historical already collected and begin forward-only via DataBento.
+
+**Datasets/Schemas:**
+- Dataset: `GLBX.MDP3`
+- Schemas: `ohlcv-1m` (intraday), `ohlcv-1h` (summaries), `ohlcv-1d` (daily)
+- Symbology: `stype_in='parent'`, symbols: `{ROOT}.FUT` (e.g., `ES.FUT`, `ZL.FUT`)
+- Exclude calendar spreads (symbols containing `-`)
+
+**Cutover Strategy:**
+- Keep historical exactly as-is (Yahoo/Alpha/BigQuery).  
+- Begin forward-only ingestion today via DataBento and store Parquet under `TrainingData/live/` and continuous under `TrainingData/live_continuous/`.
+- Stitch historical + live at query time (or via stitcher) to form unified continuous series.
+
+**Security:**
+- Key: `DATABENTO_API_KEY` (server-side only). Store via macOS Keychain.  
+  See `docs/setup/KEYCHAIN_API_KEYS.md` for the Keychain command and export snippet.
+
+**Quality Controls:**
+- Tick sizes per root: `registry/universe/tick_sizes.yaml`
+- Spread filter (drop `symbol` with `-`)
+- No future timestamps; outlier guards; variance checks
+
+**Implemented Utilities:**
+- Live poller (forward-only 1m): `scripts/live/databento_live_poller.py`
+- Build forward continuous (front-by-volume): `scripts/ingest/build_forward_continuous.py`
+- Serverless helpers/endpoints (development):  
+  - Range: `scripts/api/databento_ohlcv_range.py`  
+  - Latest 1m: `scripts/api/databento_latest_1m.py`  
+  - API routes: `dashboard-nextjs/src/app/api/v1/market/{ohlcv,latest-1m}/route.ts`
 
 ### Yahoo Finance
 **Role:** ZL=F ONLY (prices + ALL 46+ indicators)  
@@ -44,6 +101,7 @@
 - **FX:** Key currency pairs for ZL model: `USD/BRL`, `USD/CNY`, `USD/ARS`, `EUR/USD`, `USD/MYR` (for Palm)
 - **Indices:** SPY, DIA, QQQ, VIX, etc.
 - **50+ Technical Indicators:** For ALL symbols (except ZL)
+  - **Important:** Alpha’s TA endpoints only support equity/ETF tickers. Use SPY to proxy ES and SOYB (or another soy oil ETF) to proxy ZL whenever we call indicator functions, then map those features back to the futures during staging.
 - **Options:** SOYB, CORN, WEAT, DBA, SPY options chains
 - **News & Sentiment:** Tagged with symbols/keywords
 - **Prefix:** `alpha_` on ALL columns except `date`, `symbol`
@@ -133,9 +191,12 @@
 - **Scripts:** `scripts/predictions/trump_action_predictor.py` (Truth Social + policy wires) and `scripts/predictions/zl_impact_predictor.py`
 - **Raw/Staging:** `raw/policy/trump_policy_events.parquet` → `staging/policy_trump_signals.parquet`
 - **Prefix:** `policy_trump_` (e.g., `policy_trump_action_prob`, `policy_trump_expected_zl_move`, `policy_trump_procurement_alert`)
+- **Sources Covered:** ScrapeCreators (Truth Social + Twitter/Facebook/LinkedIn), aggregated news (NewsAPI, Alpha Vantage News, trusted RSS), ICE announcements, USTR/Federal Register tariff notices, White House executive orders, ScrapeCreators Google Search queries for trade/biofuel/agriculture/energy keywords
+- **Classification:** Each record tagged into `policy_*`, `trade_*`, `biofuel_*`, `logistics_*`, `macro_*` buckets with region/source metadata and ZL sentiment score
+- **Cadence:** Truth Social/ScrapeCreators social feeds and Google Search queries every 15 minutes (matching Big 8 refresh); aggregated news/ICE/USTR/EO scrapes hourly with a daily full backfill so nothing is missed over weekends/holidays
 - **Integration:** Feeds dashboard policy cards and becomes the “Policy Shock” pillar inside `neural.vw_big_eight_signals`
 - **Cadence:** Every 15 minutes alongside the Big 8 refresh cycle
-- **View Relationship:** `sync_signals_big8.py` writes snapshots to `signals.big_eight_live`, and `neural.vw_big_eight_signals` simply selects from that table so dashboards always read the latest record.
+- **View Relationship:** `sync_signals_big8.py` writes snapshots to `signals.big_eight_live`, and `neural.vw_big_eight_signals` simply selects from that table so dashboards always read the latest record. The same staged feed also powers the “Sentiment & Policy” dashboard lane—stories, social hits, lobbying/regulatory events, tariffs, and executive orders show up there with their sentiment tags so the front-end can explain shocks in plain English.
 
 ---
 
@@ -250,9 +311,18 @@
 
 ## DATA COLLECTION PRIORITIES
 
+### Phase 0: Futures Live Cutover (Immediate)
+0. **DataBento (GLBX.MDP3):** Start forward-only 1m ingestion for Phase‑A roots (ES/MES, ZL/ZS/ZM/ZC/ZW, CL/NG/RB/HO, GC/SI/HG).  
+   - Run: `python3 scripts/live/databento_live_poller.py --roots ES,ZL,CL --interval 60`  
+   - Build continuous: `python3 scripts/ingest/build_forward_continuous.py --root ES --days 1`
+   - Keep historical sources intact; stitch at analysis time.
+
 ### Phase 1: Core Data (Week 1)
 1. **Yahoo:** ZL=F only (prices + all indicators) → `yahoo_` prefix
 2. **FRED:** Expand to 55-60 series → `fred_` prefix
+   - Use `scripts/ingest/collect_fred_comprehensive.py` with a valid API key (32-char lowercase alphanumeric, no hyphens). Store via `security add-generic-password -s "FRED_API_KEY" -w "<key>"`. Official docs: https://fred.stlouisfed.org/docs/api/fred/
+   - Default real-time period is “today” (FRED). Only set `realtime_start`/`realtime_end` if we explicitly need ALFRED vintage data; most users want latest revisions, so stick with FRED defaults.
+   - Series catalog curated to 53 valid IDs (removed `NAPMPI`, `NAPM`, `GOLDPMGBD228NLBM` which no longer exist). Drop FRED’s `series_id` column before merging so each series becomes a single `fred_*` column in the wide frame.
 3. **Alpha:** ES futures (all 11 timeframes) → `alpha_` prefix
 4. **Alpha:** Core commodities (CORN, WHEAT, WTI, etc.) → `alpha_` prefix
 5. **Alpha:** 50+ technical indicators for all symbols → `alpha_` prefix
@@ -451,6 +521,95 @@
 ### Shock Analysis (Local, Optimized)
 - Purpose: Detect transient, high-impact events; add shock features and weight emphasis with decay and caps.
 - Why local: Complex multi-signal logic and decay runs faster and cheaper with vectorized pandas/NumPy/Polars than repeating SQL windows.
+
+## Policy Shock Scoring Formula
+
+Every policy/news record receives a `policy_trump_score` (0-1) calculated as:
+
+```
+policy_trump_score = source_confidence × topic_multiplier × abs(sentiment_score) × recency_decay × frequency_penalty
+```
+
+### Component Definitions
+
+**source_confidence (0.50-1.00):**
+- Gov (USDA, USTR, EPA, WhiteHouse) → 1.00
+- Premium press (Reuters/Bloomberg/WSJ) → 0.95
+- Major press (FT/WSJ regional, CNBC, AP) → 0.90
+- Trade publications (AgWeb, DTN, Co-ops) → 0.80
+- Unknown blog or unverified domain → 0.50
+
+**topic_multiplier:**
+- `policy_lobbying` / `policy_legislation` / `policy_regulation` / tariffs → 1.00
+- `trade_china` / `trade_argentina` / `trade_palm` → 0.95
+- `biofuel_policy` / `biofuel_spread` / `energy_crude` → 0.85
+- `supply_farm_reports` / `supply_weather` / `supply_labour` → 0.80
+- `logistics_water` / `logistics_port` → 0.70
+- `macro_volatility` / `macro_fx` / `macro_rate` → 0.60
+- `market_structure` / `market_positioning` → 0.50
+
+**sentiment_score ∈ [-1, 1]:**
+- Calculated via keyword matching (bullish keywords - bearish keywords) / (total + 1)
+- `sentiment_class` = sign(sentiment_score) → 'bullish', 'bearish', or 'neutral'
+
+**recency_decay = exp(-Δhours / 24):**
+- Yesterday's headline (~24 hours old) → ~0.37× today's
+- 12 hours old → ~0.61×
+- 1 hour old → ~0.96×
+- Current (0 hours) → 1.0×
+
+**frequency_penalty:**
+- Set to 0.8 if ≥3 similar headlines (same domain + query) in past 3 hours
+- Otherwise 1.0
+
+### Signed Score for Training
+
+For training, use `policy_trump_score_signed`:
+```
+policy_trump_score_signed = policy_trump_score × sign(sentiment_score)
+```
+
+This preserves direction: positive for bullish shocks, negative for bearish shocks.
+
+### Examples
+
+**Example 1:** White House executive order (gov 1.0) about biofuel waivers (topic 0.85), sentiment -0.8, published 1 hour ago:
+```
+score = 1.0 × 0.85 × 0.8 × exp(-1/24) × 1.0 ≈ 0.65
+```
+
+**Example 2:** River level note (logistics 0.70), trade publication (0.8), mild sentiment -0.3, 12 hours old:
+```
+score = 0.8 × 0.70 × 0.3 × exp(-12/24) ≈ 0.09
+```
+
+### Usage in Training
+
+In `build_all_features.py`, multiply training weights by:
+```
+weight_multiplier = 1 + 0.2 × policy_trump_score_signed
+```
+
+This gives:
+- Bullish policy shocks: weight multiplier up to 1.2×
+- Bearish policy shocks: weight multiplier down to 0.8×
+- Neutral/no policy: weight multiplier = 1.0×
+
+### Per-Bucket Scores
+
+The same formula applies to other buckets (`trade_*`, `biofuel_*`, etc.) by swapping the topic multiplier. High-impact topics (policy/China) dominate, while modest logistics stories remain low unless extremely negative and fresh.
+
+### Output Fields
+
+Every record includes:
+- `policy_trump_score`: 0-1 (unsigned magnitude)
+- `policy_trump_score_signed`: -1 to +1 (signed for training)
+- `policy_trump_confidence`: Source credibility (0.5-1.0)
+- `policy_trump_topic_multiplier`: Topic impact multiplier
+- `policy_trump_recency_decay`: Time decay factor
+- `policy_trump_frequency_penalty`: Duplicate penalty factor
+- `policy_trump_sentiment_score`: Raw sentiment (-1 to +1)
+- `policy_trump_sentiment_class`: 'bullish', 'bearish', 'neutral'
 
 Shock set (initial):
 - Policy shock: `abs(policy_trump_expected_zl_move) ≥ 0.015`; score = normalized move (cap 4%); decay half-life = 5d.
@@ -818,6 +977,54 @@ Aggressive GC (`gc.collect()`, `tf.keras.backend.clear_session()`) between runs 
 - **Total models:** ~65 (Tier 0-3 × 5 horizons) plus ensembles.
 - **Training time:** ~22 hours spread across 6 weeks of the rebuild plan.
 - **Expected uplift:** Tier 0 → Tier 4 yields 60-85% accuracy improvement, with regime-specific + neural tiers contributing incremental gains before the final ensemble.
+
+---
+
+## DASHBOARD EXECUTION BACKLOG (Post-Data Phase)
+
+These cards capture how Chris consumes intelligence. Build them once staging + modeling are live so the dashboard answers his five core questions (“What moved?”, “Is this normal?”, “What do I do?”, “How does it compare?”, “Is risk rising?”).
+
+1. **Inline Explainables**
+   - Top 3 SHAP drivers per forecast with plain-English text (“Palm spread widening + BRL weakness drove +0.8% bias”).
+   - Macro/news injectors (USDA flashes, palm export chatter, Fed signals) rendered as a one-sentence causal chain.
+
+2. **Regime Indicator Panel**
+   - Compact widget: regime name, days active, historical impact profile, and confidence (“Volatility-High | Active since Oct 12 | soy oil reacts 1.4× to palm shocks”).
+
+3. **“What Changed Since Yesterday” Tile**
+   - Delta list (palm +1.8%, USD/BRL −0.7%, crush +0.3%, weather +12 % rain, funds +4k) with net effect classification (+0.3σ upward pressure).
+
+4. **Substitution Economics Analyzer**
+   - Live palm/ZL spread, percentile rank, spread regime (tight/normal/wide), historical analog callouts, and mean-reversion vs breakout probability.
+
+5. **Scenario Buttons (“If this→then that”)**
+   - Palm +5%, BRL +3%, crude −8%, Brazil drought, Indo quota cut etc. Buttons recalc fair value shift, forecast shift, risk status, explainer snippet.
+
+6. **Confidence & Signal Reliability Meter**
+   - Confidence score, historical hit rate for current driver combo, volatility drag, ensemble distribution width, and a “Why lowered/raised?” caption.
+
+7. **Positioning & Flow Intelligence**
+   - Market pressure gauge combining CFTC fund deltas, crush rate change, export velocity, front/back roll, short vs long pressure.
+
+8. **Historical Analog Finder**
+   - Auto text: “Last 5 times (Vol-High + Palm Up + BRL Weak) → ZL rose 4/5 with avg +2.1% over 20 days.” Confidence boost module.
+
+9. **Procurement Timing Heat Map**
+   - Horizon table (1w/1m/3m/6m) with signal, confidence, recommended action (HOLD/SMALL BUY/WAIT/BUY HEAVY) color-coded.
+
+10. **Risk Alerts & Threshold Alarms**
+    - Alert engine for palm surge >3 %, BRL vol spike, Indo policy chatter, crush collapse, weather anomaly, regime switch, VIX >30. Each alert explains consequence (e.g., “Palm +3.9 % → substitution pressure ↑ next 5–15 d”).
+
+11. **Narrative Strip**
+    - 1–2 sentence auto summary of today’s drivers, shifts, forecast direction, and risk tone (“Mild bullish window: palm strength + weaker BRL vs soft crude; confidence moderate.”).
+
+12. **Procurement Value at Risk (P‑VaR)**
+    - Quantifies dollar impact of waiting vs buying now: expected return, vol, position size, risk window → cost avoidance, worst-case slippage, probability-weighted outcomes.
+
+13. **Model Drift Panel**
+    - Change log for feature ranks, regime weights, prediction variance vs prior run. Explains “Why did the model change?” for trust.
+
+> When ready to implement, spin up a dedicated dashboard spec covering wireframes, color system, BigQuery views/API endpoints. Use this backlog as the checklist.
 
 ---
 

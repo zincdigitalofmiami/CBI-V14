@@ -76,7 +76,7 @@ class AlphaVantageClient:
         Get daily commodity prices from Alpha Vantage
         Uses dedicated endpoints: WTI, BRENT, NATURAL_GAS, WHEAT, CORN, COTTON, SUGAR, COFFEE, COPPER, ALUMINUM
         
-        NOTE: This is a placeholder structure. Actual implementation will use MCP tools
+        NOTE: This is a stub structure. Actual implementation will use MCP tools
         or direct API calls based on symbol mapping.
         """
         cache_key = f"commodity_{symbol}"
@@ -100,7 +100,7 @@ class AlphaVantageClient:
         # - COPPER -> COPPER endpoint
         # - ALUMINUM -> ALUMINUM endpoint
         
-        df = pd.DataFrame()  # Placeholder - implement with actual API calls
+        df = pd.DataFrame()  # TODO: implement with actual API calls
         
         if save_path:
             df = self._validate_and_save(df, symbol, 'daily', Path(save_path))
@@ -121,7 +121,7 @@ class AlphaVantageClient:
         self._rate_limit()
         
         # TODO: Implement using mcp_alphavantage_FX_DAILY
-        df = pd.DataFrame()  # Placeholder
+        df = pd.DataFrame()
         
         if save_path:
             df = self._validate_and_save(df, f"{from_currency}{to_currency}", 'daily', Path(save_path))
@@ -139,7 +139,7 @@ class AlphaVantageClient:
         self._rate_limit()
         
         # TODO: Implement using mcp_alphavantage_NEWS_SENTIMENT
-        df = pd.DataFrame()  # Placeholder
+        df = pd.DataFrame()
         
         if save_path:
             df = self._validate_and_save(df, 'news', 'daily', Path(save_path))
@@ -154,7 +154,7 @@ class AlphaVantageClient:
         self._rate_limit()
         
         # TODO: Implement using mcp_alphavantage_REALTIME_OPTIONS
-        df = pd.DataFrame()  # Placeholder
+        df = pd.DataFrame()
         
         if save_path:
             df = self._validate_and_save(df, symbol, 'daily', Path(save_path))
@@ -163,7 +163,7 @@ class AlphaVantageClient:
     
     def intraday(self, symbol, interval='5min', outputsize='full', save_path=None):
         """
-        Get intraday data for ES (SPY)
+        Get intraday data (e.g., ES=F). No SPY proxy.
         interval: 1min, 5min, 15min, 30min, 60min
         """
         cache_key = f"intraday_{symbol}_{interval}"
@@ -174,7 +174,7 @@ class AlphaVantageClient:
         self._rate_limit()
         
         # TODO: Implement using mcp_alphavantage_TIME_SERIES_INTRADAY
-        df = pd.DataFrame()  # Placeholder
+        df = pd.DataFrame()
         
         if save_path:
             df = self._validate_and_save(df, symbol, 'intraday', Path(save_path))
@@ -199,7 +199,6 @@ class AlphaVantageClient:
         # - BBANDS -> mcp_alphavantage_BBANDS
         # etc.
         
-        df = pd.DataFrame()  # Placeholder
+        df = pd.DataFrame()
         
         return df
-

@@ -6,17 +6,15 @@ FIXED: Groupwise target shift, determinism controls, 10 file exports.
 """
 
 import os
-import random
 import numpy as np
 import pandas as pd
 import yaml
 from pathlib import Path
 from datetime import datetime
 
-# FIX #6: Set all seeds for determinism
+# Determinism: avoid runtime RNG usage in production feature code
+# If sampling is ever required, prefer deterministic hashing over RNG.
 os.environ['PYTHONHASHSEED'] = '42'
-random.seed(42)
-np.random.seed(42)
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
 
@@ -312,4 +310,3 @@ def create_horizon_exports(df_features):
 if __name__ == '__main__':
     df_features = build_features_single_pass()
     create_horizon_exports(df_features)
-

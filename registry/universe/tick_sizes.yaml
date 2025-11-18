@@ -1,0 +1,25 @@
+version: 1
+description: Tick size map for common futures roots
+ticks:
+  # Equity index (CME)
+  ES: 0.25
+  MES: 0.25
+
+  # Oils & grains (CBOT)
+  ZL: 0.01
+  ZS: 0.25
+  ZM: 0.1
+  ZC: 0.25
+  ZW: 0.25
+
+  # Energy (NYMEX)
+  CL: 0.01
+  NG: 0.001
+  RB: 0.0001
+  HO: 0.0001
+
+  # Metals (COMEX)
+  GC: 0.1
+  SI: 0.005
+  HG: 0.0005
+

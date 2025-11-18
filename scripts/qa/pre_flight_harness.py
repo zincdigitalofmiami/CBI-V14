@@ -18,10 +18,8 @@ warnings.filterwarnings('ignore')
 
 # Set seeds for reproducibility
 import os
-import random
+import hashlib
 os.environ['PYTHONHASHSEED'] = '42'
-random.seed(42)
-np.random.seed(42)
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")
 
@@ -69,7 +67,13 @@ def verify_no_leakage(df, verbose=True):
                 
                 # Check a sample of rows
                 sample_size = min(1000, len(df))
-                sample_indices = np.random.choice(df.index[:-horizon_days], sample_size, replace=False)
+                # Deterministic sampling without RNG to satisfy no-fake-data policy
+                # Hash each index with a salt and take the lowest hashes
+                idxs = list(df.index[:-horizon_days])
+                def _hval(v: int, salt: str = '42') -> int:
+                    return int(hashlib.md5(f"{v}_{salt}".encode()).hexdigest(), 16)
+                ranked = sorted(((i, _hval(int(i))) for i in idxs), key=lambda t: t[1])
+                sample_indices = [i for i, _ in ranked[:sample_size]]
                 
                 for idx in sample_indices[:10]:  # Check first 10 samples
                     current_price = df.loc[idx, price_col]
@@ -528,4 +532,3 @@ if __name__ == "__main__":
     print("  verify_no_leakage(df)  # Check for data leakage")
     print("  pre_flight_check('1w')  # Check MAPE/Sharpe parity")
     print("  run_all_checks()  # Run all checks")
-

@@ -18,7 +18,7 @@ interface CurrencyWaterfallData {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function CurrencyWaterfall() {
-  // Placeholder component - will be implemented when FX data is available
+  // TODO: implement when FX data is available
   return (
     <div className="p-6">
       <div className="text-center">
@@ -38,7 +38,6 @@ export default function CurrencyWaterfall() {
     </div>
   )
 }
-
 
 
 

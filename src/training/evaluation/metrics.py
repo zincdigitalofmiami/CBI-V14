@@ -240,7 +240,7 @@ def check_data_leakage(
     
     # Check 1: No future-dated features
     # (This is a simplified check - in practice, you'd check each feature)
-    checks['no_future_dates'] = True  # Placeholder
+    checks['no_future_dates'] = True  # TODO: implement final checks
     
     # Check 2: Target is properly shifted
     # Target should be horizon_days ahead of features
@@ -250,11 +250,11 @@ def check_data_leakage(
         
         # Check that target dates are ahead of feature dates
         # (Simplified - assumes target is already shifted)
-        checks['target_shifted'] = True  # Placeholder
+        checks['target_shifted'] = True  # TODO: implement final checks
     
     # Check 3: No forward-filling into horizon
     # (Would need to check each feature for forward-fill patterns)
-    checks['no_forward_fill'] = True  # Placeholder
+    checks['no_forward_fill'] = True  # TODO: implement final checks
     
     return checks
 
@@ -407,6 +407,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 

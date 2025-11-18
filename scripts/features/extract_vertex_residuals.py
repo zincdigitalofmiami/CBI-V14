@@ -142,7 +142,7 @@ for horizon, model_id in models.items():
                     q90 = q90_est
                     mean_residual = mean_est
                     stddev_residual = estimated_std
-                    n_samples = 1000  # Placeholder - actual count unknown
+                    n_samples = 1000  # TODO: verify actual sample count
                     
                     print(f"  ⚠️ NOTE: Quantiles are ESTIMATED from metrics, not actual residuals")
                     
@@ -252,4 +252,3 @@ print("⚠️  IMPORTANT: This was the LAST Vertex AI operation")
 print("✅ BQML will use these quantiles going forward")
 print("✅ No more Vertex AI dependencies")
 print("="*60)
-

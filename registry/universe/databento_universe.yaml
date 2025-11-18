@@ -1,0 +1,35 @@
+version: 1
+description: Initial Databento futures universe (CME/CBOT/NYMEX/COMEX)
+defaults:
+  dataset: GLBX.MDP3
+  schema_1m: ohlcv-1m
+  schema_1h: ohlcv-1h
+  schema_1d: ohlcv-1d
+  stype_in: parent
+  parent_suffix: .FUT
+  roll_rule: volume   # options: volume | oi | front.1
+  start_date: 2010-06-06
+
+roots:
+  # Equity index
+  - { root: ES, venue: CME, priority: 1 }
+  - { root: MES, venue: CME, priority: 2 }
+
+  # Oils & grains (CBOT)
+  - { root: ZL, venue: CBOT, priority: 1 }
+  - { root: ZS, venue: CBOT, priority: 1 }
+  - { root: ZM, venue: CBOT, priority: 1 }
+  - { root: ZC, venue: CBOT, priority: 2 }
+  - { root: ZW, venue: CBOT, priority: 2 }
+
+  # Energy (NYMEX)
+  - { root: CL, venue: NYMEX, priority: 1 }
+  - { root: NG, venue: NYMEX, priority: 1 }
+  - { root: RB, venue: NYMEX, priority: 2 }
+  - { root: HO, venue: NYMEX, priority: 2 }
+
+  # Metals (COMEX/NYMEX)
+  - { root: GC, venue: COMEX, priority: 2 }
+  - { root: SI, venue: COMEX, priority: 3 }
+  - { root: HG, venue: COMEX, priority: 3 }
+

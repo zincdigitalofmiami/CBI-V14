@@ -34,17 +34,11 @@ class NeuralDataCollector:
         
     def get_fred_key(self):
         """Get FRED API key from secrets or environment"""
-        # In production, get from Secret Manager
-        # For now, check if we have it in existing data
-        query = """
-        SELECT DISTINCT source_name 
-        FROM `cbi-v14.raw_intelligence.macro_economic_indicators`
-        WHERE source_name LIKE '%FRED%'
-        LIMIT 1
-        """
-        result = self.client.query(query).to_dataframe()
-        # Placeholder - need actual key
-        return "YOUR_FRED_API_KEY"
+        # Retrieve from environment or Secret Manager; do not return placeholders
+        key = os.getenv('FRED_API_KEY')
+        if not key:
+            raise RuntimeError("FRED_API_KEY not configured. Set env var or Secret Manager entry.")
+        return key
     
     # ============================================
     # DOLLAR DEEP DRIVERS
@@ -502,7 +496,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 

@@ -256,8 +256,240 @@ A model qualifies for dashboard production use if:
 3. SHAP explanations align with known market dynamics
 4. No data leakage (verified via time-based splits)
 5. Passes monotonic constraint validation
-6. Passes walk-forward validation (60+ iterations)
+ 6. Passes walk-forward validation (60+ iterations)
 7. Regime detection accuracy > 95%
+
+## Idea Generation
+
+Purpose: capture rigorous modeling ideas for ZL forecasting (and scale to the full futures universe) before implementation. These are research proposals, not commitments, and must pass out‑of‑sample gates.
+
+- Model Stack (enterprise)
+  - Baselines: LightGBM, CatBoost, ElasticNet (calibrated quantiles for MAPE).
+  - Deep TS: Temporal Fusion Transformer (TFT), N‑HiTS/N‑BEATS, TCN (dilated CNNs) for multi‑horizon forecasting.
+  - Ensembles: regime‑routed stacking/blending; meta‑learner chooses expert per regime/horizon.
+  - Driver cascades: submodels for crude/palm/soy complex (drivers) → feed ZL models with proper lags.
+
+- Research harness (MAs and indicators)
+  - Families: SMA/EMA/WMA/KAMA/T3 across {20, 30, 50, 100, 150, 200, 250}.
+  - Signals: price vs MA, MA vs MA, distance‑to‑MA (ATR‑normalized), MA slope/ribbon width.
+  - TS‑CV: expanding or purged K‑Fold with 10‑day embargo; per‑regime and all‑history.
+  - Acceptance gates: OOS IC ≥ 0.03 (p < 0.05) in ≥ 70% folds; conditioned returns > 0 after transaction costs; stable sign by year/regime.
+  - Default to SMA(50/100/200) only if research shows no materially better alternative after costs and stability checks.
+
+- Hidden intelligence (primary drivers) — feature family
+  - New primary drivers to engineer (lagged and decayed): BRICS/CIPS settlement rails; crush/HVO‑RD margin stress; fertilizer/chemical constraints; river draft/hydrology; port/crane outages; trade finance/insurer repricing; statistical revision patterns (USDA/EPA); satellite NDVI/EVI drift; refinery turnarounds/outages; export lineup anomalies.
+  - Engineering: daily event counts/intensity, EWMA decays (30–90d half‑life), 30/60/90‑day lags, regime‑conditional variants, cross‑effects with crude/palm and USD.
+  - Staging: prefix `hidden_`; one row per date; tests for continuity, duplicates, and provenance.
+
+- Alpha NEWS_SENTIMENT integration (drivers, not proxies)
+  - Aggregate daily by symbol: mean/median sentiment, article count, pos/neg skew, topic‑conditioned scores (economy_monetary, energy_transportation, etc.), 3/7/30‑day trends/z‑scores.
+  - Map `ticker_sentiment` to driver symbols and ZL via driver graph; apply ≥ 1‑day lag; prefix `alpha_news_`.
+
+- Dataset builders and trainers (governed)
+  - Build per‑horizon/per‑regime matrices with strict lagging and embargo.
+  - Trainers: LightGBM/CatBoost with Optuna (pinball/MAE) and TFT/N‑HiTS (quantiles, early stopping).
+  - Stackers: blending/stacking with purged validation; regime routing for meta‑learner.
+
+- Evaluation and gating
+  - OOS: MAPE, sMAPE, MASE; IC for features vs forward returns; conditioned returns after realistic costs (ticks).
+  - Robustness: structural break diagnostics; block‑bootstrap Monte Carlo (10–20‑day blocks, 10k samples) for Sharpe/DD distributions; require stability for promotion.
+
+- Explainability and monitoring
+  - SHAP (global + temporal), permutation importance stability, feature drift monitoring.
+  - Quarterly re‑validation; demotion path for features/models failing stability gates.
+
+- Implementation notes (when approved)
+  - Single source per instrument; no proxies; strict prefix policy; one row per date preserved in joins.
+  - ZL is primary; extend methods to the broader futures universe only after ZL passes acceptance gates.
+
+### Hidden Relationship Intelligence Module (HRI) — Spec (Idea Generation)
+
+Scope and role
+- Goal: convert cross‑domain, primary drivers into formal, testable daily signals that lead ZL by 1–9 months, feed the hidden correlation dimension of the Big 7 stack, and remain explainable (cause→effect), not black‑box.
+- Position in stack: new Tier 5 above existing TIER 1–4 (fundamentals/geo/substitution/technical).
+
+Data architecture (aligned to naming conventions)
+- Datasets (existing): `raw_intelligence`, `signals`, `neural`, `api`.
+- Raw layer (new tables under `raw_intelligence`):
+  - `raw_intelligence.hidden_defense_contracts`
+  - `raw_intelligence.hidden_tech_export_controls`
+  - `raw_intelligence.hidden_pharma_licensing`
+  - `raw_intelligence.hidden_swf_positions`
+  - `raw_intelligence.hidden_carbon_markets`
+  - `raw_intelligence.hidden_cbdc_corridors`
+  - `raw_intelligence.hidden_port_projects`
+  - `raw_intelligence.hidden_agri_academic_links`
+- Curated cross‑domain views (views, same dataset as appropriate):
+  - `vw_hidden_defense_agri_links`, `vw_hidden_tech_agri_links`, `vw_hidden_pharma_agri_links`,
+    `vw_hidden_swf_agri_links`, `vw_hidden_carbon_arbitrage`, `vw_hidden_cbdc_trade_corridors`,
+    `vw_hidden_port_infrastructure_signals`, `vw_hidden_academic_agri_influence`
+- Hidden feature table (daily grain, prefixed):
+  - Dataset: `signals`
+  - Table: `signals.hidden_relationship_signals`
+  - Columns (all prefixed `hidden_` except `date`):
+    - `date`
+    - `hidden_defense_agri_score`, `hidden_tech_agri_score`, `hidden_pharma_agri_score`
+    - `hidden_swf_lead_flow_score`, `hidden_carbon_arbitrage_score`, `hidden_cbdc_corridor_score`
+    - `hidden_port_capacity_lead_index`, `hidden_academic_exchange_score`
+    - `hidden_trump_argentina_backchannel_score`, `hidden_china_alt_bloc_score`, `hidden_biofuel_lobbying_pressure`
+    - `hidden_relationship_composite_score`
+
+Feature engineering (repeatable formulas; examples)
+- Defense–agri nexus:
+  - Input: defense events (country, date, value/type), ag trade volumes.
+  - Score example: sum over countries of intensity_{t−90→t−30} × Δ soy_oil_imports_{t→t+90}.
+- Tech export controls:
+  - Input: export license events by country; subsequent import shifts.
+  - Score example: rolling 6–12m corr_zscore(tech_event_intensity_t, soy_imports_{t+30→t+180}).
+- Pharma–agri link:
+  - Input: licensing/approvals; FX/trade; GDP scaling.
+  - Score example: Σ (pharma_value_{t−60→t}/GDP_c) × Δ soy_exports_{t→t+90}.
+- SWF effect:
+  - Input: SWF positions in ag/logistics.
+  - Score example: ΔSWF_positions_{t−180→t} × future_flow_change_{t→t+180} (validate with Granger tests).
+- Carbon arbitrage:
+  - Input: carbon prices by region; policy step‑changes.
+  - Score example: carbon_spread(EU,Asia)_t × elasticity_for_crush_migration.
+- CBDC corridors:
+  - Input: corridor announcements/activations.
+  - Score example: Σ active_corridor_{t} × Δ soy_flows_{t→t+180} (normalized).
+- Ports/dredging capacity:
+  - Input: infra contracts, dredging awards, loading equipment orders.
+  - Score example: Σ normalized_invest_{t−365→t−180} × %traffic_change_{t→t+365}.
+- Academic exchanges:
+  - Input: ag MoUs, grants, exchanges.
+  - Score example: count_active_MoUs_{t−365→t} × Δ soy_oil_imports_{t→t+365}.
+- Trump–Argentina backchannel:
+  - Input: US↔AR policy intensity; AR export mix shifts.
+  - Score example: composite f(trump_event_intensity_{t−90→t}, shift_AR_exports_{t→t+90}).
+- China alternative bloc diplomacy:
+  - Input: partnership intensity; import share changes.
+  - Score example: Σ partnership_intensity_{t−180→t} × Δ import_share_from_US_{t→t+180} × (−1).
+- Biofuel lobbying cascade:
+  - Input: PAC spend, pre‑rule dockets, hearings.
+  - Score example: scaled_sum(PAC_{t−180→t}, pre_rule_{t−90→t}, hearings_{t−60→t}).
+
+Detection engine and composite
+- Lagged correlations: ρ(H_i(t), ZL(t+Δ)) for Δ∈{30,60,90,180}; store `corr_max_i`, `lag_at_corr_max_i`, `p_value_i`.
+- Granger layer: monthly frequency on selected pairs; store `granger_predictive_i`, `best_lag_i`.
+- Anomalies: rolling z‑scores; flag `hidden_i_zscore_t > 2.0`.
+- Composite: `hidden_relationship_composite_score` = weighted sum of hidden z‑scores using `policy_impact_score` and `source_reliability_score` from the enhanced metadata layer.
+
+UI/visualization hooks
+- Graph: nodes (ZL, palm, soy, regions), hidden domains; edges weighted by corr×sign(lag) with Granger flags.
+- Views: “current hidden regime” (top 3 active); composite vs ZL trend chart.
+
+Governance & tests
+- Prefix policy: all columns `hidden_`; joins preserve one row/day; strict lagging (no leakage).
+- Tests: continuity (≤0.5% missing weekdays), no duplicate dates, schema stability; audit trail raw→feature.
+
+### Integration Into Ultimate Signal Architecture (Idea Generation)
+
+Extend comprehensive signal universe (Tier 5)
+- Add a CTE sourcing from `signals.hidden_relationship_signals`, then left join by `date` in `vw_comprehensive_signal_universe` to expose:
+  - `hidden_relationship_composite_score`, key domain scores (e.g., `hidden_trump_argentina_backchannel_score`, `hidden_china_alt_bloc_score`, `hidden_biofuel_lobbying_pressure`).
+
+Upgrade Big 7 / hidden correlation dimension
+- In `vw_big_seven_signals`, define:
+  - `feature_hidden_correlation = SAFE_DIVIDE(hidden_relationship_composite_score, NULLIF(stddev_hidden_relationship_composite_score_rolling_1yr, 0))`.
+  - `correlation_override_flag = (feature_hidden_correlation > 1.5)`.
+
+Neural training inputs
+- In `neural.comprehensive_weight_training`, include hidden features:
+  - `hidden_relationship_composite_score` and component scores listed above.
+  - Interactions (examples):
+    - `hidden_china_alt_bloc_score * china_trade_tension_index AS china_bloc_tension_interaction`
+    - `hidden_biofuel_lobbying_pressure * us_rfs_mandate_change_expected AS biofuel_policy_interaction`
+    - `hidden_cbdc_corridor_score * usd_index_level AS fx_cbdc_interaction`
+
+Ultimate adaptive predictor
+- Pass hidden features and interactions into `neural.ultimate_adaptive_predictor` alongside existing Tier 1–4 composites and Big 4 features.
+
+API layer & explainability
+- In `api.vw_ultimate_adaptive_signal`, extend `primary_signal_driver`:
+  - If `correlation_override_flag` then 'Hidden relationships driving signal'.
+- Add `hidden_primary_domain` for dashboard clarity using domain thresholds (e.g., >1.5 z‑score → biofuel_lobbying/defense_agri/china_alt_bloc/etc.).
+
+Metadata & governance
+- Register each hidden feature in the enhanced metadata table with:
+  - `policy_impact_score`, `source_reliability_score`, `related_futures_contract`, and key countries.
+- Quarterly re‑validation; demotion path for unstable features; documentation of acceptance gates and drift.
+
+### GPT-Based News Classification System for ZL Intelligence (Idea Generation)
+
+**Status**: Ready-to-implement spec (not yet executed)  
+**Purpose**: Feed headlines/articles into GPT to extract structured, ZL-focused intelligence for Hidden Relationship Intelligence Module
+
+**Integration Path**: ScrapeCreators → BigQuery → `news_intelligence` → `hidden_relationship_signals`
+
+**System Architecture**:
+
+1. **Classification Model** (GPT-based)
+   - **System Prompt**: Agricultural geopolitics and commodities intelligence analyst focused on ZL (soybean oil), soybeans, and competing vegetable oils
+   - **Input**: Single news item (headline + snippet/short article)
+   - **Output**: Structured JSON analysis with 12 fields (see schema below)
+   - **Classification Axes**:
+     - Primary topic (40 categories matching institutional keyword matrix)
+     - Hidden relationships (17 cross-domain drivers-of-drivers)
+     - Region focus (12 geographies)
+     - Relevance, direction, strength, timing, mechanism
+
+2. **User Prompt Template**
+   ```
+   HEADLINE: {{headline_text}}
+   SOURCE: {{source_name}}
+   DATE: {{iso_date_if_known_or_null}}
+   BODY: {{short_snippet_or_article_text}}
+   ```
+
+3. **Output JSON Schema** (12 fields)
+   - `primary_topic`: One of 40 categories (biofuel_policy, palm_policy, china_demand, us_policy_trump, brazil_argentina_crop_logistics, weather_agriculture, biofuel_lobbying, sovereign_wealth_funds, carbon_markets_eudr, shipping_chokepoints, defense_agri_nexus, pharma_agri_link, cbdc_trade_corridor, port_infrastructure, academic_agri_links, farm_bill_usdomestic, crush_margins_processing, fx_macro, food_security, freight_rates, fertilizer_energy_inputs, us_china_tension, gmo_agrochemical_policy, black_sea_war, labor_strikes_logistics, renewable_diesel_capacity, tanker_dynamics, inflation_rates_liquidity, spec_positioning, risk_off_vix, shipping_insurance, port_throughput, lgfv_china_finance, soybean_disease_pests, energy_markets, infra_failures, credit_crunch, elections_political_instability, digital_traceability, other)
+   - `hidden_relationships`: Array of drivers-of-drivers (defense_agri_nexus, tech_export_agri_link, pharma_agri_link, sovereign_wealth_fund_effect, carbon_market_arbitrage, cbdc_corridor_effect, deep_water_port_intel, educational_exchange_trade_nexus, trump_argentina_backchannel, china_alt_bloc_diplomacy, biofuel_lobbying_chain, offshore_finance_shells, telecom_infrastructure_loyalty, agri_mercenary_corridor, water_rights_shift, esg_rating_drift, none)
+   - `region_focus`: Array of geographies (us, brazil, argentina, china, eu, southeast_asia, india, black_sea, middle_east, africa, latin_america_other, global, other)
+   - `relevance_to_soy_complex`: Integer 0-100 (0-20: almost irrelevant, 21-40: weak, 41-60: moderate, 61-80: high, 81-100: very high)
+   - `directional_impact_zl`: One of (bullish, bearish, neutral, mixed, unknown)
+   - `impact_strength`: Integer 0-100 (how big the impact if it plays out)
+   - `impact_time_horizon_days`: Approximate days until main price effect (e.g., 7, 30, 90, 180)
+   - `half_life_days`: How long effect persists before decaying ~50% (e.g., chokepoint disruptions = 7-21, policy shifts = 90-365)
+   - `mechanism_summary`: 1-3 sentences explaining causal chain from news → ZL (explicit about palm vs soy, China vs US origin, biofuel vs food)
+   - `direct_vs_indirect`: One of (direct, indirect, hidden)
+   - `subtopics`: Array of finer-grained labels (rfs_saf_lcfs, palm_export_tax, dalian_futures, china_state_reserves, argentina_export_tax, port_strike, truck_blockade, mississippi_draft, el_nino, heatwave, flooding, gmo_ban, glyphosate, carbon_credit, deforestation_compliance, sanctions, naval_protection, cbdc_settlement, digital_yuan, swf_equity_stake, academic_mou, 5g_infrastructure, pharma_license, vaccine_deal, credit_tightening, refinery_conversion, renewable_diesel, fertilizer_sanctions, black_sea_corridor, soydollar, exchange_rate_shock, lgfv_default, esg_downgrade, election_result, farm_bill, food_security_law, none)
+   - `confidence`: Integer 0-100 (confidence in classification)
+
+4. **Domain Knowledge Rules** (embedded in system prompt)
+   - Biofuel mandates, SAF credits, LCFS tightening → BULLISH ZL (higher feedstock demand)
+   - Palm oil export taxes/bans, Indonesia/Malaysia supply issues → BULLISH ZL via substitution
+   - Chinese demand (state reserves, crush margins, Dalian futures) → major drivers
+   - Brazil/Argentina weather, logistics, strikes, policy → supply drivers → ZL responds
+   - Hidden channels (defense deals, tech controls, pharma licensing, SWF investments, CBDC corridors, port projects, academic MoUs, biofuel lobbying) → trade flow changes by 3-9 months
+   - FX shocks, credit constraints, geopolitical risk, sanctions, ESG restrictions → affect soy/palm movement
+
+5. **BigQuery Integration**
+   - **Storage**: `raw_intelligence.news_intelligence` / `news_advanced`
+   - **Schema**: Map JSON fields 1:1 to BigQuery columns or JSON field
+   - **Aggregation** (daily):
+     - Bullish/bearish sentiment by topic
+     - Hidden driver intensity per day (e.g., `biofuel_lobbying_chain`)
+     - Time series: `hidden_biofuel_lobbying_pressure`, `hidden_china_alt_bloc_score`, etc. from counts/weights
+   - **Feeds Into**:
+     - `hidden_relationship_signals` table
+     - `feature_hidden_correlation` and `correlation_override_flag` in Big 7 / Ultimate Signal
+
+6. **Implementation Options** (when approved)
+   - **Option A**: BigQuery UDF (accepts headline, body, returns JSON)
+   - **Option B**: Python script (processes articles, writes to BigQuery)
+   - **Option C**: Hybrid (Python for complex logic, BigQuery for aggregation)
+
+7. **Test Cases** (ready-to-use examples)
+   - **Example 1 - Biofuel Lobbying**: "U.S. biofuel lobby pushes for aggressive SAF tax credit expansion" → Expected: `primary_topic: "biofuel_lobbying"`, `hidden_relationships: ["biofuel_lobbying_chain"]`, `directional_impact_zl: "bullish"`, `impact_time_horizon_days: 60`
+   - **Example 2 - CBDC Corridor**: "China and Brazil launch direct digital yuan–real settlement corridor" → Expected: `primary_topic: "cbdc_trade_corridor"`, `hidden_relationships: ["cbdc_corridor_effect", "china_alt_bloc_diplomacy"]`, `directional_impact_zl: "bearish"`, `impact_time_horizon_days: 90`
+
+**Next Steps** (when ready to implement):
+1. Convert to BigQuery UDF spec OR design Python processing script
+2. Design aggregation logic (dozens of JSON records per day → `hidden_relationship_composite_score` and per-domain hidden scores)
+3. Integrate with existing ScrapeCreators → BigQuery pipeline
+4. Wire into `hidden_relationship_signals` table and Big 7 / Ultimate Signal architecture
+
 8. Predictions upload successfully to BigQuery
 9. Dashboard can read from `predictions.vw_zl_{horizon}_latest`
 
@@ -725,4 +957,3 @@ Comprehensive catalog of data sources, APIs, and scraping endpoints including:
 - Security notes on API key management
 
 **Note**: Review security section for hardcoded API keys that need migration to Keychain.
-

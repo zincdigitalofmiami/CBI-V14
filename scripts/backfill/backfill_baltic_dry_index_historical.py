@@ -89,7 +89,9 @@ def fetch_bdi_from_alternative_sources(start_date: str, end_date: str) -> Option
     
     try:
         # Try FRED API (if BDI is available there)
-        fred_api_key = os.getenv('FRED_API_KEY', 'dc195c8658c46ee1df83bcd4fd8a690b')
+        fred_api_key = os.getenv('FRED_API_KEY')
+        if not fred_api_key:
+            logger.info("FRED_API_KEY not set; skipping FRED lookup for BDI")
         # BDI is not typically in FRED, but checking for completeness
         
         # Try Yahoo Finance
@@ -107,55 +109,10 @@ def fetch_bdi_from_alternative_sources(start_date: str, end_date: str) -> Option
 
 def generate_daily_records_with_estimates(start_date: datetime, end_date: datetime) -> pd.DataFrame:
     """
-    Generate daily BDI records with reasonable estimates based on historical patterns.
-    This is a fallback when API data is not available.
-    
-    Historical BDI ranges:
-    - 2006-2008: 2000-11000 (boom period)
-    - 2009-2016: 500-2000 (recession/recovery)
-    - 2017-2019: 1000-2000 (moderate)
-    - 2020-2021: 1000-3000 (COVID volatility)
-    - 2022-2025: 1000-2500 (recent range)
+    Disabled: no synthetic/estimated generation allowed. Returns empty DataFrame.
     """
-    records = []
-    current_date = start_date
-    
-    while current_date <= end_date:
-        year = current_date.year
-        
-        # Estimate BDI based on historical ranges (simplified)
-        if 2006 <= year <= 2008:
-            # Boom period - high values
-            base_value = 4000 + (hash(str(current_date)) % 7000)  # 4000-11000
-        elif 2009 <= year <= 2016:
-            # Recession/recovery - lower values
-            base_value = 500 + (hash(str(current_date)) % 1500)  # 500-2000
-        elif 2017 <= year <= 2019:
-            # Moderate period
-            base_value = 1000 + (hash(str(current_date)) % 1000)  # 1000-2000
-        elif 2020 <= year <= 2021:
-            # COVID volatility
-            base_value = 1000 + (hash(str(current_date)) % 2000)  # 1000-3000
-        else:
-            # Recent period
-            base_value = 1000 + (hash(str(current_date)) % 1500)  # 1000-2500
-        
-        # Ensure reasonable range
-        base_value = max(300, min(4000, base_value))
-        
-        records.append({
-            'date': current_date.date(),
-            'baltic_dry_index': float(base_value),
-            'freight_soybean_mentions': 0,
-            'source_name': 'ESTIMATED_HISTORICAL',
-            'confidence_score': 0.50,  # Low confidence for estimates
-            'ingest_timestamp_utc': datetime.now(timezone.utc),
-            'provenance_uuid': str(uuid.uuid4())
-        })
-        
-        current_date += timedelta(days=1)
-    
-    return pd.DataFrame(records)
+    logger.error("Synthetic BDI generation is disabled. Configure real data sources instead.")
+    return pd.DataFrame()
 
 
 def check_existing_dates(client: bigquery.Client, start_date: datetime, end_date: datetime) -> set:
@@ -205,7 +162,7 @@ def load_to_bigquery(client: bigquery.Client, df: pd.DataFrame) -> int:
         return 0
 
 
-def backfill_baltic_dry_index(start_year: int = 2006, end_year: int = 2025, use_estimates: bool = True):
+def backfill_baltic_dry_index(start_year: int = 2006, end_year: int = 2025, use_estimates: bool = False):
     """
     Backfill Baltic Dry Index data.
     
@@ -242,17 +199,12 @@ def backfill_baltic_dry_index(start_year: int = 2006, end_year: int = 2025, use_
     
     # If no real data and estimates allowed, generate estimates
     if real_data is None or real_data.empty:
-        if use_estimates:
-            logger.warning("⚠️  No real data sources available, generating estimates")
-            logger.warning("⚠️  Estimates have low confidence (0.50) and should be replaced with real data when available")
-            df = generate_daily_records_with_estimates(start_date, end_date)
-        else:
-            logger.error("❌ No real data available and estimates disabled")
-            return {
-                'status': 'NO_DATA',
-                'rows_loaded': 0,
-                'message': 'No real data sources available'
-            }
+        logger.error("❌ No real data available for BDI backfill and estimates are disabled")
+        return {
+            'status': 'NO_DATA',
+            'rows_loaded': 0,
+            'message': 'No real data sources available'
+        }
     else:
         df = real_data
     
@@ -277,13 +229,13 @@ def backfill_baltic_dry_index(start_year: int = 2006, end_year: int = 2025, use_
     logger.info("="*60)
     logger.info(f"Rows loaded: {rows_loaded}")
     logger.info(f"Date range: {start_date.date()} to {end_date.date()}")
-    logger.info(f"Source: {'ESTIMATED_HISTORICAL' if use_estimates and (real_data is None or real_data.empty) else 'REAL_DATA'}")
+    logger.info(f"Source: REAL_DATA")
     
     return {
         'status': 'SUCCESS',
         'rows_loaded': rows_loaded,
         'date_range': f"{start_date.date()} to {end_date.date()}",
-        'source_type': 'ESTIMATED' if use_estimates and (real_data is None or real_data.empty) else 'REAL'
+        'source_type': 'REAL'
     }
 
 
@@ -303,4 +255,3 @@ if __name__ == '__main__':
     
     result = backfill_baltic_dry_index(start_year, end_year, use_estimates)
     print(json.dumps(result, indent=2))
-

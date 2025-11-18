@@ -71,6 +71,14 @@ class JoinExecutor:
             return STAGING_DIR / path_str.replace('staging/', '')
         elif path_str.startswith('registry/'):
             return REGISTRY_DIR / path_str.replace('registry/', '')
+        elif path_str.startswith('features/'):
+            # Try features directory first, fallback to registry
+            features_path = DRIVE / "TrainingData" / path_str.replace('features/', '')
+            if features_path.exists():
+                return features_path
+            else:
+                # Fallback to registry
+                return REGISTRY_DIR / path_str.replace('features/', '')
         else:
             return STAGING_DIR / path_str
     
@@ -112,8 +120,15 @@ class JoinExecutor:
         failures = []
         
         for test in tests:
-            test_name = list(test.keys())[0]
-            test_value = test[test_name]
+            if isinstance(test, str):
+                test_name = test
+                test_value = None
+            elif isinstance(test, dict):
+                test_name = list(test.keys())[0]
+                test_value = test[test_name]
+            else:
+                logger.warning(f"    ⚠️  Unknown test format ({type(test)}), skipping: {test}")
+                continue
             
             try:
                 # Test: expect_date_range
@@ -249,6 +264,30 @@ class JoinExecutor:
                     else:
                         logger.warning(f"    ⚠️  No 'training_weight' column found")
                 
+                # Test: expect_columns_prefixed
+                elif test_name == 'expect_columns_prefixed':
+                    prefixes = test_value if isinstance(test_value, list) else [test_value]
+                    join_keys = ['date', 'symbol', 'timestamp']  # Keys that shouldn't be prefixed
+                    
+                    for prefix in prefixes:
+                        # Find all columns that should have this prefix
+                        prefixed_cols = [c for c in df.columns if c.startswith(prefix)]
+                        # Find data columns (exclude join keys) that don't have the prefix
+                        data_cols = [c for c in df.columns if c not in join_keys and not c.startswith(prefix)]
+                        
+                        # Check if there are any unprefixed data columns (this is a warning, not error)
+                        if data_cols:
+                            # Only error if there are columns that should have this prefix but don't
+                            # This is a soft check - we just verify the prefix exists
+                            logger.info(f"    ✅ Found {len(prefixed_cols)} columns with prefix '{prefix}'")
+                        else:
+                            logger.info(f"    ✅ All data columns have prefix '{prefix}'")
+                        
+                        # Verify at least some columns have the prefix
+                        assert len(prefixed_cols) > 0, \
+                            f"No columns found with prefix '{prefix}'"
+                        logger.info(f"    ✅ Prefix '{prefix}' verified: {len(prefixed_cols)} columns")
+                
                 else:
                     logger.warning(f"    ⚠️  Unknown test: {test_name}")
             
@@ -294,32 +333,34 @@ class JoinExecutor:
             left_df = self._load_dataframe(left_path)
             logger.info(f"  Left: {left_path} ({len(left_df)} rows)")
         
-        # Resolve right side
-        right_path = self._resolve_path(join_def['right'])
-        right_df = self._load_dataframe(right_path)
-        logger.info(f"  Right: {right_path} ({len(right_df)} rows)")
-        
-        # Perform join
-        join_on = join_def.get('on', ['date'])
         join_how = join_def.get('how', 'left')
-        
-        logger.info(f"  Join: {join_how} on {join_on}")
-        
-        # Ensure join keys exist
-        for key in join_on:
-            if key not in left_df.columns:
-                raise ValueError(f"Join key '{key}' not found in left DataFrame")
-            if key not in right_df.columns:
-                raise ValueError(f"Join key '{key}' not found in right DataFrame")
-        
-        # Perform join
-        result_df = pd.merge(
-            left_df,
-            right_df,
-            on=join_on,
-            how=join_how,
-            suffixes=('', '_right')
-        )
+        # Determine whether this step is a join or base load
+        right_ref = join_def.get('right')
+        if right_ref:
+            right_path = self._resolve_path(right_ref)
+            right_df = self._load_dataframe(right_path)
+            logger.info(f"  Right: {right_path} ({len(right_df)} rows)")
+            
+            join_on = join_def.get('on', ['date'])
+            logger.info(f"  Join: {join_how} on {join_on}")
+            
+            for key in join_on:
+                if key not in left_df.columns:
+                    raise ValueError(f"Join key '{key}' not found in left DataFrame")
+                if key not in right_df.columns:
+                    raise ValueError(f"Join key '{key}' not found in right DataFrame")
+            
+            result_df = pd.merge(
+                left_df,
+                right_df,
+                on=join_on,
+                how=join_how,
+                suffixes=('', '_right')
+            )
+        else:
+            logger.info("  No right source specified. Treating this step as base load (no join).")
+            result_df = left_df.copy()
+            right_df = None
         
         # Handle null policy
         null_policy = join_def.get('null_policy', {})
@@ -355,14 +396,20 @@ class JoinExecutor:
         logger.info(f"  Result: {len(result_df)} rows, {result_df.shape[1]} columns")
         
         # Verify rows preserved (if expected)
-        if 'expect_rows_preserved' in [list(t.keys())[0] for t in join_def.get('tests', [])]:
+        tests = join_def.get('tests', [])
+        has_expect_rows_preserved = any(
+            (t == 'expect_rows_preserved') or
+            (isinstance(t, dict) and 'expect_rows_preserved' in t)
+            for t in tests
+        )
+        
+        if right_ref and has_expect_rows_preserved:
             if join_how == 'left':
                 assert len(result_df) == len(left_df), \
                     f"Row count changed: {len(left_df)} -> {len(result_df)}"
                 logger.info(f"  ✅ Rows preserved: {len(result_df)}")
         
         # Run tests
-        tests = join_def.get('tests', [])
         if tests:
             self.run_tests(result_df, tests, join_name)
         
@@ -419,4 +466,3 @@ if __name__ == "__main__":
     executor = JoinExecutor()
     final_df = executor.execute_all_joins()
     print(f"\n✅ Join execution complete: {len(final_df)} rows")
-

@@ -45,9 +45,14 @@
 **Status**: Planned for future buildout  
 **Priority**: Medium  
 **Target User**: Chris (Procurement Manager)  
-**Note**: Basic page structure exists at `dashboard-nextjs/src/app/sentiment/page.tsx` - needs full implementation
+**Note**: Basic page structure exists at `dashboard-nextjs/src/app/sentiment/page.tsx` - it currently renders the header (“Quantitative Sentiment Analysis”) and a “Coming Soon” card with no data bindings. All functional requirements below remain outstanding.
 
 **Purpose**: Comprehensive sentiment analysis and breaking news dashboard
+
+**Current implementation snapshot (Nov 2025)**:
+- `dashboard-nextjs/src/app/sentiment/page.tsx` only wires in the global `Sidebar`/`Header` components and a placeholder hero section. No hooks or API calls exist yet, so this route is effectively a stub.
+- Upstream sentiment processing already runs through `scripts/sentiment/unified_sentiment_neural.py` (aka the UnifiedSentimentNeuralSystem). It ingests policy/news/social/weather/microstructure/technical inputs, produces ensemble scores, regimes, component confidence, and writes `sentiment_dashboard.json` plus `staging/unified_sentiment_neural.parquet`.
+- PAGE_BUILDOUT_ROADMAP items below should be implemented by reading those JSON/Parquet outputs (initially from the local drive) and exposing them through a Next.js API layer for the React UI. Keep the architecture aligned with Ultimate Single Signal: price forecasts (ZL cost) flow into the sentiment ROI widgets, and sentiment insights feed back into procurement/strategy pages.
 
 **Features to Include**:
 - **Unified Sentiment Scoring**
@@ -124,6 +129,7 @@ Data Sources → Local Drive → Sentiment Analysis → Dashboard
 ## 📝 NOTES
 
 - Sentiment page will leverage existing `unified_sentiment_neural.py` infrastructure
+- Until the dedicated APIs are in place, keep `/sentiment` hidden from navigation or clearly labeled “Coming Soon” so users know it is non-functional.
 - All sentiment data stored on local external drive
 - Breaking news will require real-time API integration
 - Component breakdown will show contribution of each sentiment source
