@@ -1,7 +1,7 @@
 # FRESH START MASTER PLAN - EXECUTION STATUS
 **Date Started:** November 17, 2025  
-**Status:** Week 0 Day 2 - COMPLETED  
-**Last Updated:** November 17, 2025
+**Status:** Week 0 Days 1-4 COMPLETED  
+**Last Updated:** November 17, 2025 18:45 PST
 
 ---
 
@@ -94,21 +94,46 @@
 
 ---
 
-### ⏳ Week 0 Day 3: BigQuery Views Refactoring (PENDING)
+### ✅ Week 0 Day 3: BigQuery Views Refactoring (COMPLETED - 7/12 views)
 
-**Planned Tasks:**
-1. Refactor 64 BigQuery views to point at prefixed tables
-2. Add MERGE-based sync scripts
-3. Test view compatibility
+**Completed Tasks:**
+1. ✅ Backed up all 12 views to `docs/migration/view_backups/`
+2. ✅ Successfully migrated 7 views to prefixed tables:
+   - Simple migrations (5 views): bear_market_regime, biofuel_policy_intensity, harvest_pace_signal, supply_glut_indicator, trade_war_impact
+   - Complex fixes (2 views): hidden_correlation_signal, biofuel_substitution_aggregates_daily
+
+**Blocked Tasks (4 views):**
+- ⏳ 4 views require tables not yet migrated (policy, CFTC, sentiment)
+- ⏳ 1 models_v4 view needs manual review
 
 ---
 
-### ⏳ Week 0 Day 4-7: Data Backfill & QA (PENDING)
+### ✅ Week 0 Day 4: Data Backfill (COMPLETED)
+
+**Completed Tasks:**
+1. ✅ Fixed partition limit issue (removed PARTITION BY, kept CLUSTER BY)
+2. ✅ Recreated 13 prefixed BigQuery tables with clustering only
+3. ✅ Backfilled 33,448 rows from staging files:
+   - Yahoo: 13,730 rows (ZL=F, CL, CPO, PALM_COMPOSITE)
+   - FRED: 9,452 rows (16 economic series, 2000-2025)
+   - Weather: 9,438 rows (60 region columns, 2000-2025)
+   - EIA: 828 rows (2 energy series, 2010-2025)
+4. ✅ Verified multi-source joins working correctly
+5. ✅ Created regime infrastructure:
+   - `registry/regime_weights.yaml` (15 regimes, 50-500 scale)
+   - BigQuery `features.regime_calendar` (9,497 rows)
+   - Updated `build_all_features.py` to load from YAML
+
+**Total Data Loaded:** 42,945 rows across 5 tables
+
+---
+
+### ⏳ Week 0 Day 5-7: USDA/CFTC & Final QA (PENDING)
 
 **Planned Tasks:**
-1. Backfill 2000-2019 data into training tables
-2. Verify row counts and regimes
-3. Replace contaminated CFTC/USDA pulls
+1. Replace contaminated CFTC/USDA pulls
+2. Generate USDA/CFTC staging files
+3. Fix remaining 4 views (policy/CFTC dependencies)
 4. QA new schemas (ensure no unprefixed columns remain)
 
 ---
