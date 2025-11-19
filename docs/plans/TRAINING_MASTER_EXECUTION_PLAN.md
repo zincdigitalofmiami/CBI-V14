@@ -28,6 +28,34 @@ Train the most accurate ZL (soybean oil) forecasting models possible using **25 
 
 **See:** `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md` and `VERIFICATION_ISSUES_FOUND.md` for full details.
 
+### Data Gap Remediation Plan (Pre-Training)
+**Timeline**: Days 1-4 post-BigQuery deployment
+
+**Day 1 - Historical Backfill**:
+- Yahoo ZL 2000-2010 → `market_data.yahoo_zl_historical_2000_2010`
+- DataBento 2010-present → `market_data.databento_futures_*` tables
+- Script: `scripts/backfill/load_historical_data.py`
+- Owner: Data Engineering
+
+**Day 2 - Regime Assignment**:
+- Load 11 regimes → `training.regime_calendar`
+- Apply weights (50-5000 scale) → `training.regime_weights`
+- Script: `scripts/regimes/populate_regime_tables.py`
+- Owner: ML Engineering
+
+**Day 3 - Feature Assembly**:
+- Build continuous series from Yahoo + DataBento
+- Populate `features.master_features` (400+ columns)
+- Script: `scripts/features/build_master_features.py`
+- Owner: Feature Engineering
+
+**Day 4 - Validation**:
+- Verify date coverage 2000-2025 (no gaps)
+- Confirm 11 regime assignments
+- Check join density >95%
+- Script: `scripts/validation/pre_training_checks.py`
+- Owner: QA
+
 ---
 
 ## Project Architecture (November 2025)
@@ -35,10 +63,13 @@ Train the most accurate ZL (soybean oil) forecasting models possible using **25 
 ### Local-First Training Architecture
 
 **Storage Layer: BigQuery**
-- **Purpose**: Data warehouse only (NO training, NO inference)
-- **Datasets**: 8 canonical datasets (raw_intelligence, features, training, predictions, monitoring, vegas_intelligence, archive, yahoo_finance_comprehensive)
-- **Tables**: 12 training tables using `{asset}_{function}_{scope}_{regime}_{horizon}` naming
-- **Status**: ✅ Complete, all tables migrated
+- **Purpose**: Data warehouse, curated views, and dashboard serving
+- **Read Access**: Vercel dashboard reads from BigQuery views
+- **Write Access**: DataBento live pipeline writes to BigQuery
+- **Training Data**: Exported from BigQuery to local Parquet for M4 training
+- **Datasets**: 12 canonical datasets (market_data, raw_intelligence, features, training, predictions, monitoring, signals, regimes, drivers, neural, dim, ops)
+- **Tables**: 55+ tables including 17 training tables (5 ZL + 12 MES horizons)
+- **Status**: ✅ Schema ready, pending deployment
 
 **Compute Layer: Mac M4**
 - **Hardware**: Apple M4 Mac mini (16GB unified memory) + TensorFlow Metal GPU
@@ -60,7 +91,9 @@ Train the most accurate ZL (soybean oil) forecasting models possible using **25 
 - **No Dependencies**: On local models or Vertex AI
 - **Status**: Active
 
-**NO Vertex AI. NO BQML Training. 100% Local Control.**
+**Training**: 100% Local on M4 Mac (no BQML/Vertex AI)
+**Data**: BigQuery serves as system of record
+**Live Feed**: DataBento → BigQuery → Dashboard
 
 ---
 
@@ -116,7 +149,7 @@ security add-generic-password -a default -s cbi-v14.SCRAPE_CREATORS_API_KEY -w "
 - `FRED_API_KEY` - Federal Reserve Economic Data
 - `NEWSAPI_KEY` - News API for sentiment analysis
 - `SCRAPE_CREATORS_API_KEY` - ScrapeCreators social media scraping
-- `ALPHA_VANTAGE_API_KEY` - Alpha Vantage market data (if used)
+- `DATABENTO_API_KEY` - DataBento live CME/CBOT/NYMEX/COMEX futures feed
 - Any other external API keys
 
 ---
@@ -161,7 +194,18 @@ Run comprehensive baselines locally on **expanded 25-year dataset** (2000-2025):
   - Historical (<2000): weight ×50
 
 ### Phase 3: Horizon-Specific Optimization
-For each horizon (1w, 1m, 3m, 6m, 12m):
+
+**ZL Horizons** (5 total - Daily forecast horizons only):
+- 1 week, 1 month, 3 months, 6 months, 12 months
+- Features: Daily features, focus on fundamentals
+
+**MES Horizons** (12 total - Intraday + multi-day horizons):
+- **Intraday (minutes):** 1 min, 5 min, 15 min, 30 min (microstructure + orderflow)
+- **Intraday (hours):** 1 hour, 4 hours (microstructure + orderflow)
+- **Multi-day:** 1 day, 7 days, 30 days (macro + sentiment)
+- **Multi-month:** 3 months, 6 months, 12 months (macro + sentiment)
+
+For each horizon:
 - Compare all baselines on holdout data
 - Select top performer
 - Add horizon-specific features
@@ -176,6 +220,38 @@ For each horizon (1w, 1m, 3m, 6m, 12m):
 ---
 
 ## Data Strategy (November 2025 Update)
+
+### Table Mapping & Cutover Strategy
+**Reference**: See `docs/plans/TABLE_MAPPING_MATRIX.md` for full mapping
+
+**Compatibility During Migration**:
+- Old table names → New tables via VIEWS
+- Example: `models_v4.production_training_data_1w` → `training.zl_training_prod_allhistory_1w`
+- Cutover grace period: 30 days with dual reads
+- Script: `scripts/migration/create_compatibility_views.sql`
+
+**Data Flow**:
+1. DataBento → `market_data.databento_futures_*`
+2. Yahoo Historical → `market_data.yahoo_zl_historical_2000_2010`
+3. Feature Engineering → `features.master_features`
+4. Training Export → `training.{zl|mes}_training_prod_*`
+5. Local M4 reads Parquet exports for training
+6. Predictions → `predictions.*` tables
+7. Dashboard reads from BigQuery views
+
+### Live Data Integration (DataBento Forward Feed)
+- **Source:** DataBento GLBX.MDP3 subscription (CME/CBOT/NYMEX/COMEX)
+- **Schemas:** `ohlcv-1m` (primary), aggregated to `ohlcv-1d`, plus forward continuous series
+- **Ingestion Path (Local‑First):**
+  - `scripts/live/databento_live_poller.py` writes forward-only 1-minute Parquet files to `TrainingData/live/{root}/1m/date=YYYY-MM-DD/`
+  - `scripts/ingest/build_forward_continuous.py` produces front-by-volume series in `TrainingData/live_continuous/{root}/1m/date=YYYY-MM-DD/`
+  - Optional (if needed later): mirror to BigQuery tables `market_data.databento_futures_ohlcv_1m_live` / `_1d_live`
+- **Training Use:**
+  - Daily job stitches historical Yahoo/DataBento aggregates with the new live Parquet to extend `features.master_features`
+  - Latest daily training exports now include the continuous forward series so models have same-day coverage
+  - Dashboard queries will read from BigQuery views powered by these tables (Vercel never hits DataBento directly)
+- **Data Quality Gates:** spread-filter (no `symbol` with `-`), tick-size validation per root (`registry/universe/tick_sizes.yaml`), timestamp monotonicity, outlier guards. All enforced before Parquet is written.
+- **Coverage:** Phase 1 roots = `ES`, `ZL`, `CL`; Phase 2 adds `ZS`, `ZM`, `NG`, `ZC`, `ZW`, `RB`, `HO`, `GC`, `SI`, `HG`, `MES`.
 
 ### New Naming Convention
 
@@ -206,6 +282,16 @@ For each horizon (1w, 1m, 3m, 6m, 12m):
 - Date Range: 2020-01-02 to 2025-11-06 (⚠️ **MISSING PRE-2020 DATA**)
 - Regimes: Only 1-3 unique regimes (⚠️ **INCOMPLETE**)
 - Status: ⚠️ **ISSUES FOUND** - Same issues as prod surface
+
+### MES Training Surfaces (NEW, DataBento Feed)
+- **Asset:** MES (Micro E-mini S&P 500, CME)
+- **Horizon Set** (12 total - Intraday + multi-day horizons):  
+  - **Intraday (minutes):** 1 min, 5 min, 15 min, 30 min  
+  - **Intraday (hours):** 1 hour, 4 hours  
+  - **Multi-day:** 1 day, 7 days, 30 days  
+  - **Multi-month:** 3 months, 6 months, 12 months
+- **Data Source:** DataBento GLBX.MDP3 `ohlcv-1m` stream aggregated to required intervals via local Parquet → `features.mes_intraday_*` matrices.
+- **Status:** Live capture in progress; historical backfill via DataBento Historical API. Training exports saved alongside ZL under `TrainingData/exports/mes_training_*`.
 
 ### Regime Support Tables
 
@@ -239,11 +325,13 @@ For each horizon (1w, 1m, 3m, 6m, 12m):
 ### Baseline Requirements (Realistic for M4 16GB)
 | Metric | Target | Hardware Constraint | Notes |
 |--------|--------|---------------------|-------|
-| Ensemble MAPE | < 1.5% | Sequential training | Walk-forward validated, 60-70 models |
+| ZL Ensemble MAPE | < 1.5% | Sequential training | Walk-forward validated, 30-35 models |
+| MES MAPE (intraday) | < 0.8% | FP16 mixed precision | 1min-4hr horizons (6 horizons), neural nets |
+| MES MAPE (multi-day+) | < 1.2% | Sequential training | 1d-12m horizons (6 horizons), tree models |
 | Regime detection | > 95% accuracy | LightGBM CPU | Crisis/bull/bear/normal classifier |
 | Volatility forecast | < 0.5% MAE | Small models | GARCH + 1 neural model |
 | SHAP coverage | > 80% variance | Batch inference | Factor attribution |
-| Model count | 60-70 | FP16 sequential | Trees first, nets second, meta last |
+| Model count (total) | 65-75 | FP16 sequential | ZL: 30-35, MES: 35-40 models |
 | NLP | Inference-only | Pre-trained FinBERT | Fine-tuning requires cloud |
 | Memory management | Mandatory | 16GB unified | FP16, session cleanup, external SSD |
 | Training strategy | Sequential | One GPU job at a time | Prevent thermal throttling |

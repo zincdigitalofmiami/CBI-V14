@@ -72,7 +72,7 @@ Store these keys in Keychain:
 | `FRED_API_KEY` | Federal Reserve Economic Data | Economic indicators |
 | `NEWSAPI_KEY` | News API | Sentiment analysis |
 | `SCRAPE_CREATORS_API_KEY` | ScrapeCreators | Social media scraping |
-| `ALPHA_VANTAGE_API_KEY` | Alpha Vantage | Market data, technical indicators (Plan75 Premium) ✅ |
+| `DATABENTO_API_KEY` | DataBento | Live CME/CBOT/NYMEX/COMEX futures feed |
 | `DATABENTO_API_KEY` | DataBento | CME/CBOT/NYMEX/COMEX futures historical + live |
 
 ## Migration from Environment Variables

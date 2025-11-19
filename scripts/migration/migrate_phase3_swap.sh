@@ -20,10 +20,10 @@ for ds in "${DATASETS[@]}"; do
     echo "Renaming ${ds} -> ${ds}_backup_${BACKUP_DATE}..."
     
     # Copy dataset to backup name
-    bq mk --dataset --location=US ${PROJECT}:${ds}_backup_${BACKUP_DATE}
+    bq mk --dataset --location=us-central1 ${PROJECT}:${ds}_backup_${BACKUP_DATE}
     
     # Copy all tables
-    tables=$(bq ls --location=US --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
+    tables=$(bq ls --location=us-central1 --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
     for table in $tables; do
         bq cp -f ${PROJECT}:${ds}.${table} ${PROJECT}:${ds}_backup_${BACKUP_DATE}.${table}
     done
@@ -80,6 +80,5 @@ for ds in "${DATASETS[@]}"; do
     loc=$(bq show --format=prettyjson ${PROJECT}:${ds} | grep -o '"location": "[^"]*"' | cut -d'"' -f4)
     echo "  ${ds}: ${loc}"
 done
-
 
 

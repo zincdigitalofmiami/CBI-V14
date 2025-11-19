@@ -17,7 +17,7 @@ for ds in "${DATASETS[@]}"; do
     echo "📦 Migrating $ds..."
     
     # Check if dataset has tables
-    table_count=$(bq ls --location=US ${PROJECT}:${ds} 2>/dev/null | tail -n +3 | wc -l | xargs)
+    table_count=$(bq ls --location=us-central1 ${PROJECT}:${ds} 2>/dev/null | tail -n +3 | wc -l | xargs)
     
     if [ "$table_count" -eq "0" ]; then
         echo "   ⚠️  $ds is empty, skipping"
@@ -26,9 +26,9 @@ for ds in "${DATASETS[@]}"; do
     
     # Export
     echo "   → Exporting..."
-    tables=$(bq ls --location=US --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
+    tables=$(bq ls --location=us-central1 --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
     for table in $tables; do
-        bq extract --location=US \
+        bq extract --location=us-central1 \
             --destination_format=PARQUET \
             --compression=SNAPPY \
             ${PROJECT}:${ds}.${table} \
@@ -53,7 +53,7 @@ for ds in "${DATASETS[@]}"; do
     
     # Backup old
     echo "   → Creating backup..."
-    bq mk --dataset --location=US ${PROJECT}:${ds}_backup_20251115_final 2>/dev/null || echo "     (exists)"
+    bq mk --dataset --location=us-central1 ${PROJECT}:${ds}_backup_20251115_final 2>/dev/null || echo "     (exists)"
     for table in $tables; do
         bq cp -f ${PROJECT}:${ds}.${table} ${PROJECT}:${ds}_backup_20251115_final.${table}
     done
@@ -74,6 +74,5 @@ echo ""
 echo "========================================================================"
 echo "✅ ALL REMAINING DATASETS MIGRATED"
 echo "========================================================================"
-
 
 

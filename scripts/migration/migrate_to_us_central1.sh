@@ -24,7 +24,7 @@ for ds in "${DATASETS[@]}"; do
     echo "📦 Exporting $ds..."
     
     # Get all tables in the dataset
-    tables=$(bq ls --location=US --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
+    tables=$(bq ls --location=us-central1 --max_results=9999 ${PROJECT}:${ds} | awk 'NR>2 {print $1}')
     
     if [ -z "$tables" ]; then
         echo "   ⚠️  No tables found in $ds"
@@ -37,7 +37,7 @@ for ds in "${DATASETS[@]}"; do
     # Export each table
     for table in $tables; do
         echo "   → Exporting $table..."
-        bq extract --location=US \
+        bq extract --location=us-central1 \
             --destination_format=PARQUET \
             --compression=SNAPPY \
             ${PROJECT}:${ds}.${table} \
@@ -53,4 +53,3 @@ echo ""
 echo "========================================================================"
 echo "✅ PHASE 1 COMPLETE: All tables exported to GCS"
 echo "========================================================================"
-

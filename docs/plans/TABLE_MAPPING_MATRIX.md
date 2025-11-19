@@ -27,6 +27,20 @@ This document is automatically generated from the actual BigQuery table inventor
 
 ---
 
+## Live Data Feed Mapping (2025 Forward-Only Stream)
+
+| Source | Old Path | New Target Table / File | Notes |
+|--------|----------|-------------------------|-------|
+| DataBento GLBX.MDP3 `ohlcv-1m` | (none – new feed) | **Local Parquet:** `TrainingData/live/{root}/1m/date=YYYY-MM-DD/part-*.parquet` | Forward-only minute bars (roots: ES,ZL,CL in Phase 1). Spread-filter and tick-size validation enforced before write. |
+| DataBento GLBX.MDP3 `ohlcv-1m` | (none – new feed) | **Local Continuous:** `TrainingData/live_continuous/{root}/1m/date=YYYY-MM-DD/part-*.parquet` | Front-by-volume continuous series; consumed by master_features stitcher. |
+| DataBento GLBX.MDP3 `ohlcv-1m` | (optional) | **BigQuery:** `market_data.databento_futures_ohlcv_1m_live` (DATE partitioned, clustered by root,symbol) | Mirror only if dashboard/api needs BQ read surface; otherwise skip. |
+| DataBento GLBX.MDP3 `ohlcv-1d` | (generated via aggregation) | **BigQuery:** `market_data.databento_futures_ohlcv_1d` | Populated via daily aggregation of the 1m Parquet (or direct DataBento 1d); used by downstream signals. |
+| Continuous front | Legacy `market_data.futures_ohlcv_1d` | **BigQuery:** `market_data.databento_futures_continuous_1d` + `market_data.roll_calendar` | Compatibility views keep old table names alive during cutover. |
+
+**Integration Flow:** local stitcher merges historical Yahoo/DataBento aggregates with the new live Parquet, writes refreshed `TrainingData/exports/zl_training_*` files, then BigQuery features tables are updated via standard load scripts. Vercel dashboards read the resulting BQ views (they do not hit DataBento directly).
+
+---
+
 ## Current BigQuery Inventory
 
 ### Dataset Summary

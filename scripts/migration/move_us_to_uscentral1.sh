@@ -31,9 +31,9 @@ for DS in "${DATASETS[@]}"; do
   echo "Exporting dataset ${DS} (US) → GCS"
   mkdir -p "${GS_URI}/${DS}" || true
   # List tables and export each in background (parquet + snappy)
-  for TBL in $(bq --location=US ls --max_results=9999 ${PROJECT}:${DS} | awk 'NR>2 {print $1}'); do
+  for TBL in $(bq --location=us-central1 ls --max_results=9999 ${PROJECT}:${DS} | awk 'NR>2 {print $1}'); do
     echo "  • Extract ${DS}.${TBL}"
-    bq --location=US extract --destination_format=PARQUET \
+    bq --location=us-central1 extract --destination_format=PARQUET \
       --compression=SNAPPY \
       "${PROJECT}:${DS}.${TBL}" \
       "${GS_URI}/${DS}/${TBL}-*.parquet" &
