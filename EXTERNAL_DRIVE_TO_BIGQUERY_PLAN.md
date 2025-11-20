@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # External Drive → BigQuery Upload Plan
 **Date**: November 18, 2025  
 **Source**: Real data analysis from `/Volumes/Satechi Hub/Projects/CBI-V14`
@@ -464,4 +470,8 @@ Upload all your processed data. Cost is negligible. No concerns about exceeding 
 **Next Step**: Run upload scripts or create bulk upload script above.
 
 **Questions?** See `REAL_DATA_COST_ANALYSIS.md` for full details.
+
+
+
+
 

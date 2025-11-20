@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # ✅ DATA SCHEMA & JOIN REVIEW RESULTS
 **Date**: November 16, 2025  
 **Status**: All Data Sources Validated

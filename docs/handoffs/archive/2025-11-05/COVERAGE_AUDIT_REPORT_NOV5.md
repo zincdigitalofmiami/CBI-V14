@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Data Coverage Audit Report - November 5, 2025
 **Dataset**: production_training_data_1m (290 features)  
 **Total Rows**: 1,347  

@@ -1,32 +1,48 @@
 #!/usr/bin/env python3
-'''
-WARNING: This file has been cleaned of ALL fake data.
-Any functions that relied on fake data have been disabled.
-Must be rewritten to use REAL data from BigQuery or APIs.
-ZERO TOLERANCE FOR FAKE DATA.
-'''
-
-#!/usr/bin/env python3
 """
-Feature Engineering Functions for 25-Year Data Enrichment Plan
-Implements all 8 feature calculation functions identified in the audit.
+Feature Engineering Functions - Complex Python-Based Calculations
+Part of hybrid feature engineering approach (Python + BigQuery SQL).
+
+This module handles complex feature calculations that are better suited for Python:
+- Sentiment analysis and NLP
+- Policy extraction and classification
+- Complex interactions and non-linear transformations
+- Advanced time-series features requiring custom logic
+
+Simple features (correlations, moving averages, regimes) are calculated in BigQuery SQL.
+See: config/bigquery/bigquery-sql/advanced_feature_engineering.sql
+
+Architecture: Hybrid Python + BigQuery SQL
+- BigQuery SQL: Correlations (CORR() OVER window), moving averages, regimes
+- Python (this file): Complex sentiment, NLP, policy extraction, interactions
 
 Author: AI Assistant
-Date: November 16, 2025
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Part of production feature engineering pipeline
 """
 
 import numpy as np
 import pandas as pd
 from datetime import datetime
 import warnings
-warnings.filterwarnings('ignore')
+
+from src.utils.timeseries import (
+    moving_average,
+    bollinger_bands,
+    relative_strength_index,
+    macd,
+    realized_volatility,
+    range_volatility,
+    seasonal_adjustment_rolling,
+)
+
+warnings.filterwarnings("ignore")
 
 # Set random seeds for reproducibility (Fix #6)
 import os
-# REMOVED: import random # NO FAKE DATA
-os.environ['PYTHONHASHSEED'] = '42'
-# REMOVED: random.seed(42) # NO RANDOM SEEDS
-# REMOVED: # REMOVED: np.random.seed(42) # NO FAKE DATA # NO RANDOM SEEDS
+
+os.environ["PYTHONHASHSEED"] = "42"
 
 
 def calculate_technical_indicators(df):
@@ -50,9 +66,9 @@ def calculate_technical_indicators(df):
     """
     print("\n📊 Calculating technical indicators...")
     
-    # Identify price column
+    # Identify price column (support multiple symbol prefixes)
     price_col = None
-    for col in ['close', 'zl_price_current', 'price']:
+    for col in ['close', 'zl_price_current', 'mes_close', 'es_close', 'price']:
         if col in df.columns:
             price_col = col
             break
@@ -83,39 +99,36 @@ def calculate_technical_indicators(df):
 def _calculate_technical_for_series(df, price_col):
     """Helper function to calculate technical indicators for a single series."""
     
+    price = df[price_col]
+
     # Moving Averages
     for period in [7, 30, 90, 200]:
-        df[f'tech_ma_{period}d'] = df[price_col].rolling(window=period, min_periods=1).mean()
+        df[f"tech_ma_{period}d"] = moving_average(price, period)
     
     # Price returns
-    df['tech_return_1d'] = df[price_col].pct_change()
-    df['tech_return_7d'] = df[price_col].pct_change(periods=7)
-    df['tech_return_30d'] = df[price_col].pct_change(periods=30)
+    df["tech_return_1d"] = price.pct_change()
+    df["tech_return_7d"] = price.pct_change(periods=7)
+    df["tech_return_30d"] = price.pct_change(periods=30)
     
     # RSI (Relative Strength Index)
     for period in [14, 30]:
-        delta = df[price_col].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period, min_periods=1).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period, min_periods=1).mean()
-        rs = gain / loss.replace(0, np.nan)
-        df[f'tech_rsi_{period}d'] = 100 - (100 / (1 + rs))
+        df[f"tech_rsi_{period}d"] = relative_strength_index(price, period)
     
     # MACD (Moving Average Convergence Divergence)
-    exp1 = df[price_col].ewm(span=12, adjust=False).mean()
-    exp2 = df[price_col].ewm(span=26, adjust=False).mean()
-    df['tech_macd_line'] = exp1 - exp2
-    df['tech_macd_signal'] = df['tech_macd_line'].ewm(span=9, adjust=False).mean()
-    df['tech_macd_histogram'] = df['tech_macd_line'] - df['tech_macd_signal']
+    macd_df = macd(price, fast_span=12, slow_span=26, signal_span=9)
+    df["tech_macd_line"] = macd_df["macd_line"]
+    df["tech_macd_signal"] = macd_df["macd_signal"]
+    df["tech_macd_histogram"] = macd_df["macd_histogram"]
     
     # Bollinger Bands
     bb_period = 20
     bb_std = 2
-    df['tech_bb_middle'] = df[price_col].rolling(window=bb_period, min_periods=1).mean()
-    bb_stddev = df[price_col].rolling(window=bb_period, min_periods=1).std()
-    df['tech_bb_upper'] = df['tech_bb_middle'] + (bb_std * bb_stddev)
-    df['tech_bb_lower'] = df['tech_bb_middle'] - (bb_std * bb_stddev)
-    df['tech_bb_width'] = df['tech_bb_upper'] - df['tech_bb_lower']
-    df['tech_bb_position'] = (df[price_col] - df['tech_bb_lower']) / (df['tech_bb_width'] + 1e-10)
+    bb = bollinger_bands(price, bb_period, num_std=bb_std)
+    df["tech_bb_middle"] = bb["bb_middle"]
+    df["tech_bb_upper"] = bb["bb_upper"]
+    df["tech_bb_lower"] = bb["bb_lower"]
+    df["tech_bb_width"] = bb["bb_width"]
+    df["tech_bb_position"] = bb["bb_position"]
     
     # Rate of Change (ROC)
     for period in [10, 20]:
@@ -252,13 +265,15 @@ def calculate_cross_asset_features(df):
 
 def calculate_volatility_features(df):
     """
-    Calculate volatility-based features.
+    Calculate volatility-based features using futures-only inputs.
     
-    Features:
-    - Realized volatility (30-day, 90-day)
-    - VIX-based features (VIX level, VIX regime)
-    - Volatility clustering indicators
-    - GARCH-style volatility estimates
+    Features (all derived from real prices we already have):
+    - Realized volatility (5/10/20/60/120-day) – annualised
+    - Vol-of-vol and percentile ranks
+    - Parkinson / Garman-Klass / Yang-Zhang estimators (OHLC based)
+    - Range-based signals
+    - Volatility clustering + EWMA proxy
+    - Regime overlays via VIX (if available)
     
     Args:
         df: DataFrame with price data
@@ -288,8 +303,9 @@ def calculate_volatility_features(df):
     else:
         df['returns'] = df['tech_return_1d']
     
-    # Realized volatility (annualized)
-    for period in [30, 90]:
+    # Realized volatility (annualized) at multiple horizons
+    realized_windows = [5, 10, 20, 60, 120]
+    for period in realized_windows:
         if 'symbol' in df.columns:
             # Multi-symbol: calculate per symbol
             vol_values = []
@@ -304,14 +320,33 @@ def calculate_volatility_features(df):
     # Volatility of volatility
     df['vol_of_vol_30d'] = df['vol_realized_30d'].rolling(window=30, min_periods=15).std()
     
-    # Parkinson volatility (if high/low available)
-    if 'high' in df.columns and 'low' in df.columns:
+    # Parkinson / Garman-Klass / Yang-Zhang (if OHLC available)
+    has_ohlc = all(col in df.columns for col in ['open', 'high', 'low', 'close'])
+    if has_ohlc:
+        log_hl_sq = (np.log(df['high'] / df['low'])) ** 2
+        log_co = np.log(df['close'] / df['open'])
+        log_oc = np.log(df['open'] / df['close'].shift(1))
+        log_cc = np.log(df['close'] / df['close'].shift(1))
+
         df['vol_parkinson_30d'] = np.sqrt(
-            df.apply(lambda x: np.log(x['high'] / x['low']) ** 2, axis=1)
-            .rolling(window=30, min_periods=15).mean() / (4 * np.log(2))
+            log_hl_sq.rolling(window=30, min_periods=15).mean() / (4 * np.log(2))
+        ) * np.sqrt(252)
+
+        gk_component = 0.5 * log_hl_sq - (2 * np.log(2) - 1) * (log_co ** 2)
+        df['vol_garman_klass_30d'] = np.sqrt(
+            gk_component.rolling(window=30, min_periods=15).mean()
+        ) * np.sqrt(252)
+
+        yz_component = (
+            0.34 * (log_oc ** 2)
+            + 0.66 * (log_cc ** 2)
+            + (0.53 * log_hl_sq)
+        )
+        df['vol_yang_zhang_30d'] = np.sqrt(
+            yz_component.rolling(window=30, min_periods=15).mean()
         ) * np.sqrt(252)
     
-    # VIX-based features (if VIX data available)
+    # VIX-based features (backup/validation) - if VIX data available
     vix_col = None
     for col in ['vix', 'vix_close', 'vix_level']:
         if col in df.columns:
@@ -319,7 +354,7 @@ def calculate_volatility_features(df):
             break
     
     if vix_col:
-        # VIX level and changes
+        # VIX level and changes (for validation/cross-check)
         df['vol_vix_level'] = df[vix_col]
         df['vol_vix_change_1d'] = df[vix_col].diff()
         df['vol_vix_change_7d'] = df[vix_col].diff(7)

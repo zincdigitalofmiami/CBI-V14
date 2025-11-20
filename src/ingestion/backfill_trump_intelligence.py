@@ -28,7 +28,17 @@ class TrumpIntelligenceBackfillPipeline:
     
     def __init__(self):
         self.client = bigquery.Client(project=PROJECT_ID)
-        self.api_key = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"  # Scrape Creators API from memory
+        import os
+        from pathlib import Path
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        try:
+            from src.utils.keychain_manager import get_api_key as _get_api
+        except Exception:
+            _get_api = None
+        self.api_key = os.getenv('SCRAPECREATORS_API_KEY') or (_get_api('SCRAPECREATORS_API_KEY') if _get_api else None)
+        if not self.api_key:
+            raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain.")
         
         # Key agricultural/trade policy keywords
         self.agricultural_keywords = [

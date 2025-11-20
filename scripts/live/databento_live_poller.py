@@ -293,9 +293,31 @@ def main():
     ap.add_argument('--bq-dataset', help='BigQuery dataset name (e.g., market_data)')
     args = ap.parse_args()
 
+    # Try multiple sources for API key
     api_key = os.environ.get('DATABENTO_API_KEY')
     if not api_key:
-        print('ERROR: DATABENTO_API_KEY not set')
+        # Try keychain
+        import subprocess
+        keychain_locations = [
+            ("databento", "databento_api_key"),
+            ("default", "cbi-v14.DATABENTO_API_KEY"),
+        ]
+        for account, service in keychain_locations:
+            try:
+                result = subprocess.run(
+                    ["security", "find-generic-password", "-w", "-a", account, "-s", service],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                api_key = result.stdout.strip()
+                if api_key:
+                    break
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                continue
+    
+    if not api_key:
+        print('ERROR: DATABENTO_API_KEY not found in environment or keychain')
         return 2
 
     client = db.Historical(api_key)

@@ -16,7 +16,17 @@ from typing import Dict, List, Tuple
 import os
 
 # Configuration
-SCRAPE_CREATOR_API_KEY = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
+SCRAPE_CREATOR_API_KEY = os.getenv('SCRAPECREATORS_API_KEY') or (_get_api('SCRAPECREATORS_API_KEY') if _get_api else None)
+if not SCRAPE_CREATOR_API_KEY:
+    raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain.")
 SCRAPE_CREATOR_BASE_URL = "https://api.scrapecreator.com/v1"
 
 class TrumpSentimentEngine:
@@ -363,4 +373,3 @@ if __name__ == "__main__":
     LEFT JOIN `cbi-v14.forecasting_data_warehouse.trump_sentiment_quantified` t
       ON p.date = t.date
     """)
-

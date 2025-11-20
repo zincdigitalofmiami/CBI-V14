@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Answers to GPT Integration Questions - FINAL
 **Date**: November 17, 2025  
 **Based On**: Complete architecture audit of CBI-V14 system
@@ -291,4 +297,8 @@ PREDICTIONS (Upload to BigQuery):
 - `GPT5_READ_FIRST.md` - Updated with architecture findings
 
 **Status**: Ready for GPT implementation with clear guidance
+
+
+
+
 

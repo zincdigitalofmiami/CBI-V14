@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 CREATE OR REPLACE VIEW `cbi-v14.neural.vw_chris_priority_regime_detector` AS
 SELECT
   b8.*,
@@ -27,6 +32,10 @@ SELECT
     ELSE 'china_relations'
   END AS primary_signal_driver_labor_aware
 FROM `cbi-v14.neural.vw_big_eight_signals` b8;
+
+
+
+
 
 
 

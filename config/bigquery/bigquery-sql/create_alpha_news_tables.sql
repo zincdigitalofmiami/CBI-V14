@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================================================
 -- Alpha Vantage NEWS_SENTIMENT Tables for CBI-V14
 -- Aligned with CBI-V14 naming conventions
@@ -171,4 +176,8 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 
 SELECT 'Alpha Vantage NEWS_SENTIMENT tables created successfully' AS status;
+
+
+
+
 

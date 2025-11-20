@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Handoffs Documentation
 
 **Last Updated**: November 14, 2025
@@ -41,6 +47,10 @@ Historical handoff documents organized by date:
 ---
 
 **Note**: All historical handoffs are preserved in archive folders. Only current/relevant documents remain in root.
+
+
+
+
 
 
 

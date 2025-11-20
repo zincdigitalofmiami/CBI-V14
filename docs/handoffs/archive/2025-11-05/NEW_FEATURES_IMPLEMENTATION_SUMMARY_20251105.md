@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # New Features Implementation Summary
 **Date:** November 5, 2025  
 **Status:** ✅ COMPLETE - Features Added and Integrated

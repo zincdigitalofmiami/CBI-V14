@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Comprehensive Migration Audit Report
 
 **Date**: 2025-11-14  
@@ -185,6 +191,10 @@ The migration is **95% complete** but has **3 critical issues**:
 3. Incomplete ingestion script updates (process issue)
 
 All issues are fixable with targeted changes. The core migration structure is sound.
+
+
+
+
 
 
 

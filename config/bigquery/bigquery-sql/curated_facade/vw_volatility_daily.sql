@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- curated.vw_volatility_daily
 -- VIX and volatility metrics facade view
 CREATE OR REPLACE VIEW `cbi-v14.curated.vw_volatility_daily` AS

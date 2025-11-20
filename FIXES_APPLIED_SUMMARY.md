@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Summary of Fixes Applied to Training Plans
 **Date**: November 18, 2025  
 **Status**: ✅ All Issues Resolved
@@ -87,3 +93,7 @@ cd /Users/kirkmusick/Documents/GitHub/CBI-V14
 **All Issues Resolved** ✅  
 **Documentation Consistent** ✅  
 **Ready for BigQuery Deployment** ✅
+
+
+
+

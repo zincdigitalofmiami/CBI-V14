@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- TRAIN V4 with BALANCED CONFIG on 444 Features
 -- Pragmatic approach: Use what we have, optimize hyperparameters

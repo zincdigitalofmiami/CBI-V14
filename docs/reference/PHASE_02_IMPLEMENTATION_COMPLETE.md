@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # PHASE 0.2 WEB SCRAPING IMPLEMENTATION - COMPLETE
 
 **Date**: November 5, 2025  
@@ -362,7 +368,7 @@ All 15+ web scraping tables created and ready:
 
 **Before** (Hardcoded):
 ```python
-self.api_key = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"  # INSECURE!
+self.api_key = "<SCRAPECREATORS_API_KEY>"  # Set via env/Keychain
 ```
 
 **After** (Secret Manager):
@@ -537,7 +543,6 @@ gcloud scheduler jobs describe JOB_NAME --location=us-central1
 ---
 
 **END OF PHASE 0.2 IMPLEMENTATION REPORT**
-
 
 
 

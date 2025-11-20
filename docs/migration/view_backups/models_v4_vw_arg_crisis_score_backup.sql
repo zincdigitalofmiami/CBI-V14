@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- Backup of models_v4.vw_arg_crisis_score
 -- Created: 2025-11-17 17:57:49
 

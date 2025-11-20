@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- FINAL NAMING CLEANUP - LOCK DOWN ARCHITECTURE
 -- Date: November 14, 2025
@@ -128,6 +133,10 @@ Verification:
 FINAL STATUS: Naming architecture LOCKED as Option 3
 Next allowed change: NEVER (without executive approval)
 */
+
+
+
+
 
 
 

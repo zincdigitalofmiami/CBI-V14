@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- TRAIN FOCUSED MODELS WITH DART (Alternative Approach)
 -- Uses DART booster for better regularization with 50-100 features

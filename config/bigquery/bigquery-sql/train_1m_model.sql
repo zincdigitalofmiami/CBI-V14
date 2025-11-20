@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- TRAIN 1M MODEL - REVERSE ENGINEERED FROM SUCCESSFUL 1W
 -- Uses minimal EXCEPT clause (only truly all-NULL columns)

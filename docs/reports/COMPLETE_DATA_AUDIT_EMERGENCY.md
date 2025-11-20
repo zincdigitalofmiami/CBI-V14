@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # EMERGENCY COMPLETE DATA AUDIT - NOVEMBER 17, 2025
 **Status:** READ ONLY - NO CHANGES MADE  
 **Purpose:** Audit EVERYTHING that exists, find Brazil, identify what's actually needed
@@ -139,4 +145,8 @@
 5. **Join_spec weather tests:** Only mention US_MIDWEST - should tests include AR/BR columns too?
 
 **I WILL NOT PROCEED until you answer these questions.**
+
+
+
+
 

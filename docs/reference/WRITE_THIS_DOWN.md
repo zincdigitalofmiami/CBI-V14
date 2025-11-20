@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 📝 WRITE THIS DOWN - OFFICIAL PRODUCTION SYSTEM
 
 **Date**: November 5, 2025  
@@ -35,9 +41,9 @@ ingestion/ingest_eia_biofuel_real.py → production_training_data_*
 
 ## API KEYS
 ```
-FRED: dc195c8658c46ee1df83bcd4fd8a690b
-NOAA: rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi
-Scrape Creators: B1TOgQvMVSV6TDglqB8lJ2cirqi2
+FRED: <set via Keychain or env>
+NOAA: <set via Keychain or env>
+Scrape Creators: <set via Keychain or env>
 ```
 
 ## DO NOT USE
@@ -68,7 +74,6 @@ Scrape Creators: B1TOgQvMVSV6TDglqB8lJ2cirqi2
 - ✅ OFFICIAL_PRODUCTION_SYSTEM.md
 - ✅ QUICK_REFERENCE.txt
 - ✅ Memory saved
-
 
 
 

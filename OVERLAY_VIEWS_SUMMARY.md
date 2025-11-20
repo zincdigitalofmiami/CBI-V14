@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Super-Optimized Overlay Views Summary
 **Date:** November 18, 2025  
 **Status:** Documented in Fresh Start Master Plan
@@ -84,4 +90,8 @@ The overlay layer provides curated, dashboard-ready views that eliminate complex
 ---
 **Status:** ✅ Documented in Fresh Start Master Plan  
 **Location:** `docs/plans/FRESH_START_MASTER_PLAN.md` - Section: "SUPER-OPTIMIZED API-FACING OVERLAY LAYER"
+
+
+
+
 

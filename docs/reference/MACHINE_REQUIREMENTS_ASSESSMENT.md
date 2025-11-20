@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Machine Requirements Assessment - M3 MacBook Air vs. Larger Machine
 **Date**: November 7, 2025  
 **Current Machine**: M3 MacBook Air, 8GB RAM, 8 CPU cores

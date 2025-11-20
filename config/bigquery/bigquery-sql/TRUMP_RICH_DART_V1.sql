@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- TRUMP-ERA NEURAL DRIVERS MODEL - ENHANCED WITH DISCOVERED DATA!
 -- 60+ RICH FEATURES INCLUDING:
 --   - Big Eight Neural Signals (vix_stress, china_relations, tariff_threat)

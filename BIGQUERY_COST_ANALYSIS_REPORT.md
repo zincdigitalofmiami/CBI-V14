@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Cost Analysis for Vercel Dashboard
 **Date**: November 18, 2025  
 **Analysis**: Real data from cbi-v14 BigQuery project
@@ -357,4 +363,8 @@ If you skip the live data collector or run it on your Mac instead of GCP, your c
 **Report Generated**: November 18, 2025  
 **Data Source**: Real BigQuery data from cbi-v14 project  
 **Analysis By**: BigQuery cost analysis script
+
+
+
+
 

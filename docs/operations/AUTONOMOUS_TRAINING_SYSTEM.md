@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Autonomous Training System for Mac M4
 
 ## Overview
@@ -563,6 +569,10 @@ Once installed, your Mac M4 is a fully autonomous quant training system:
 **No human intervention required.**
 
 Welcome to the future of autonomous ML operations.
+
+
+
+
 
 
 

@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================================================
 -- CBI-V14 COMPLETE BIGQUERY SCHEMA
 -- Date: November 18, 2025
@@ -674,4 +679,8 @@ ORDER BY table_name, clustering_ordinal_position;
 -- ============================================================================
 -- END OF SCHEMA
 -- ============================================================================
+
+
+
+
 

@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Folder Consolidation - November 13, 2025
 
 **Date**: November 13, 2025  
@@ -84,6 +90,10 @@ These folders serve different purposes and are NOT competing:
 - **Active Plans**: `docs/plans/*.md`
 - **Archived Plans**: `docs/plans/archive/*.md`
 - **Plan README**: `docs/plans/README.md`
+
+
+
+
 
 
 

@@ -4,8 +4,18 @@
 # Production-ready cURL commands for commodity market intelligence
 # Execute with: ./production_social_scraper.sh
 
-# Set your API key
-export SC_API_KEY="B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+# Resolve API key (do not hardcode secrets in repo)
+# 1) Prefer environment variable SC_API_KEY if set
+# 2) Fallback to macOS Keychain item cbi-v14.SCRAPECREATORS_API_KEY
+if [[ -z "${SC_API_KEY:-}" ]]; then
+  if command -v security >/dev/null 2>&1; then
+    SC_API_KEY=$(security find-generic-password -a default -s cbi-v14.SCRAPECREATORS_API_KEY -w 2>/dev/null || true)
+  fi
+fi
+if [[ -z "${SC_API_KEY:-}" ]]; then
+  echo "❌ SC_API_KEY not set. Export SC_API_KEY or store in Keychain: security add-generic-password -a default -s cbi-v14.SCRAPECREATORS_API_KEY -w '<key>' -U" >&2
+  exit 1
+fi
 
 # Create output directories
 mkdir -p data/{twitter,truth_social,facebook,linkedin,youtube,reddit,tiktok}
@@ -677,5 +687,4 @@ cat > data/ingestion_manifest.json << EOF
 EOF
 
 log "📋 Ingestion manifest created: data/ingestion_manifest.json"
-
 

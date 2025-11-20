@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Migration Update Summary
 
 ## ✅ Completed
@@ -51,6 +57,10 @@
 2. Update prediction scripts
 3. Update SQL files
 4. Test end-to-end workflow
+
+
+
+
 
 
 

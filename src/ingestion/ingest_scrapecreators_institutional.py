@@ -2,7 +2,7 @@
 """
 CBI-V14 ScrapeCreators Institutional Intelligence
 Collects lobbying, congressional, analyst, and China state media intelligence
-API Key: B1TOgQvMVSV6TDglqB8lJ2cirqi2
+API Key: <set via env SCRAPECREATORS_API_KEY or Keychain>
 """
 
 import os
@@ -19,7 +19,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 PROJECT_ID = "cbi-v14"
-SCRAPECREATORS_API_KEY = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
+SCRAPECREATORS_API_KEY = os.getenv('SCRAPECREATORS_API_KEY') or (_get_api('SCRAPECREATORS_API_KEY') if _get_api else None)
+if not SCRAPECREATORS_API_KEY:
+    raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain.")
 SCRAPECREATORS_BASE_URL = "https://api.scrapecreators.com"
 
 class InstitutionalIntelligenceCollector:
@@ -233,6 +243,5 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
 
 

@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Phase 5: Update SQL Files - COMPLETE ✅
 
 **Date**: 2025-11-14  
@@ -39,6 +45,10 @@ SQL files updated to reference new table names:
 1. Test new build script: `BUILD_TRAINING_TABLES_NEW_NAMING.sql`
 2. Update ingestion scripts to write to new table names (Phase 8)
 3. Update feature calculation scripts
+
+
+
+
 
 
 

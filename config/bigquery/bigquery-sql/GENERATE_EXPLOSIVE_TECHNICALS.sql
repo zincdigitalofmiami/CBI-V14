@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- GENERATE ALL TECHNICAL INDICATORS FOR 18 SYMBOLS
 -- 43 features per ETF/Commodity, 51 per Stock

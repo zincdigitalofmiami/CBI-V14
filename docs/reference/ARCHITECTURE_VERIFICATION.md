@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CBI-V14 Architecture Verification
 **Date:** November 12, 2025  
 **Purpose:** Verify the complete data → training → production workflow
@@ -210,9 +216,9 @@ python3 vertex-ai/deployment/create_endpoint.py --model_resource_name=projects/.
 **Logs:** `/Volumes/Satechi Hub/Projects/CBI-V14/Logs/cron/`
 
 **API Keys:** Exported via `.env.cron` (sources automatically)
-- FRED: dc195c8658c46ee1df83bcd4fd8a690b
-- NOAA: rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi
-- ScrapeCreators: B1TOgQvMVSV6TDglqB8lJ2cirqi2
+- FRED: <set via Keychain or env>
+- NOAA: <set via Keychain or env>
+- ScrapeCreators: <set via Keychain or env>
 
 **✅ VERIFIED:** Cron jobs run locally, push data to cloud automatically.
 
@@ -387,4 +393,3 @@ The architecture is **sound and production-ready**. The only thing missing is:
 - **Deployment:** `vertex-ai/README.md`
 - **Cron Setup:** `scripts/crontab_setup.sh`
 - **Data Gaps:** `docs/audits/CRITICAL_DATA_GAPS_BACKFILL_PLAN.md`
-

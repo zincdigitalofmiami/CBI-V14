@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # ScrapeCreators Data Pipeline Analysis
 **Generated:** November 7, 2025
 **Purpose:** Complete analysis of data ingestion, storage, schemas, and metadata
@@ -25,7 +31,7 @@ BigQuery Tables (WRITE_APPEND mode)
 #### **API Layer**
 - **Endpoint:** `https://api.scrapecreators.com/v1/`
 - **Authentication:** API key in header (`x-api-key`)
-- **Key:** `B1TOgQvMVSV6TDglqB8lJ2cirqi2`
+- **Key:** `<SCRAPECREATORS_API_KEY>`
 - **Rate Limiting:** 1 second delay between requests
 - **Timeout:** 30-60 seconds per request
 
@@ -359,4 +365,3 @@ Every record includes:
 **Total Monthly Cost:** ~$5-10 for ScrapeCreators API + minimal BigQuery storage
 **Data Freshness:** 1-4 hour lag for most sources
 **Reliability:** Multiple retry mechanisms and error handling
-

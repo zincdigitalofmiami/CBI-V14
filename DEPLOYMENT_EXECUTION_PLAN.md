@@ -1,7 +1,15 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Deployment Execution Plan
 **Date:** November 18, 2025  
 **Status:** Ready to Execute  
 **Estimated Time:** 3-5 hours
+
+Reference: `docs/plans/BIGQUERY_CENTRIC_MIGRATION_PLAN.md` — deployment aligns with the BigQuery‑centric data plane (ingest/orchestrate/serve), Mac‑centric model plane, and 5‑minute batch ingestion policy.
 
 ## 🎯 Pre-Deployment Status
 
@@ -278,4 +286,3 @@ echo "✅ Schema deployment complete. Next: Run data migration scripts."
 ---
 **Status:** Ready to execute Phase 1 (Schema Deployment)  
 **Next Action:** Run `./scripts/deployment/deploy_bq_schema.sh`
-

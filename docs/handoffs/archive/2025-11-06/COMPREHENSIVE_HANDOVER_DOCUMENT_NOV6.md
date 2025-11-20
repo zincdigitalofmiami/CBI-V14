@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 🚨 COMPREHENSIVE HANDOVER DOCUMENT - CBI-V14 PROJECT
 **Date: November 6, 2025**  
 **Purpose: Complete knowledge transfer for new chat session**
@@ -97,7 +103,7 @@ NASDAQ_DATA_LINK = "kVwh8979kjDLy578XsKz"  # Quandl/NASDAQ
 FRED_API_KEY = "d947b8c4c8a2db7b82bfcb3a3f8d8e4f"  # Federal Reserve
 ALPHAVANTAGE = "YOUR_ALPHA_VANTAGE_API_KEY"  # Needs actual key
 OPEN_METEO = "free"  # No key needed
-SCRAPE_CREATORS = "B1TOgQvMVSV6TDglqB8lJ2cirqi2"  # Truth Social
+SCRAPE_CREATORS = "<SCRAPECREATORS_API_KEY>"  # Truth Social (set via env/Keychain)
 GDELT = "free"  # No key needed
 NOAA = "enabled in GCP"  # Via marketplace
 USDA_FAS = "free"  # Public data
@@ -526,7 +532,6 @@ The platform is successful when:
 *By: Previous session assistant*
 
 Remember: The data is there, the models work, we just need to connect the current data to the production tables. The ULTIMATE_DATA_CONSOLIDATION.sql script should fix everything.
-
 
 
 

@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Naming Architecture Migration Progress
 
 **Date**: 2025-11-14  
@@ -64,6 +70,10 @@
 - **Shim Views**: 5/5 ✅
 - **Scripts Updated**: 0/20+ ⏳
 - **SQL Files Updated**: 0/10+ ⏳
+
+
+
+
 
 
 

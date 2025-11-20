@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Databento Data Inventory - Complete Review
 
 **Date:** 2025-11-18  
@@ -182,4 +188,8 @@ You already have **fantastic data** for MES:
 - ✅ Real market data confirmed
 
 The ZL 1-minute data will complete the set and give you accurate microstructure features for both instruments!
+
+
+
+
 

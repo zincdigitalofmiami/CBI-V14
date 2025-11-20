@@ -83,3 +83,9 @@ src/utils/__pycache__/
 # Temporary reorganization files
 *.backup.*
 reorganize_*.log
+
+# Prevent root-level Markdown clutter (reports should live under docs/)
+/*.md
+!/README.md
+!/CONTRIBUTING.md
+!/LICENSE.md

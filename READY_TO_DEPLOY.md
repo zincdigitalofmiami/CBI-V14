@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Ready to Deploy - Complete Architecture
 **Date**: November 18, 2025  
 **Status**: ✅ All gaps fixed, validated, documented, ready for execution  
@@ -226,5 +232,9 @@ bq query --project_id=cbi-v14 --location=us-central1 --use_legacy_sql=false < VE
 **My recommendation**: Deploy schema first (it's ready), then create scripts.
 
 Ready when you are! 🚀
+
+
+
+
 
 

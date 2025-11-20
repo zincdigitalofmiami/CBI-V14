@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- ADD 110 HIGH-IMPACT FEATURES FOR V3
 -- Tier 1 ETFs + Tier 2 Ag Stocks + Tier 3 Energy + Tier 4 Dollar

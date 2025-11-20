@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================================================
 -- PHASE 3 FIX: Complete Sharpe View with Proper Subquery Handling
 -- Date: November 15, 2025
@@ -359,5 +364,9 @@ SELECT
   END AS soybean_performance_rating
   
 FROM final_metrics;
+
+
+
+
 
 

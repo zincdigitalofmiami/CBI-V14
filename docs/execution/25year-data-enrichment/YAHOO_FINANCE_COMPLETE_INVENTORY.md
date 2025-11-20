@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 📊 YAHOO FINANCE COMPLETE SYMBOL INVENTORY
 **Date**: November 16, 2025  
 **Location**: `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/raw/yahoo_finance/prices/`  

@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- Fix Regime Assignments in Training Tables
 -- Date: November 17, 2025
 -- Purpose: Fix 'allhistory' placeholders and properly assign regimes with weights
@@ -193,5 +198,9 @@ ORDER BY table_name;
 -- - No 'allhistory' placeholder regimes
 -- - Proper distribution across regimes
 -- ============================================================
+
+
+
+
 
 

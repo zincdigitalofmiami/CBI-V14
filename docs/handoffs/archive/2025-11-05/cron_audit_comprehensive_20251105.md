@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CBI-V14 Comprehensive Cron Scheduling Audit Report
 **Generated:** 2025-11-05  
 **Purpose:** Optimize performance, reduce costs, ensure critical data sources stay current

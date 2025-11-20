@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Deployment Dry Run Results
 **Date:** November 18, 2025  
 **Mode:** DRY RUN (no changes made)  
@@ -180,4 +186,8 @@ python3 scripts/migration/migrate_master_features.py
 **Status:** ✅ DRY RUN PASSED - Ready for live deployment  
 **Timestamp:** November 18, 2025  
 **Approver:** _____________ Date: _________
+
+
+
+
 

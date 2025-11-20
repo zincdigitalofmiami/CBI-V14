@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # DATA FORMAT ANALYSIS & RESEARCH-BACKED FIXES
 **Date:** November 17, 2025  
 **Analysis Type:** Comprehensive staging file review with online research validation  
@@ -713,4 +719,8 @@ Final: 416,110 rows × ~120 columns (before feature engineering)
 - Data engineering best practices
 
 **Ready to implement fixes:** ✅ YES
+
+
+
+
 

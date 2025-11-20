@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Code Folder Consolidation - November 13, 2025
 
 **Date**: November 13, 2025  
@@ -99,6 +105,10 @@
 - **Training Scripts**: `src/training/scripts/`
 - **Training Docs**: `docs/training/`
 - **Analysis Docs**: `docs/analysis/`
+
+
+
+
 
 
 

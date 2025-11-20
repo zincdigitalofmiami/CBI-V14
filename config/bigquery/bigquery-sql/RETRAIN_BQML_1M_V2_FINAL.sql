@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- RETRAIN bqml_1m_v2 WITH COMPLETE SCHEMA
 -- All 334 columns: 311 Yahoo + 23 RIN/biofuel

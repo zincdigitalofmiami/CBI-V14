@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- UPDATE VIX STRESS TO ACTUAL VIX PRICE
 -- Change feature_vix_stress from VIX/20 stress score to actual VIX price

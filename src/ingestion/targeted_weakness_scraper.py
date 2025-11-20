@@ -21,7 +21,17 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_KEY = 'B1TOgQvMVSV6TDglqB8lJ2cirqi2'
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
+API_KEY = os.getenv('SCRAPECREATORS_API_KEY') or (_get_api('SCRAPECREATORS_API_KEY') if _get_api else None)
+if not API_KEY:
+    raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain.")
 client = bigquery.Client(project='cbi-v14')
 
 # TARGETED SOURCES FOR WEAK AREAS
@@ -252,4 +262,3 @@ def main():
 if __name__ == '__main__':
     success = main()
     exit(0 if success else 1)
-

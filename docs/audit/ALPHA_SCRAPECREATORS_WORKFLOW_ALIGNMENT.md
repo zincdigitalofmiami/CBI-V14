@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Alpha Vantage + ScrapeCreators Workflow Alignment Verification
 
 **Date**: November 18, 2025  
@@ -580,4 +586,8 @@ All components aligned:
 **Status**: ✅ Workflow Alignment Verified  
 **Schema Impact**: ✅ Zero Changes to Existing Tables  
 **Recommendation**: ✅ Proceed with Implementation
+
+
+
+
 

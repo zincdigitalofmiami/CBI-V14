@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================================================
 -- LOAD ALL REAL HISTORICAL DATA - NO FAKE SHIT
 -- Date: November 15, 2025
@@ -352,5 +357,9 @@ SELECT
 FROM `cbi-v14.training.zl_training_prod_allhistory_1m`;
 
 -- THIS IS ALL REAL DATA FROM ACTUAL HISTORICAL TABLES - NO FAKE CALCULATIONS
+
+
+
+
 
 

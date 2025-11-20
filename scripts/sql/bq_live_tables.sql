@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- BigQuery table DDL for live futures OHLCV mirroring (1m) and rollups
 
 -- 1) Base live 1m table (partitioned by date on ts_event; clustered by root,symbol)

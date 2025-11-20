@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================================================
 -- CBI-V14 OVERLAY VIEWS - Super-Optimized API-Facing Layer
 -- Date: November 18, 2025
@@ -168,7 +173,7 @@ SELECT
   big8.big8_policy_shock,
   big8.big8_weather_supply_risk,
   big8.big8_china_demand,
-  big8.big8_vix_cvol_stress,
+  big8.big8_vix_stress,
   big8.big8_positioning_pressure,
   big8.big8_energy_biofuel_shock,
   big8.big8_fx_pressure,
@@ -220,7 +225,7 @@ SELECT * FROM training.zl_training_prod_allhistory_12m;
 -- PART 5: SIGNALS-DRIVER COMPOSITE VIEWS (1 view)
 -- ============================================================================
 
-CREATE OR REPLACE VIEW signals.vw_big_seven_signals AS
+CREATE OR REPLACE VIEW signals.vw_big8_signals AS
 SELECT 
   crush.date,
   'ZL' AS symbol,
@@ -234,8 +239,10 @@ SELECT
   weather.weather_supply_risk AS signal_weather,
   -- China Demand
   china.china_demand AS signal_china,
-  -- VIX/CVOL Stress
-  vol.vix_cvol_stress AS signal_volatility,
+  -- VIX Stress (no CVOL)
+  vol.vix_stress AS signal_volatility,
+  -- Options-based IV30 overlay (if available)
+  iv.iv30 AS signal_iv30,
   -- Positioning Pressure
   pos.positioning_pressure AS signal_positioning,
   -- Hidden Composite (7th signal)
@@ -247,9 +254,9 @@ SELECT
     COALESCE(fx.fx_pressure, 0) * 0.15 +
     COALESCE(weather.weather_supply_risk, 0) * 0.15 +
     COALESCE(china.china_demand, 0) * 0.15 +
-    COALESCE(vol.vix_cvol_stress, 0) * 0.10 +
+    COALESCE(vol.vix_stress, 0) * 0.10 +
     COALESCE(hidden.hidden_relationship_composite_score, 0) * 0.10
-  ) AS big_seven_composite_score,
+  ) AS big8_composite_score,
   CURRENT_TIMESTAMP() AS as_of
 FROM signals.crush_oilshare_daily crush
 LEFT JOIN signals.energy_proxies_daily energy ON crush.date = energy.date
@@ -259,7 +266,12 @@ LEFT JOIN signals.calculated_signals china ON crush.date = china.date
 LEFT JOIN signals.calculated_signals vol ON crush.date = vol.date
 LEFT JOIN signals.calculated_signals pos ON crush.date = pos.date
 LEFT JOIN signals.hidden_relationship_signals hidden ON crush.date = hidden.date
+LEFT JOIN features.iv30_daily iv ON crush.date = iv.date AND iv.symbol = 'ZL'
 ORDER BY crush.date DESC;
+
+-- Backward-compatibility alias (to be removed after downstream updates)
+CREATE OR REPLACE VIEW signals.vw_big_seven_signals AS
+SELECT * FROM signals.vw_big8_signals;
 
 -- ============================================================================
 -- PART 6: MES OVERLAY VIEWS (2 views)
@@ -340,4 +352,7 @@ ORDER BY table_schema;
 -- ============================================================================
 -- END - 31 OVERLAY VIEWS CREATED
 -- ============================================================================
+
+
+
 

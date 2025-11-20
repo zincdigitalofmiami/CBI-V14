@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Py Knowledge Folder Review & Integration Report
 **Date**: November 17, 2025  
 **Status**: ✅ REVIEWED, VALIDATED, AND UPDATED
@@ -365,4 +371,8 @@ Categories:
 **Status**: ✅ Py Knowledge reviewed, validated, updated, and pushed to GitHub  
 **Commits**: ac988f8 (Alpha Vantage docs) + 4d2b409 (Py Knowledge updates)  
 **Result**: Complete alignment between Alpha Vantage strategy and PyTorch implementation guidance
+
+
+
+
 

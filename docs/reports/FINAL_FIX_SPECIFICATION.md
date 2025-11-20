@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # FINAL FIX SPECIFICATION - EACH SOURCE IS UNIQUE
 **Date:** November 17, 2025  
 **Status:** Research-backed, per-source custom solutions  
@@ -715,4 +721,8 @@ NO CARTESIAN PRODUCTS ✅
 - ✅ Result: 56 → 9 columns, ready for Alpha join
 
 **Each transformation is SPECIFIC to that source's characteristics and requirements.**
+
+
+
+
 

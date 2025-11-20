@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Phase 4: Update Python Scripts - COMPLETE ✅
 
 **Date**: 2025-11-14  
@@ -98,6 +104,10 @@ Phase 4 is **COMPLETE**. Ready to proceed with:
 - Phase 5: Update SQL Files
 - Phase 7: Complete Model Save Patterns (add metadata files)
 - Phase 8: Update Ingestion Scripts
+
+
+
+
 
 
 

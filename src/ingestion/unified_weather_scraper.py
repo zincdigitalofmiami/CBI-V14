@@ -29,7 +29,17 @@ class GlobalSoybeanWeatherPipeline:
     """
     
     def __init__(self):
-        self.noaa_token = "rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi"
+        import os
+        from pathlib import Path
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        try:
+            from src.utils.keychain_manager import get_api_key as _get_api
+        except Exception:
+            _get_api = None
+        self.noaa_token = os.getenv('NOAA_API_TOKEN') or (_get_api('NOAA_API_TOKEN') if _get_api else None)
+        if not self.noaa_token:
+            raise RuntimeError("NOAA_API_TOKEN not set. Export or store in Keychain.")
         
         self.metrics = {
             'brazil': {'calls': 0, 'success': 0, 'failures': 0},
@@ -306,7 +316,6 @@ if __name__ == "__main__":
     # Performance report
     scraper.print_performance_report()
     print("\n✅ Weather data loading complete")
-
 
 
 

@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- POPULATE ALL FRED & YAHOO DATA INTO TRAINING DATASET
 -- The data EXISTS in source tables - this fills the NULLs in training_dataset_super_enriched

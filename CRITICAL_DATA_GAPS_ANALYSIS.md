@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CRITICAL DATA GAPS ANALYSIS
 **Date:** November 18, 2025  
 **Status:** RESEARCH - DO NOT EXECUTE  
@@ -394,4 +400,8 @@ Researching:
 ---
 
 **STATUS:** ANALYSIS IN PROGRESS - NO EXECUTION
+
+
+
+
 

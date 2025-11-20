@@ -1,0 +1,11 @@
+#!/bin/sh
+# Block committing root-level Markdown files (except allowlist)
+
+ROOT_MD=$(find . -maxdepth 1 -type f -name "*.md" \! -name "README.md" \! -name "CONTRIBUTING.md" \! -name "LICENSE.md")
+if [ -n "$ROOT_MD" ]; then
+  echo "❌ Root-level Markdown files are not allowed. Move them under docs/ (e.g., docs/reports/)."
+  echo "$ROOT_MD" | sed 's/^/  - /'
+  exit 1
+fi
+
+exit 0

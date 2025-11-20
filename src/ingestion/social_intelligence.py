@@ -41,9 +41,22 @@ class SocialIntelligence:
             response = secret_client.access_secret_version(request={"name": name})
             return response.payload.data.decode("UTF-8")
         except Exception as e:
-            print(f"⚠️  Secret Manager failed: {e}, using fallback")
-            # Temporary fallback - remove after migration
-            return "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+            print(f"⚠️  Secret Manager failed: {e}, trying env/Keychain")
+            try:
+                import os
+                key = os.getenv('SCRAPECREATORS_API_KEY')
+                if key:
+                    return key
+                from pathlib import Path
+                import sys as _sys
+                _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+                from src.utils.keychain_manager import get_api_key as _get_api
+                key = _get_api('SCRAPECREATORS_API_KEY')
+                if key:
+                    return key
+            except Exception:
+                pass
+            raise RuntimeError("SCRAPECREATORS_API_KEY not available from Secret Manager, env, or Keychain.")
         
     def _build_social_matrix(self):
         """Social intelligence source matrix"""

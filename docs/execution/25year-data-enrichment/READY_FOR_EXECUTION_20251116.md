@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 🚀 READY FOR EXECUTION - Morning Start
 **Date**: November 16, 2025  
 **Status**: ✅ **PHASE 0 COMPLETE** - Ready to begin Phase 1  

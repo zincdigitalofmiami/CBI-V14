@@ -1002,6 +1002,69 @@ def create_palm_staging():
     print(f"✅ Created: {staging_file} ({len(merged)} rows × {len(merged.columns)} cols)")
     return merged
 
+def create_sentiment_staging():
+    """
+    Creates sentiment daily staging file from 9-layer sentiment calculation.
+    - Runs sentiment_layers.py calculation
+    - Ensures all columns have appropriate prefixes
+    - Saves to staging/sentiment_daily.parquet
+    """
+    print("Creating sentiment daily staging file (9-layer architecture)...")
+    
+    try:
+        # Import sentiment calculation
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from scripts.features.sentiment_layers import calculate_sentiment_daily
+        
+        # Load required staging files
+        df_policy = pd.read_parquet(DRIVE / "staging/policy_trump_signals.parquet") if (DRIVE / "staging/policy_trump_signals.parquet").exists() else pd.DataFrame()
+        df_eia = pd.read_parquet(DRIVE / "staging/eia_energy_granular.parquet") if (DRIVE / "staging/eia_energy_granular.parquet").exists() else pd.DataFrame()
+        df_weather = pd.read_parquet(DRIVE / "staging/weather_granular_daily.parquet") if (DRIVE / "staging/weather_granular_daily.parquet").exists() else pd.DataFrame()
+        df_usda = pd.read_parquet(DRIVE / "staging/usda_reports_granular.parquet") if (DRIVE / "staging/usda_reports_granular.parquet").exists() else pd.DataFrame()
+        df_cftc = pd.read_parquet(DRIVE / "staging/cftc_commitments.parquet") if (DRIVE / "staging/cftc_commitments.parquet").exists() else pd.DataFrame()
+        df_fred = pd.read_parquet(DRIVE / "staging/fred_macro_expanded.parquet") if (DRIVE / "staging/fred_macro_expanded.parquet").exists() else pd.DataFrame()
+        
+        # For news, use policy_trump_signals as proxy (would need actual news_articles table)
+        df_news = df_policy.copy() if not df_policy.empty else pd.DataFrame()
+        
+        # For databento, create empty (would load from BigQuery or staging)
+        df_databento = pd.DataFrame()
+        
+        # Calculate sentiment layers
+        result = calculate_sentiment_daily(
+            df_news, df_policy, df_eia, df_weather, df_usda, df_cftc, df_databento, df_fred
+        )
+        
+        if result.empty:
+            print("⚠️  No sentiment data calculated")
+            return None
+        
+        # Ensure date column is date type
+        if 'date' in result.columns:
+            result['date'] = pd.to_datetime(result['date']).dt.date
+        
+        # Sort by date
+        result = result.sort_values('date').reset_index(drop=True)
+        
+        staging_file = DRIVE / "staging/sentiment_daily.parquet"
+        result.to_parquet(staging_file, index=False)
+        print(f"✅ Created: {staging_file} ({len(result)} rows × {len(result.columns)} cols)")
+        print(f"   Date range: {result['date'].min()} to {result['date'].max()}")
+        print(f"   Procurement index range: {result['procurement_sentiment_index'].min():.4f} to {result['procurement_sentiment_index'].max():.4f}")
+        return result
+        
+    except ImportError as e:
+        print(f"⚠️  Could not import sentiment_layers: {e}")
+        print("   Skipping sentiment staging (requires sentiment_layers.py)")
+        return None
+    except Exception as e:
+        print(f"⚠️  Error creating sentiment staging: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 def create_es_staging():
     """
     Creates ES futures staging file from Yahoo Finance data.
@@ -1088,6 +1151,7 @@ def main():
     create_policy_trump_staging() # Policy/Trump signals with policy_trump_ prefix
     create_palm_staging()         # Palm oil with barchart_palm_ prefix
     create_es_staging()           # ES futures with es_ prefix (25 years + technicals)
+    create_sentiment_staging()    # 9-layer sentiment daily (from sentiment_layers.py)
     
     print("\n" + "="*80)
     print("✅ STAGING FILES CREATED (CORRECTED)")

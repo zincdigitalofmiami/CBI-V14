@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 📊 Detailed Analysis: bqml_1m_v2 vs bqml_1m_v3
 **Date**: November 6, 2025  
 **Models Trained**: Both completed today

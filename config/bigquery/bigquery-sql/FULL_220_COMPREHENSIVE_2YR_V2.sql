@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- FILE: bigquery-sql/FULL_220_COMPREHENSIVE_2YR_V2.sql
 -- PURPOSE: 100% compliant with your 7-phase, 24-audit plan
 -- STATUS: Phase 1–5 COMPLETE | Phase 6.1 RUNNING | Phase 6.3–7 queued

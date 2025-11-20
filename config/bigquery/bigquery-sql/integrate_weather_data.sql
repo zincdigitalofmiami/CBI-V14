@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- INTEGRATE WEATHER DATA INTO TRAINING DATASET
 -- Add weather-based features for Brazil, Argentina, and US soybean regions

@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # REAL BigQuery Cost Analysis - External Drive Data
 **Date**: November 18, 2025  
 **Source**: Actual data on `/Volumes/Satechi Hub/Projects/CBI-V14`
@@ -384,4 +390,8 @@ Your infrastructure (BigQuery + Dashboard + Live Data VM) will cost **$0.03-0.04
 **Report Generated**: November 18, 2025  
 **Data Source**: Actual external drive at `/Volumes/Satechi Hub/Projects/CBI-V14`  
 **Next Step**: Run upload scripts to move Parquet files to BigQuery
+
+
+
+
 

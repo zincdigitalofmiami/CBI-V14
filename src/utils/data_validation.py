@@ -271,3 +271,7 @@ def validate_before_save(df, symbol, data_type):
     # Only reaches here if valid
     return True
 
+
+
+
+

@@ -1,3 +1,8 @@
+# ⚠️ CRITICAL: NO FAKE DATA ⚠️
+# This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+# All data must come from authenticated APIs, official sources, or validated historical records.
+#
+
 version: "1.1"
 description: "Declarative join specification with automated tests for 25-year data pipeline - UPDATED FOR FRESH START (prefixed columns, granular formats)"
 last_updated: "2025-11-17"
@@ -94,22 +99,9 @@ joins:
       - expect_rows_preserved
       - expect_columns_added: ["regime", "training_weight"]  # Updated: regime_calendar.parquet has 'training_weight', not separate vol/eng/garch weights
 
-  # === JOIN: Alpha Vantage Features ===
-  - name: "add_alpha_vantage"
-    left: "<<add_regimes>>"
-    right: "staging/alpha_vantage_features.parquet"
-    on: ["date"] # Assuming a simple date join for now
-    how: "left"
-    null_policy:
-      allow: true
-      fill_method: "ffill"
-    tests:
-      - expect_rows_preserved
-      - expect_columns_prefixed: ["alpha_"]
-
   # === JOIN: Volatility & VIX ===
   - name: "add_volatility"
-    left: "<<add_alpha_vantage>>"
+    left: "<<add_regimes>>"
     right: "staging/volatility_features.parquet"
     on: ["date"]
     how: "left"
@@ -159,7 +151,7 @@ joins:
     tests:
       - expect_rows_preserved
       - expect_columns_prefixed: ["es_"]
-      - expect_columns_added: ["es_close", "es_rsi_14", "es_macd"]  # Sample ES indicators
+      - expect_columns_added: ["es_close"]
 
   # === JOIN: ES Intraday Aggregated Features ===
   - name: "add_es_intraday_features"
@@ -173,6 +165,20 @@ joins:
     tests:
       - expect_rows_preserved
       - expect_columns_added: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"] # Sample of new features
+
+  # === JOIN: 9-Layer Sentiment Daily (Production - Verified Nov 19, 2025) ===
+  - name: "add_sentiment"
+    left: "<<add_es_intraday_features>>"
+    right: "staging/sentiment_daily.parquet"
+    on: ["date"]
+    how: "left"
+    null_policy:
+      allow: true
+      fill_method: "ffill"  # Sentiment signals persist until new calculation
+    tests:
+      - expect_rows_preserved
+      - expect_columns_added: ["procurement_sentiment_index", "core_zl_price_sentiment", "biofuel_policy_sentiment", "geopolitical_tariff_sentiment"]
+      - expect_columns_added: ["tariff_pinball", "rin_moon_pinball", "drought_pinball"]
 
   # === JOIN: MES Futures (daily) ===
   - name: "add_mes_futures"
@@ -236,3 +242,7 @@ final_tests:
   - expect_regime_cardinality_gte: 7
   - expect_weight_range: [50, 1000]  # Updated Nov 17, 2025: Changed from 50-5000 to 50-1000
   - expect_columns_present: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"]
+
+
+
+

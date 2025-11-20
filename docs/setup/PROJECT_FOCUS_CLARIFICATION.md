@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Project Focus Clarification
 
 **Date**: November 18, 2025  
@@ -89,4 +95,8 @@ Any documents that incorrectly emphasize ES as a primary target should be update
 
 **Last Updated**: November 18, 2025  
 **Maintained By**: Data Collection Pipeline
+
+
+
+
 

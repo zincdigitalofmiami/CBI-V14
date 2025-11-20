@@ -42,10 +42,10 @@ if [[ ! -f "$ENV_FILE" ]]; then
 # Uncomment and set path to your service account key file:
 # export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-key.json"
 
-# API Keys (from QUICK_REFERENCE.txt)
-export FRED_API_KEY="dc195c8658c46ee1df83bcd4fd8a690b"
-export NOAA_API_TOKEN="rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi"
-export SCRAPECREATORS_API_KEY="B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+# API Keys (do not commit secrets; set via Keychain or environment)
+# export FRED_API_KEY="<set-via-keychain-or-env>"
+# export NOAA_API_TOKEN="<set-via-keychain-or-env>"
+# export SCRAPECREATORS_API_KEY="<set-via-keychain-or-env>"
 
 # Project Configuration
 export PROJECT_ID="cbi-v14"
@@ -98,10 +98,10 @@ PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
 30 6 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} ingest_market_prices.py >> $LOG_DIR/market_prices.log 2>&1
 0 7 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} ingest_baltic_dry_index.py >> $LOG_DIR/baltic_dry_index.log 2>&1
 
-# FRED Economic Data (API: dc195c8658c46ee1df83bcd4fd8a690b)
+# FRED Economic Data
 15 7 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} fred_economic_deployment.py >> $LOG_DIR/fred_economic.log 2>&1
 
-# Social Intelligence & Scrape Creators (API: B1TOgQvMVSV6TDglqB8lJ2cirqi2)
+# Social Intelligence & Scrape Creators
 0 */4 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} ingest_social_intelligence_comprehensive.py >> $LOG_DIR/social_intel.log 2>&1
 30 */6 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} ingest_scrapecreators_institutional.py >> $LOG_DIR/scrapecreators_institutional.log 2>&1
 0 8 * * * cd $INGESTION_DIR && ${ENV_SOURCE}${PYTHON_BIN} scrape_creators_full_blast.py >> $LOG_DIR/scrapecreators_full.log 2>&1

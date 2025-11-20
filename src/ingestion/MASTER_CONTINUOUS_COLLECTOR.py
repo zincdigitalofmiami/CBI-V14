@@ -24,6 +24,14 @@ import feedparser
 import yfinance as yf
 import pandas as pd
 from google.cloud import bigquery
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 import uuid
@@ -42,7 +50,20 @@ DATASET = 'forecasting_data_warehouse'
 client = bigquery.Client(project=PROJECT_ID)
 
 # Scrape Creators API
-SCRAPE_CREATORS_KEY = 'B1TOgQvMVSV6TDglqB8lJ2cirqi2'
+def _resolve_secret(env_name: str, key_name: str):
+    val = os.getenv(env_name)
+    if val:
+        return val
+    if _get_api:
+        try:
+            return _get_api(key_name)
+        except Exception:
+            return None
+    return None
+
+SCRAPE_CREATORS_KEY = _resolve_secret('SCRAPECREATORS_API_KEY', 'SCRAPECREATORS_API_KEY')
+if not SCRAPE_CREATORS_KEY:
+    raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain 'cbi-v14.SCRAPECREATORS_API_KEY'.")
 
 def get_metadata(source, confidence=0.85):
     """Canonical metadata pattern"""
@@ -343,7 +364,6 @@ def run_master_collection():
 if __name__ == '__main__':
     success = run_master_collection()
     exit(0 if success else 1)
-
 
 
 

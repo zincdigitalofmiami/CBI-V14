@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CBI-V14 Complete Schema & Documentation Update Summary
 **Date**: November 18, 2025  
 **Status**: ✅ COMPLETE - Ready for BigQuery Deployment
@@ -176,3 +182,7 @@ predictions.* → Dashboard
 - All operational monitoring ✅
 
 **Ready for Production Deployment!** 🚀
+
+
+
+

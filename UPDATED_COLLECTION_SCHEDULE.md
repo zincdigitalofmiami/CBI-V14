@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Updated Collection Schedule
 **Date**: November 18, 2025  
 **Status**: Revised based on user feedback
@@ -419,5 +425,9 @@ Ready to create:
 4. BigQuery tables for new data
 
 Say the word and I'll generate all collection scripts.
+
+
+
+
 
 

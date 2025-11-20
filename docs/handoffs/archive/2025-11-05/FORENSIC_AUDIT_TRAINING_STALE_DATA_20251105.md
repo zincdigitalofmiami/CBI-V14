@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # FORENSIC AUDIT: Training Dataset Stale Data Problem
 **Generated**: November 5, 2025  
 **Issue**: Training dataset stuck at Nov 3 while source data and views are current (Nov 5)  

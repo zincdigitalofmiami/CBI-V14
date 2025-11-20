@@ -44,7 +44,17 @@ logger = logging.getLogger(__name__)
 # CBI-V14 Configuration
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
-FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
+FRED_API_KEY = os.getenv('FRED_API_KEY') or (_get_api('FRED_API_KEY') if _get_api else None)
+if not FRED_API_KEY:
+    raise RuntimeError("FRED_API_KEY not set. Export or store in Keychain.")
 
 class DataValidator:
     def __init__(self):

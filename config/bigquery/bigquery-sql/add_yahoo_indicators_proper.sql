@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- Add Yahoo Technical Indicators - Following Existing Pattern
 -- Pattern from backfill_from_scraped_data.sql: LEFT JOIN from forecasting_data_warehouse

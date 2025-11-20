@@ -1,670 +1,409 @@
-# CBI-V14: Table Mapping Matrix
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
 
-**Last Updated**: November 15, 2025 (Updated with Verification Audit Findings)
-**Status**: AUTO-GENERATED FROM BIGQUERY INVENTORY + VERIFICATION AUDIT
-**Source**: Direct BigQuery query + external drive scan + comprehensive verification audit
+**📋 BEST PRACTICES:** See `.cursorrules` and `docs/reference/BEST_PRACTICES_DRAFT.md` for mandatory best practices including: no fake data, always check before creating, always audit after work, us-central1 only, no costly resources without approval, research best practices, research quant finance modeling.
 
-This document is automatically generated from the actual BigQuery table inventory and external drive contents, updated with findings from the November 15, 2025 comprehensive data verification audit.
+# CBI-V14: Table Mapping Matrix (Archived)
+Note: This document is archived. For the active, consolidated reference, see `docs/plans/REFERENCE.md`.
 
-## Verification Audit Summary (November 15, 2025)
+**Last Updated**: November 19, 2025 (Updated with Fresh Audit Findings)  
+**Status**: COMPREHENSIVE MAPPING - AUTO-GENERATED FROM AUDIT + VERIFICATION  
+**Source**: Fresh Audit (Nov 19, 2025) + Join Spec + BigQuery Inventory + Staging File Scan
 
-**Total Data Verified:** 1,877,182 rows across 453 tables in 29 datasets
-
-**Key Findings:**
-- ✅ **No 0.5 placeholder pattern** detected in production price data
-- ⚠️ **Training tables missing pre-2020 data** (all start from 2020, not 2000)
-- ⚠️ **Regime assignments incomplete** (only 1-3 regimes per table, expected 7+)
-- ⚠️ **Some join tables missing** (commodity_soybean_oil_prices, vix_data)
-- ✅ **Historical data verified real** (5,236 rows from models_v4, no placeholders)
-- ✅ **Yahoo Finance data verified** (801K rows total, 6,227 ZL rows, no placeholders)
-
-**Critical Issues Found:**
-1. `training.zl_training_prod_allhistory_1m`: All 1,404 rows have regime='allhistory' and weight=1 (placeholder values)
-2. All training tables: Missing pre-2020 data (should start from 2000-01-01)
-3. Missing join tables: `raw_intelligence.commodity_soybean_oil_prices`, `forecasting_data_warehouse.vix_data`
-
-**See:** `COMPREHENSIVE_DATA_VERIFICATION_REPORT.md` and `VERIFICATION_ISSUES_FOUND.md` for full details.
+This document provides a comprehensive mapping between staging files, BigQuery tables, join specifications, and the complete data pipeline. Updated with findings from the November 19, 2025 fresh comprehensive audit.
 
 ---
 
-## Live Data Feed Mapping (2025 Forward-Only Stream)
+## Executive Summary
 
-| Source | Old Path | New Target Table / File | Notes |
-|--------|----------|-------------------------|-------|
-| DataBento GLBX.MDP3 `ohlcv-1m` | (none – new feed) | **Local Parquet:** `TrainingData/live/{root}/1m/date=YYYY-MM-DD/part-*.parquet` | Forward-only minute bars (roots: ES,ZL,CL in Phase 1). Spread-filter and tick-size validation enforced before write. |
-| DataBento GLBX.MDP3 `ohlcv-1m` | (none – new feed) | **Local Continuous:** `TrainingData/live_continuous/{root}/1m/date=YYYY-MM-DD/part-*.parquet` | Front-by-volume continuous series; consumed by master_features stitcher. |
-| DataBento GLBX.MDP3 `ohlcv-1m` | (optional) | **BigQuery:** `market_data.databento_futures_ohlcv_1m_live` (DATE partitioned, clustered by root,symbol) | Mirror only if dashboard/api needs BQ read surface; otherwise skip. |
-| DataBento GLBX.MDP3 `ohlcv-1d` | (generated via aggregation) | **BigQuery:** `market_data.databento_futures_ohlcv_1d` | Populated via daily aggregation of the 1m Parquet (or direct DataBento 1d); used by downstream signals. |
-| Continuous front | Legacy `market_data.futures_ohlcv_1d` | **BigQuery:** `market_data.databento_futures_continuous_1d` + `market_data.roll_calendar` | Compatibility views keep old table names alive during cutover. |
+### Current State (November 19, 2025)
 
-**Integration Flow:** local stitcher merges historical Yahoo/DataBento aggregates with the new live Parquet, writes refreshed `TrainingData/exports/zl_training_*` files, then BigQuery features tables are updated via standard load scripts. Vercel dashboards read the resulting BQ views (they do not hit DataBento directly).
+- **Staging Files**: 19 parquet files, 523,291 total rows
+- **BigQuery Tables**: 30 tables audited (all empty - expected for new datasets)
+- **Pipeline Status**: ✅ PASSING (2,025 rows × 1,175 columns final output)
+- **Date Range**: 2000-03-15 to 2025-11-14
+- **Join Steps**: 15 joins in pipeline
+- **News Collection**: Partial setup (ScrapeCreators ready, Alpha Vantage pending)
 
----
+### Key Findings
 
-## Current BigQuery Inventory
-
-### Dataset Summary
-
-| Dataset | Tables | Views | Total Objects | Total Rows | Total Size (MB) |
-|---------|--------|-------|---------------|------------|----------------|
-| `api` | 1 | 2 | 3 | 0 | 0.00 |
-| `archive` | 11 | 0 | 11 | 13,937 | 19.46 |
-| `archive_consolidation_nov6` | 4 | 0 | 4 | 5,322 | 9.33 |
-| `bkp` | 8 | 0 | 8 | 17,871 | 2.11 |
-| `curated` | 2 | 28 | 30 | 16 | 0.00 |
-| `dashboard` | 3 | 0 | 3 | 4 | 0.00 |
-| `deprecated` | 2 | 1 | 3 | 376 | 0.10 |
-| `export_evaluated_data_items_cbi_v14_automl_pilot_1w_2025_10_28T10_08_35_327Z` | 1 | 0 | 1 | 112 | 0.15 |
-| `features` | 2 | 0 | 2 | 2,894 | 0.13 |
-| `forecasting_data_warehouse` | 87 | 12 | 99 | 422,772 | 65.32 |
-| `market_data` | 4 | 0 | 4 | 155,075 | 34.73 |
-| `models` | 22 | 8 | 30 | 27,191 | 14.11 |
-| `models_v4` | 78 | 15 | 93 | 198,922 | 60.19 |
-| `monitoring` | 1 | 0 | 1 | 615 | 0.03 |
-| `neural` | 0 | 1 | 1 | 0 | 0.00 |
-| `performance` | 2 | 2 | 4 | 0 | 0.00 |
-| `predictions` | 5 | 0 | 5 | 4 | 0.00 |
-| `predictions_uc1` | 4 | 1 | 5 | 5 | 0.00 |
-| `raw_intelligence` | 7 | 0 | 7 | 87,666 | 9.49 |
-| `signals` | 1 | 33 | 34 | 6 | 0.00 |
-| `staging` | 11 | 0 | 11 | 79,885 | 35.76 |
-| `training` | 18 | 0 | 18 | 34,206 | 30.96 |
-| `weather` | 1 | 0 | 1 | 3 | 0.00 |
-| `yahoo_finance_comprehensive` | 10 | 0 | 10 | 801,199 | 186.56 |
+✅ **Pipeline Validation**: All tests passing  
+✅ **Staging Files**: 19 files, mostly healthy (1 file with duplicate dates)  
+⚠️ **BigQuery Tables**: All empty (expected - new dataset structure)  
+⚠️ **News Collection**: Alpha Vantage collector script missing  
+✅ **Join Spec**: Fully aligned with staging files
 
 ---
 
-### Detailed Table Inventory
+## 1. STAGING FILES → BIGQUERY MAPPING
 
-#### Dataset: `api`
+### Complete Staging File Inventory (November 19, 2025)
 
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `current_forecasts` | TABLE | 0 | 0.00 | 2025-10-29 | None | None |  |
-| `vw_market_intelligence` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_ultimate_adaptive_signal_historical` | VIEW | 0 | 0.00 | 2025-11-15 | None | None |  |
+| Staging File | Rows | Columns | Date Range | Duplicates | Status | BigQuery Target | Dataset |
+|--------------|------|---------|------------|------------|-------|-----------------|---------|
+| `alpha_vantage_features.parquet` | 10,719 | 736 | 1986-01-02 to 2025-11-17 | 0 | ⏯ Archived | `alpha_vantage_features` | `raw_intelligence` (deprecated) |
+| `cftc_commitments.parquet` | 522 | 195 | 2015-01-06 to 2024-12-31 | 0 | ✅ | `cftc_commitments` | `forecasting_data_warehouse` |
+| `eia_biofuels_2010_2025.parquet` | 828 | 2 | 2010-01-04 to 2025-11-10 | 0 | ✅ | `eia_biofuels` | `raw_intelligence` |
+| `eia_energy_granular.parquet` | 828 | 3 | 2010-01-04 to 2025-11-10 | 0 | ✅ | `eia_energy_granular` | `forecasting_data_warehouse` |
+| `es_daily_aggregated.parquet` | 21 | 23 | 2025-10-20 to 2025-11-17 | 0 | ✅ | `es_daily_aggregated` | `forecasting_data_warehouse` |
+| `es_futures_daily.parquet` | 6,308 | 58 | 2000-11-24 to 2025-11-17 | 0 | ✅ | `es_futures_daily` | `forecasting_data_warehouse` |
+| `fred_macro_expanded.parquet` | 9,452 | 17 | 2000-01-01 to 2025-11-16 | 0 | ✅ | `fred_macro_expanded` | `forecasting_data_warehouse` |
+| `mes_15min.parquet` | 229,160 | 6 | N/A | 0 | ✅ | `mes_15min` | `market_data` |
+| `mes_15min_features.parquet` | 229,160 | 24 | N/A | 0 | ✅ | `mes_15min_features` | `market_data` |
+| `mes_confirmation_features.parquet` | 2,036 | 15 | 2019-05-05 to 2025-11-16 | 0 | ✅ | `mes_confirmation_features` | `market_data` |
+| `mes_daily_aggregated.parquet` | 2,036 | 34 | 2019-05-05 to 2025-11-16 | 0 | ✅ | `mes_daily_aggregated` | `market_data` |
+| `mes_futures_daily.parquet` | 2,036 | 6 | 2019-05-05 to 2025-11-16 | 0 | ✅ | `mes_futures_daily` | `market_data` |
+| `palm_oil_daily.parquet` | 1,269 | 9 | 2020-10-21 to 2025-11-17 | 0 | ✅ | `palm_oil_daily` | `forecasting_data_warehouse` |
+| `policy_trump_signals.parquet` | 25 | 13 | 2025-11-17 to 2025-11-17 | 25 | ⚠️ | `policy_trump_signals` | `forecasting_data_warehouse` |
+| `usda_reports_granular.parquet` | 6 | 16 | 2020-01-06 to 2025-01-06 | 0 | ✅ | `usda_reports_granular` | `forecasting_data_warehouse` |
+| `volatility_features.parquet` | 9,069 | 21 | 1990-01-02 to 2025-11-17 | 0 | ✅ | `volatility_features` | `forecasting_data_warehouse` |
+| `weather_granular.parquet` | 9,438 | 61 | 2000-01-01 to 2025-11-02 | 0 | ✅ | `weather_granular` | `forecasting_data_warehouse` |
+| `yahoo_historical_prefixed.parquet` | 6,380 | 55 | 2000-03-15 to 2025-11-14 | 0 | ✅ | `yahoo_historical_prefixed` | `forecasting_data_warehouse` |
+| `zl_daily_aggregated.parquet` | 3,998 | 14 | 2010-06-06 to 2025-11-14 | 0 | ✅ | `zl_daily_aggregated` | `market_data` |
 
-#### Dataset: `archive`
+**Total**: 19 files, 523,291 rows
 
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `backup_20251115_prod_1m` | TABLE | 1,404 | 4.11 | 2025-11-15 | None | None |  |
-| `legacy_20251114__models_v4__crisis_2008_historical` | TABLE | 253 | 0.07 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__pre_crisis_2000_2007_historical` | TABLE | 1,737 | 0.49 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__production_training_data_12m` | TABLE | 1,473 | 2.31 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__production_training_data_1m` | TABLE | 1,404 | 4.07 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__production_training_data_1w` | TABLE | 1,472 | 2.59 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__production_training_data_3m` | TABLE | 1,475 | 2.45 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__production_training_data_6m` | TABLE | 1,473 | 2.30 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__recovery_2010_2016_historical` | TABLE | 1,760 | 0.50 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__trade_war_2017_2019_historical` | TABLE | 754 | 0.21 | 2025-11-14 | None | None |  |
-| `legacy_20251114__models_v4__trump_rich_2023_2025` | TABLE | 732 | 0.36 | 2025-11-14 | None | None |  |
+### Issues Identified
 
-#### Dataset: `archive_consolidation_nov6`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `production_1m_backup_20251105` | TABLE | 1,347 | 2.42 | 2025-11-06 | None | None |  |
-| `production_1w_backup_20251105` | TABLE | 1,448 | 2.49 | 2025-11-06 | None | None |  |
-| `production_3m_backup_20251105` | TABLE | 1,329 | 2.31 | 2025-11-06 | None | None |  |
-| `production_6m_backup_20251105` | TABLE | 1,198 | 2.11 | 2025-11-06 | None | None |  |
-
-#### Dataset: `bkp`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `crude_oil_prices_SAFETY_20251021_180706` | TABLE | 2,265 | 0.29 | 2025-10-21 | None | None |  |
-| `economic_indicators_SAFETY_20251021_180706` | TABLE | 7,523 | 0.72 | 2025-10-21 | None | None |  |
-| `news_intelligence_20251010T231740Z` | TABLE | 333 | 0.17 | 2025-10-10 | None | None |  |
-| `soybean_oil_prices_20251010T231754Z` | TABLE | 525 | 0.06 | 2025-10-10 | None | None |  |
-| `soybean_oil_prices_SAFETY_20251021_180706` | TABLE | 1,935 | 0.23 | 2025-10-21 | None | None |  |
-| `soybean_oil_prices_backup_20251021_152417` | TABLE | 2,255 | 0.27 | 2025-10-21 | None | None |  |
-| `soybean_oil_prices_backup_20251021_152537` | TABLE | 2,255 | 0.27 | 2025-10-21 | None | None |  |
-| `volatility_data_20251010T231720Z` | TABLE | 780 | 0.10 | 2025-10-10 | None | None |  |
-
-#### Dataset: `curated`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `region_station_map` | TABLE | 10 | 0.00 | 2025-10-14 | None | None |  |
-| `region_weight_map` | TABLE | 6 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_biofuel_policy_us_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_cftc_positions_oilseeds_weekly` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_cftc_soybean_oil_weekly` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_client_insights_daily` | VIEW | 0 | 0.00 | 2025-10-13 | None | None |  |
-| `vw_client_multi_horizon_forecast` | VIEW | 0 | 0.00 | 2025-10-13 | None | None |  |
-| `vw_commodity_prices_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_crush_margins_daily` | VIEW | 0 | 0.00 | 2025-10-13 | None | None |  |
-| `vw_dashboard_commodity_prices` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_dashboard_fundamentals` | VIEW | 0 | 0.00 | 2025-10-13 | None | None |  |
-| `vw_dashboard_weather_intelligence` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_economic_daily` | VIEW | 0 | 0.00 | 2025-10-10 | None | None |  |
-| `vw_fed_rates_realtime` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_multi_source_intelligence_summary` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_news_commodity_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_news_intel_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_palm_soy_spread_daily` | VIEW | 0 | 0.00 | 2025-10-13 | None | None |  |
-| `vw_priority_indicators_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_social_intelligence` | VIEW | 0 | 0.00 | 2025-10-10 | None | None |  |
-| `vw_soybean_oil_features_daily` | VIEW | 0 | 0.00 | 2025-10-11 | None | None |  |
-| `vw_soybean_oil_quote` | VIEW | 0 | 0.00 | 2025-10-11 | None | None |  |
-| `vw_treasury_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_usda_export_sales_soy_weekly` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_volatility_daily` | VIEW | 0 | 0.00 | 2025-10-10 | None | None |  |
-| `vw_weather_ar_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_weather_br_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_weather_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_weather_global_daily` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_weather_usmw_daily` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-
-#### Dataset: `dashboard`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `performance_metrics` | TABLE | 4 | 0.00 | 2025-10-27 | None | None |  |
-| `prediction_history` | TABLE | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `regime_history` | TABLE | 0 | 0.00 | 2025-10-27 | None | None |  |
-
-#### Dataset: `deprecated`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `fct_zl_price_volatility_daily_legacy_20251009T114922` | VIEW | 0 | 0.00 | 2025-10-09 | None | None |  |
-| `ice_trump_intelligence` | TABLE | 186 | 0.05 | 2025-10-12 | PARTITION BY timestamp | category |  |
-| `ice_trump_intelligence_legacy_20251013` | TABLE | 190 | 0.05 | 2025-10-13 | PARTITION BY timestamp | category |  |
-
-#### Dataset: `export_evaluated_data_items_cbi_v14_automl_pilot_1w_2025_10_28T10_08_35_327Z`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `evaluated_data_items` | TABLE | 112 | 0.15 | 2025-10-28 | None | None |  |
-
-#### Dataset: `features`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `feature_metadata` | TABLE | 52 | 0.02 | 2025-11-14 | None | None |  |
-| `market_regimes` | TABLE | 2,842 | 0.11 | 2025-11-14 | None | None |  |
-
-#### Dataset: `forecasting_data_warehouse`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `ai_metadata_summary` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `all_commodity_prices` | TABLE | 62,717 | 16.70 | 2025-11-15 | None | None |  |
-| `argentina_crisis_tracker` | TABLE | 10 | 0.00 | 2025-10-28 | None | None |  |
-| `baltic_dry_index` | TABLE | 0 | 0.00 | 2025-11-13 | PARTITION BY time | None | Baltic Dry Index - Daily shipping rates indicator ... |
-| `biofuel_policy` | TABLE | 62 | 0.01 | 2025-10-22 | None | None |  |
-| `biofuel_prices` | TABLE | 354 | 0.04 | 2025-10-22 | None | None |  |
-| `breaking_news_hourly` | TABLE | 560 | 0.18 | 2025-10-30 | None | None |  |
-| `canola_oil_prices` | TABLE | 770 | 0.10 | 2025-10-22 | None | None |  |
-| `cftc_cot` | TABLE | 944 | 0.13 | 2025-10-21 | None | None |  |
-| `china_soybean_imports` | TABLE | 22 | 0.00 | 2025-10-28 | None | None |  |
-| `cocoa_prices` | TABLE | 21 | 0.00 | 2025-10-23 | None | None |  |
-| `copper_prices` | TABLE | 4,800 | 0.67 | 2025-11-12 | None | None |  |
-| `corn_prices` | TABLE | 15,623 | 2.14 | 2025-10-27 | None | None |  |
-| `cotton_prices` | TABLE | 21 | 0.00 | 2025-10-23 | None | None |  |
-| `crude_oil_prices` | TABLE | 10,859 | 1.45 | 2025-10-22 | None | None |  |
-| `currency_data` | TABLE | 59,187 | 5.70 | 2025-10-22 | None | None |  |
-| `data_catalog` | TABLE | 18 | 0.00 | 2025-11-03 | None | None |  |
-| `data_integration_status` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `economic_indicators` | TABLE | 72,553 | 6.37 | 2025-10-27 | None | None |  |
-| `enhanced_feature_metadata` | TABLE | 52 | 0.03 | 2025-11-03 | None | None |  |
-| `enso_climate_status` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `ers_oilcrops_monthly` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `event_restaurant_impact` | VIEW | 0 | 0.00 | 2025-11-05 | None | None |  |
-| `feature_metadata` | TABLE | 52 | 0.02 | 2025-10-08 | None | None |  |
-| `freight_logistics` | TABLE | 0 | 0.00 | 2025-11-05 | PARTITION BY date | None | Freight and logistics data including Baltic Dry In... |
-| `futures_prices_barchart` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `futures_prices_cme_public` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `futures_prices_investing` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `futures_prices_marketwatch` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `futures_sentiment_tradingview` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `gold_prices` | TABLE | 11,555 | 1.51 | 2025-10-22 | None | None |  |
-| `hourly_prices` | TABLE | 27 | 0.00 | 2025-11-05 | None | None |  |
-| `industrial_demand_indicators` | TABLE | 3 | 0.00 | 2025-10-28 | None | None |  |
-| `industry_intelligence_asa` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `job_execution_tracking` | TABLE | 1 | 0.00 | 2025-11-05 | None | None |  |
-| `legislative_bills` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `market_analysis_correlations` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `metadata_completeness_check` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `model_interpretability_metadata` | TABLE | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `natural_gas_prices` | TABLE | 11,567 | 1.52 | 2025-10-22 | None | None |  |
-| `neural_network_architecture_metadata` | TABLE | 4 | 0.00 | 2025-11-03 | None | None |  |
-| `news_advanced` | TABLE | 223 | 1.93 | 2025-10-22 | None | None |  |
-| `news_industry_brownfield` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `news_intelligence` | TABLE | 2,830 | 1.51 | 2025-10-27 | None | None |  |
-| `news_market_farmprogress` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `news_reuters` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `news_ultra_aggressive` | TABLE | 33 | 0.21 | 2025-10-22 | None | None |  |
-| `palm_oil_prices` | TABLE | 1,340 | 0.15 | 2025-10-27 | None | None |  |
-| `policy_events_federalregister` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `policy_rfs_volumes` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `predictions_1m` | TABLE | 0 | 0.00 | 2025-11-01 | PARTITION BY as_of_timestamp | None |  |
-| `rapeseed_oil_prices` | TABLE | 146 | 0.02 | 2025-10-22 | None | None |  |
-| `realtime_prices` | TABLE | 56 | 0.00 | 2025-10-23 | None | None |  |
-| `risk_free_rates` | TABLE | 496 | 0.03 | 2025-11-15 | None | None |  |
-| `shap_drivers` | TABLE | 0 | 0.00 | 2025-11-01 | PARTITION BY as_of_timestamp | None |  |
-| `signals_1w` | TABLE | 0 | 0.00 | 2025-11-01 | PARTITION BY as_of_timestamp | signal_name |  |
-| `silver_prices` | TABLE | 4,798 | 0.67 | 2025-11-12 | None | None |  |
-| `social_intelligence_unified` | TABLE | 4,673 | 1.14 | 2025-11-03 | None | None |  |
-| `social_sentiment` | TABLE | 677 | 0.22 | 2025-10-22 | None | None |  |
-| `soybean_meal_prices` | TABLE | 10,775 | 1.47 | 2025-10-22 | None | None |  |
-| `soybean_oil_prices` | TABLE | 6,057 | 0.81 | 2025-10-27 | None | None |  |
-| `soybean_oil_prices_backup_20251112_165404` | TABLE | 1,301 | 0.15 | 2025-11-12 | None | None |  |
-| `soybean_oil_prices_historical_view` | VIEW | 0 | 0.00 | 2025-11-12 | None | None |  |
-| `soybean_prices` | TABLE | 15,708 | 2.16 | 2025-10-27 | None | None |  |
-| `sp500_prices` | TABLE | 10,579 | 1.43 | 2025-10-21 | None | None |  |
-| `treasury_prices` | TABLE | 1,961 | 0.24 | 2025-10-15 | None | None |  |
-| `trump_policy_intelligence` | TABLE | 468 | 0.15 | 2025-10-22 | None | None |  |
-| `usd_index_prices` | TABLE | 11,636 | 1.42 | 2025-10-22 | None | None |  |
-| `usda_crop_progress` | TABLE | 2,814 | 0.43 | 2025-11-06 | None | None |  |
-| `usda_export_sales` | TABLE | 12 | 0.00 | 2025-10-22 | None | None |  |
-| `usda_harvest_progress` | TABLE | 1,950 | 0.11 | 2025-10-22 | None | None |  |
-| `usda_wasde_soy` | TABLE | 0 | 0.00 | 2025-11-02 | None | None |  |
-| `vegas_casinos` | TABLE | 31 | 0.01 | 2025-11-05 | None | None |  |
-| `vegas_cuisine_multipliers` | TABLE | 142 | 0.02 | 2025-11-05 | None | None |  |
-| `vegas_events` | TABLE | 5 | 0.00 | 2025-11-05 | None | None |  |
-| `vegas_export_list` | TABLE | 3,176 | 0.54 | 2025-11-05 | None | None |  |
-| `vegas_fryers` | TABLE | 0 | 0.00 | 2025-11-05 | PARTITION BY ingested_at | None |  |
-| `vegas_opportunity_scores` | VIEW | 0 | 0.00 | 2025-11-05 | None | None |  |
-| `vegas_restaurants` | TABLE | 151 | 0.04 | 2025-11-05 | None | None |  |
-| `vegas_scheduled_reports` | TABLE | 28 | 0.01 | 2025-11-05 | None | None |  |
-| `vegas_shift_casinos` | TABLE | 440 | 0.09 | 2025-11-05 | None | None |  |
-| `vegas_shift_restaurants` | TABLE | 1,233 | 0.21 | 2025-11-05 | None | None |  |
-| `vegas_shifts` | TABLE | 148 | 0.02 | 2025-11-05 | None | None |  |
-| `vegas_top_opportunities` | VIEW | 0 | 0.00 | 2025-11-05 | None | None |  |
-| `vix_daily` | TABLE | 6,271 | 0.32 | 2025-10-22 | None | None |  |
-| `volatility_data` | TABLE | 1,985 | 0.16 | 2025-10-04 | None | None |  |
-| `vw_scrapecreator_economic_proxy` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_scrapecreator_policy_signals` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_scrapecreator_price_proxy` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_scrapecreator_weather_proxy` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `weather_argentina_daily` | TABLE | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `weather_brazil_clean` | TABLE | 33 | 0.01 | 2025-10-27 | None | None |  |
-| `weather_brazil_daily` | TABLE | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `weather_data` | TABLE | 14,434 | 1.73 | 2025-10-27 | None | None |  |
-| `weather_us_midwest_clean` | TABLE | 64 | 0.01 | 2025-10-27 | None | None |  |
-| `weather_us_midwest_daily` | TABLE | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `wheat_prices` | TABLE | 15,631 | 2.15 | 2025-10-22 | None | None |  |
-| `yahoo_finance_enhanced` | TABLE | 48,685 | 9.18 | 2025-11-03 | None | None |  |
-| `yahoo_finance_historical` | VIEW | 0 | 0.00 | 2025-11-12 | None | None |  |
-
-#### Dataset: `market_data`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `_ARCHIVED_yahoo_finance_enhanced_20251102` | TABLE | 48,685 | 9.18 | 2025-11-03 | None | None |  |
-| `hourly_prices` | TABLE | 309 | 0.02 | 2025-10-29 | None | None |  |
-| `yahoo_finance_20yr_STAGING` | TABLE | 57,397 | 16.35 | 2025-11-06 | None | None |  |
-| `yahoo_finance_enhanced` | TABLE | 48,684 | 9.18 | 2025-11-03 | None | None |  |
-
-#### Dataset: `models`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `FINAL_TRAINING_DATASET_COMPLETE` | TABLE | 1,263 | 1.49 | 2025-10-24 | None | None |  |
-| `complete_signals_features` | TABLE | 1,263 | 0.38 | 2025-10-22 | None | None |  |
-| `enhanced_market_regimes` | TABLE | 2,842 | 0.11 | 2025-10-22 | None | None |  |
-| `enhanced_news_proxy` | TABLE | 653 | 0.07 | 2025-10-22 | None | None |  |
-| `enhanced_policy_features` | TABLE | 653 | 0.05 | 2025-10-22 | None | None |  |
-| `ensemble_predictions` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `news_features_materialized` | TABLE | 13 | 0.00 | 2025-10-22 | None | None |  |
-| `price_features_precomputed` | TABLE | 1,261 | 0.14 | 2025-10-27 | None | None |  |
-| `sentiment_features_materialized` | TABLE | 581 | 0.06 | 2025-10-22 | None | None |  |
-| `sentiment_features_precomputed` | TABLE | 604 | 0.02 | 2025-10-27 | None | None |  |
-| `signals_master` | TABLE | 2,830 | 0.33 | 2025-10-22 | None | None |  |
-| `tariff_features_materialized` | TABLE | 46 | 0.00 | 2025-10-22 | None | None |  |
-| `training_complete_enhanced` | TABLE | 1,263 | 2.12 | 2025-10-23 | None | None |  |
-| `training_data_complete_all_intelligence` | TABLE | 1,263 | 1.48 | 2025-10-24 | None | None |  |
-| `training_data_with_currencies_verified` | TABLE | 1,263 | 1.44 | 2025-10-24 | None | None |  |
-| `training_dataset` | TABLE | 1,263 | 0.60 | 2025-10-23 | None | None |  |
-| `training_dataset_backup_20251023` | TABLE | 1,263 | 0.60 | 2025-10-23 | None | None |  |
-| `training_dataset_enhanced` | TABLE | 1,263 | 1.65 | 2025-10-22 | None | None |  |
-| `training_dataset_enhanced_v5` | TABLE | 1,251 | 1.13 | 2025-10-24 | None | None |  |
-| `training_dataset_enriched` | VIEW | 0 | 0.00 | 2025-10-23 | None | None |  |
-| `training_dataset_master` | TABLE | 1,289 | 0.40 | 2025-10-23 | None | None |  |
-| `training_enhanced_final` | TABLE | 1,323 | 1.72 | 2025-10-22 | None | None |  |
-| `vix_features_materialized` | TABLE | 2,717 | 0.27 | 2025-10-22 | None | None |  |
-| `vw_crush_margins` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_daily_news_features` | VIEW | 0 | 0.00 | 2025-10-23 | None | None |  |
-| `vw_daily_social_features` | VIEW | 0 | 0.00 | 2025-10-23 | None | None |  |
-| `vw_ensemble_predictions` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_event_driven_features` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_seasonality_features` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `weather_features_precomputed` | TABLE | 1,024 | 0.05 | 2025-10-27 | None | None |  |
-
-#### Dataset: `models_v4`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `_ARCHIVED_archive_training_dataset_20251027_pre_update` | TABLE | 1,251 | 1.80 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_archive_training_dataset_DUPLICATES_20251027` | TABLE | 1,263 | 1.82 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_archive_training_dataset_super_enriched_20251027_final` | TABLE | 1,251 | 1.80 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_training_dataset_backup_20251028` | TABLE | 1,251 | 1.85 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_training_dataset_baseline_clean` | TABLE | 1,251 | 1.75 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_training_dataset_baseline_complete` | TABLE | 1,251 | 1.75 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_training_dataset_clean` | TABLE | 1,251 | 1.82 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_ARCHIVED_training_dataset_snapshot_20251028_pre_update` | TABLE | 1,251 | 1.85 | 2025-11-03 | None | None | DEPRECATED - DO NOT USE |
-| `_contract_207` | TABLE | 207 | 0.01 | 2025-10-30 | None | None |  |
-| `_contract_209` | TABLE | 209 | 0.01 | 2025-10-30 | None | None |  |
-| `_latest_date` | TABLE | 1 | 0.00 | 2025-11-05 | None | None |  |
-| `_v_train_core` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `alternative_fx_rates` | TABLE | 2,043 | 0.03 | 2025-11-03 | None | None |  |
-| `argentina_port_logistics_daily` | TABLE | 1,347 | 0.01 | 2025-11-06 | None | None |  |
-| `backtesting_history` | TABLE | 508 | 0.02 | 2025-10-23 | None | None |  |
-| `baseline_1m_comprehensive_2yr` | TABLE | 482 | 2.87 | 2025-11-07 | None | None |  |
-| `baseline_1m_comprehensive_2yr_55_symbols_backup` | TABLE | 482 | 2.87 | 2025-11-07 | None | None |  |
-| `batch_prediction_input` | TABLE | 1 | 0.00 | 2025-10-29 | None | None |  |
-| `boost_weights_log` | TABLE | 172 | 0.02 | 2025-11-07 | PARTITION BY date_applied | category, feature |  |
-| `cftc_daily_filled` | TABLE | 2,136 | 0.05 | 2025-11-10 | None | None |  |
-| `cpi_yoy_daily` | TABLE | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `crisis_2008_historical` | TABLE | 253 | 0.06 | 2025-11-12 | None | None |  |
-| `currency_complete` | TABLE | 6,287 | 0.23 | 2025-11-10 | None | None |  |
-| `economic_indicators_daily_complete` | TABLE | 11,893 | 0.60 | 2025-11-03 | None | None |  |
-| `enhanced_features_automl` | VIEW | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `errors_2025_10_29T13_14_07_060Z_043` | TABLE | 1 | 0.00 | 2025-10-29 | None | None |  |
-| `eval_holdout_2024` | TABLE | 482 | 1.38 | 2025-11-06 | None | None |  |
-| `feature_importance_vertex` | TABLE | 615 | 0.03 | 2025-11-02 | None | None |  |
-| `feature_metadata_catalog` | TABLE | 444 | 0.02 | 2025-11-07 | None | None |  |
-| `forecast_validation_alerts` | TABLE | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `forecast_validation_logs` | TABLE | 2 | 0.00 | 2025-10-28 | None | None |  |
-| `forward_curve_v3` | TABLE | 181 | 0.01 | 2025-10-23 | None | None |  |
-| `fred_economic_complete` | TABLE | 113 | 0.00 | 2025-11-03 | None | None |  |
-| `freight_logistics_daily` | TABLE | 1,347 | 0.01 | 2025-11-06 | None | None |  |
-| `full_220_comprehensive_2yr` | TABLE | 482 | 2.82 | 2025-11-07 | None | None |  |
-| `fundamentals_derived_features` | TABLE | 16,824 | 0.13 | 2025-10-27 | None | None |  |
-| `fx_derived_features` | TABLE | 16,824 | 0.20 | 2025-10-27 | None | None |  |
-| `gdp_growth_daily` | TABLE | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `lag_alignment_audit` | TABLE | 1 | 0.00 | 2025-11-07 | None | None |  |
-| `monetary_derived_features` | TABLE | 16,824 | 0.23 | 2025-10-27 | None | None |  |
-| `news_intelligence_daily` | TABLE | 19 | 0.00 | 2025-11-10 | None | None |  |
-| `palm_oil_complete` | TABLE | 1,842 | 0.07 | 2025-11-10 | None | None |  |
-| `palm_price_daily_complete` | TABLE | 2,045 | 0.10 | 2025-11-03 | None | None |  |
-| `pre_crisis_2000_2007_historical` | TABLE | 1,737 | 0.38 | 2025-11-12 | None | None |  |
-| `predict_frame` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `predict_frame_209` | TABLE | 1 | 0.00 | 2025-11-05 | None | None |  |
-| `predictions_comparison` | TABLE | 482 | 0.03 | 2025-11-06 | None | None |  |
-| `production_training_data_12m` | TABLE | 1,473 | 2.22 | 2025-11-07 | None | None |  |
-| `production_training_data_1m` | TABLE | 1,404 | 3.99 | 2025-11-06 | None | None |  |
-| `production_training_data_1m_backup_20251112_165404` | TABLE | 1,404 | 3.99 | 2025-11-12 | None | None |  |
-| `production_training_data_1w` | TABLE | 1,472 | 2.50 | 2025-11-06 | None | None |  |
-| `production_training_data_1w_backup_20251112_165404` | TABLE | 1,472 | 2.50 | 2025-11-12 | None | None |  |
-| `production_training_data_3m` | TABLE | 1,475 | 2.36 | 2025-11-06 | None | None |  |
-| `production_training_data_6m` | TABLE | 1,473 | 2.22 | 2025-11-06 | None | None |  |
-| `recovery_2010_2016_historical` | TABLE | 1,760 | 0.39 | 2025-11-12 | None | None |  |
-| `residual_quantiles` | TABLE | 4 | 0.00 | 2025-11-02 | None | None |  |
-| `rfs_mandates_daily` | TABLE | 1,347 | 0.01 | 2025-11-06 | None | None |  |
-| `rich_focused_feature_availability` | TABLE | 148 | 0.00 | 2025-11-07 | None | None |  |
-| `rich_focused_feature_importance` | TABLE | 281 | 0.02 | 2025-11-07 | None | None |  |
-| `rich_focused_feature_list` | TABLE | 148 | 0.01 | 2025-11-07 | None | None |  |
-| `rich_focused_feature_list_final` | TABLE | 137 | 0.00 | 2025-11-07 | None | None |  |
-| `rin_prices_daily` | TABLE | 1,347 | 0.01 | 2025-11-06 | None | None |  |
-| `social_sentiment_daily` | TABLE | 208 | 0.01 | 2025-11-10 | None | None |  |
-| `trade_war_2017_2019_historical` | TABLE | 754 | 0.17 | 2025-11-12 | None | None |  |
-| `train_1m` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `train_1w` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `train_3m` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `train_6m` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `training_data_1m_clean` | TABLE | 732 | 0.35 | 2025-11-07 | None | None |  |
-| `training_dataset_1m_filtered` | VIEW | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `training_dataset_3m_filtered` | VIEW | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `training_dataset_6m_filtered` | VIEW | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `training_dataset_pre_coverage_fix_backup` | TABLE | 2,045 | 2.44 | 2025-11-03 | None | None |  |
-| `training_dataset_pre_forwardfill_backup` | TABLE | 2,043 | 2.74 | 2025-11-04 | None | None |  |
-| `training_dataset_pre_integration_backup` | TABLE | 2,136 | 0.18 | 2025-11-10 | None | None |  |
-| `training_dataset_super_enriched` | TABLE | 2,136 | 0.18 | 2025-11-05 | None | None | ✅ PRODUCTION TRAINING DATASET - OFFICIAL SOURCE FO... |
-| `training_dataset_super_enriched_backup` | TABLE | 2,045 | 2.42 | 2025-11-03 | None | None |  |
-| `training_dataset_v4` | VIEW | 0 | 0.00 | 2025-10-23 | None | None |  |
-| `treasury_10y_yahoo_complete` | TABLE | 2,043 | 0.08 | 2025-11-03 | None | None |  |
-| `trump_policy_daily` | TABLE | 53 | 0.00 | 2025-11-10 | None | None |  |
-| `trump_rich_2023_2025` | TABLE | 732 | 0.32 | 2025-11-07 | None | None |  |
-| `us_midwest_weather_complete` | TABLE | 2,133 | 0.12 | 2025-11-03 | None | None |  |
-| `us_midwest_weather_daily` | TABLE | 404 | 0.02 | 2025-11-03 | None | None |  |
-| `usd_cny_daily_complete` | TABLE | 5,021 | 0.22 | 2025-11-03 | None | None |  |
-| `usda_export_daily` | TABLE | 12 | 0.00 | 2025-11-10 | None | None |  |
-| `vertex_core_features` | TABLE | 16,824 | 1.77 | 2025-11-07 | None | None |  |
-| `vertex_master_time_spine` | TABLE | 16,824 | 1.29 | 2025-11-07 | None | None |  |
-| `volatility_derived_features` | TABLE | 16,824 | 0.42 | 2025-10-27 | None | None |  |
-| `vw_arg_crisis_score` | VIEW | 0 | 0.00 | 2025-11-07 | None | None |  |
-| `vw_fx_all` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_temporal_engineered` | VIEW | 0 | 0.00 | 2025-10-28 | None | None |  |
-| `yahoo_finance_weekend_complete` | TABLE | 14,301 | 0.61 | 2025-11-03 | None | None |  |
-| `yahoo_indicators_wide` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-
-#### Dataset: `monitoring`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `model_feature_importance` | TABLE | 615 | 0.03 | 2025-11-14 | None | None |  |
-
-#### Dataset: `neural`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `vw_big_eight_signals` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-
-#### Dataset: `performance`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `mape_historical_tracking` | TABLE | 0 | 0.00 | 2025-11-15 | PARTITION BY tracking_date | tracking_date |  |
-| `soybean_sharpe_historical_tracking` | TABLE | 0 | 0.00 | 2025-11-15 | PARTITION BY tracking_date | tracking_date |  |
-| `vw_forecast_performance_tracking` | VIEW | 0 | 0.00 | 2025-11-15 | None | None |  |
-| `vw_soybean_sharpe_metrics` | VIEW | 0 | 0.00 | 2025-11-15 | None | None |  |
-
-#### Dataset: `predictions`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `daily_forecasts` | TABLE | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `errors_2025_10_29T15_00_41_432Z_235` | TABLE | 1 | 0.00 | 2025-10-29 | None | None |  |
-| `errors_2025_10_29T15_27_01_724Z_285` | TABLE | 1 | 0.00 | 2025-10-29 | None | None |  |
-| `monthly_vertex_predictions` | TABLE | 2 | 0.00 | 2025-10-30 | PARTITION BY prediction_date | None |  |
-| `zl_predictions_prod_all_latest` | TABLE | 0 | 0.00 | 2025-11-14 | None | None |  |
-
-#### Dataset: `predictions_uc1`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `daily_forecasts` | TABLE | 0 | 0.00 | 2025-10-31 | None | None |  |
-| `model_feature_importance` | TABLE | 0 | 0.00 | 2025-10-31 | PARTITION BY prediction_date | horizon, feature |  |
-| `monthly_vertex_predictions` | TABLE | 1 | 0.00 | 2025-10-31 | PARTITION BY prediction_date | None |  |
-| `production_forecasts` | TABLE | 4 | 0.00 | 2025-11-04 | PARTITION BY forecast_date | horizon, model_name | Production forecasts from BQML models - clean base... |
-| `vw_feature_importance_latest` | VIEW | 0 | 0.00 | 2025-10-31 | None | None |  |
-
-#### Dataset: `raw_intelligence`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `commodity_crude_oil_prices` | TABLE | 10,859 | 1.45 | 2025-11-14 | None | None |  |
-| `commodity_palm_oil_prices` | TABLE | 1,340 | 0.15 | 2025-11-14 | None | None |  |
-| `macro_economic_indicators` | TABLE | 72,553 | 6.37 | 2025-11-14 | None | None |  |
-| `news_sentiments` | TABLE | 2,830 | 1.51 | 2025-11-14 | None | None |  |
-| `policy_biofuel` | TABLE | 62 | 0.01 | 2025-11-14 | None | None |  |
-| `shipping_baltic_dry_index` | TABLE | 0 | 0.00 | 2025-11-14 | PARTITION BY time | None | Baltic Dry Index - Daily shipping rates indicator ... |
-| `trade_china_soybean_imports` | TABLE | 22 | 0.00 | 2025-11-14 | None | None |  |
-
-#### Dataset: `signals`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `daily_calculations` | TABLE | 6 | 0.00 | 2025-10-29 | None | None |  |
-| `vw_bear_market_regime` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_biofuel_cascade_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_biofuel_ethanol_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_biofuel_policy_intensity` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_biofuel_substitution_aggregates_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_china_import_diversification_monthly` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_china_import_diversification_nowcast_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_china_relations_big8` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_china_relations_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_comprehensive_signal_universe` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_fundamental_aggregates_comprehensive_daily` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_geopolitical_aggregates_comprehensive_daily` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_geopolitical_volatility_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_harvest_pace_big8` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_harvest_pace_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_hidden_correlation_signal` | VIEW | 0 | 0.00 | 2025-10-27 | None | None |  |
-| `vw_high_priority_social_intelligence` | VIEW | 0 | 0.00 | 2025-11-14 | None | None |  |
-| `vw_master_signal_processor` | VIEW | 0 | 0.00 | 2025-10-16 | None | None |  |
-| `vw_news_sentiment_scores_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_sentiment_price_correlation` | VIEW | 0 | 0.00 | 2025-10-20 | None | None |  |
-| `vw_social_sentiment_aggregates_daily` | VIEW | 0 | 0.00 | 2025-11-14 | None | None |  |
-| `vw_substitution_aggregates_comprehensive_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_supply_glut_indicator` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_tariff_threat_big8` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_tariff_threat_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_technical_aggregates_comprehensive_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_trade_war_impact` | VIEW | 0 | 0.00 | 2025-10-30 | None | None |  |
-| `vw_vix_stress_big8` | VIEW | 0 | 0.00 | 2025-11-03 | None | None |  |
-| `vw_vix_stress_daily` | VIEW | 0 | 0.00 | 2025-10-16 | None | None |  |
-| `vw_vix_stress_signal` | VIEW | 0 | 0.00 | 2025-10-22 | None | None |  |
-| `vw_weather_aggregates_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_weather_aggregates_daily_nowcast` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-| `vw_weather_availability_daily` | VIEW | 0 | 0.00 | 2025-10-14 | None | None |  |
-
-#### Dataset: `staging`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `biofuel_policy` | TABLE | 30 | 0.01 | 2025-10-13 | PARTITION BY date | source_name |  |
-| `biofuel_production` | TABLE | 24 | 0.00 | 2025-10-13 | PARTITION BY date | region |  |
-| `cftc_cot` | TABLE | 78 | 0.01 | 2025-10-14 | PARTITION BY report_date | commodity, contract_code |  |
-| `comprehensive_social_intelligence` | TABLE | 76,297 | 35.44 | 2025-10-14 | PARTITION BY collection_date | platform, handle |  |
-| `ice_enforcement_intelligence` | TABLE | 4 | 0.00 | 2025-10-12 | PARTITION BY timestamp | source_name |  |
-| `market_prices` | TABLE | 0 | 0.00 | 2025-10-10 | PARTITION BY date | symbol |  |
-| `trade_policy_events` | TABLE | 0 | 0.00 | 2025-10-13 | PARTITION BY event_date | policy_type, country |  |
-| `trump_policy_intelligence` | TABLE | 215 | 0.07 | 2025-10-12 | PARTITION BY timestamp | source_name |  |
-| `usda_export_sales` | TABLE | 12 | 0.00 | 2025-10-13 | PARTITION BY report_date | commodity, destination_country |  |
-| `usda_harvest_progress` | TABLE | 2,730 | 0.16 | 2025-10-20 | None | None |  |
-| `weather_data_midwest_openmeteo` | TABLE | 495 | 0.07 | 2025-11-03 | None | None |  |
-
-#### Dataset: `training`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `regime_calendar` | TABLE | 13,102 | 0.37 | 2025-11-14 | None | None | Maps dates to market regimes for regime-based trai... |
-| `regime_weights` | TABLE | 11 | 0.00 | 2025-11-14 | None | None |  |
-| `zl_training_full_all_1w` | TABLE | 1,263 | 1.48 | 2025-11-14 | None | None |  |
-| `zl_training_full_allhistory_12m` | TABLE | 1,473 | 2.35 | 2025-11-14 | None | None |  |
-| `zl_training_full_allhistory_1m` | TABLE | 1,404 | 4.10 | 2025-11-14 | None | None |  |
-| `zl_training_full_allhistory_1w` | TABLE | 1,472 | 2.62 | 2025-11-14 | None | None |  |
-| `zl_training_full_allhistory_3m` | TABLE | 1,475 | 2.49 | 2025-11-14 | None | None |  |
-| `zl_training_full_allhistory_6m` | TABLE | 1,473 | 2.34 | 2025-11-14 | None | None |  |
-| `zl_training_full_crisis_all` | TABLE | 253 | 0.06 | 2025-11-14 | None | None |  |
-| `zl_training_full_precrisis_all` | TABLE | 1,737 | 0.38 | 2025-11-14 | None | None |  |
-| `zl_training_full_recovery_all` | TABLE | 1,760 | 0.39 | 2025-11-14 | None | None |  |
-| `zl_training_full_tradewar_all` | TABLE | 754 | 0.17 | 2025-11-14 | None | None |  |
-| `zl_training_prod_allhistory_12m` | TABLE | 1,473 | 2.35 | 2025-11-14 | None | None |  |
-| `zl_training_prod_allhistory_1m` | TABLE | 1,404 | 4.09 | 2025-11-14 | None | None |  |
-| `zl_training_prod_allhistory_1w` | TABLE | 1,472 | 2.62 | 2025-11-14 | None | None |  |
-| `zl_training_prod_allhistory_3m` | TABLE | 1,475 | 2.49 | 2025-11-14 | None | None |  |
-| `zl_training_prod_allhistory_6m` | TABLE | 1,473 | 2.34 | 2025-11-14 | None | None |  |
-| `zl_training_prod_trump_all` | TABLE | 732 | 0.32 | 2025-11-14 | None | None |  |
-
-#### Dataset: `weather`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `daily_updates` | TABLE | 3 | 0.00 | 2025-10-29 | None | None |  |
-
-#### Dataset: `yahoo_finance_comprehensive`
-
-| Table/View Name | Type | Rows | Size (MB) | Created | Partitioning | Clustering | Description |
-|-----------------|------|------|-----------|---------|---------------|------------|-------------|
-| `all_symbols_20yr` | TABLE | 57,397 | 20.94 | 2025-11-06 | None | None |  |
-| `biofuel_components_canonical` | TABLE | 6,475 | 0.92 | 2025-11-06 | None | None |  |
-| `biofuel_components_raw` | TABLE | 42,367 | 5.19 | 2025-11-06 | None | None |  |
-| `explosive_technicals` | TABLE | 28,101 | 5.54 | 2025-11-06 | None | None |  |
-| `rin_proxy_features` | TABLE | 12,637 | 0.37 | 2025-11-06 | None | None |  |
-| `rin_proxy_features_dedup` | TABLE | 6,348 | 0.18 | 2025-11-06 | None | None |  |
-| `rin_proxy_features_final` | TABLE | 6,475 | 0.67 | 2025-11-06 | None | None |  |
-| `rin_proxy_features_fixed` | TABLE | 12,637 | 0.37 | 2025-11-06 | None | None |  |
-| `yahoo_finance_complete_enterprise` | TABLE | 314,381 | 81.46 | 2025-11-06 | None | None |  |
-| `yahoo_normalized` | TABLE | 314,381 | 70.92 | 2025-11-06 | None | symbol, date |  |
+⚠️ **policy_trump_signals.parquet**: All 25 rows have duplicate dates (same date: 2025-11-17). Investigation needed.
 
 ---
 
-## External Drive Inventory
+## 2. JOIN SPECIFICATION MAPPING
 
-**External Drive Found**: `/Volumes/Satechi Hub`
+### Pipeline Join Steps (from `registry/join_spec.yaml`)
 
-**Files Found**: 33 data files
+| Join Step | Left Input | Right Input (Staging File) | Join Key | How | Tests |
+|-----------|------------|----------------------------|----------|-----|-------|
+| `base_prices` | N/A (base) | `yahoo_historical_prefixed.parquet` | N/A | N/A | Date range, symbol count, ZL rows |
+| `add_macro` | `<<base_prices>>` | `fred_macro_expanded.parquet` | `date` | left | Rows preserved, columns added, null rates |
+| `add_weather` | `<<add_macro>>` | `weather_granular.parquet` | `date` | left | Rows preserved, null rates, columns added |
+| `add_cftc` | `<<add_weather>>` | `cftc_commitments.parquet` | `date` | left | Rows preserved, CFTC available after 2015 |
+| `add_usda` | `<<add_cftc>>` | `usda_reports_granular.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_eia` | `<<add_usda>>` | `eia_energy_granular.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_regimes` | `<<add_eia>>` | `registry/regime_calendar.parquet` | `date` | left | Rows preserved, regime columns added |
+| `add_alpha_vantage` | `<<add_regimes>>` | `alpha_vantage_features.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_volatility` | `<<add_alpha_vantage>>` | `volatility_features.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_palm` | `<<add_volatility>>` | `palm_oil_daily.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_policy_trump` | `<<add_palm>>` | `policy_trump_signals.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_es_futures` | `<<add_policy_trump>>` | `es_futures_daily.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_es_intraday_features` | `<<add_es_futures>>` | `es_daily_aggregated.parquet` | `date` | left | Rows preserved, intraday features added |
+| `add_mes_futures` | `<<add_es_intraday_features>>` | `mes_futures_daily.parquet` | `date` | left | Rows preserved, columns prefixed |
+| `add_mes_intraday_features` | `<<add_mes_futures>>` | `mes_daily_aggregated.parquet` | `date` | left | Rows preserved, intraday features added |
+| `add_mes_confirmation_features` | `<<add_mes_intraday_features>>` | `mes_confirmation_features.parquet` | `date` | left | Rows preserved, correlation features added |
+| `add_zl_intraday_features` | `<<add_mes_confirmation_features>>` | `zl_daily_aggregated.parquet` | `date` | left | Rows preserved, ZL intraday features added |
 
-### Sample Files
+**Total Join Steps**: 17 (1 base + 16 joins)
 
-- `/Volumes/Satechi Hub/Projects/CBI-V14/archive/csv_backups_oct27/training_dataset_clean.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/recovery_2010_2016_historical.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/zl_training_full_allhistory_12m.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/zl_training_prod_allhistory_6m.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/trade_war_2017_2019_historical.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/zl_training_prod_allhistory_1m.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/crisis_2008_historical.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/zl_training_full_allhistory_1w.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/zl_training_full_allhistory_3m.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/exports/inflation_2021_2022.parquet`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/empty_minimal_tables.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/historical_data_sources.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/models_training_inventory.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/duplicate_table_names.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/dataset_summary.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/schema_all_columns.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/inventory_340_objects.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/column_name_frequency.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/production_tables_detail.csv`
-- `/Volumes/Satechi Hub/Projects/CBI-V14/GPT_Data/production_features_290.csv`
+### Final Pipeline Output
 
-*... and 13 more files*
-
----
-
-## Migration Mapping
-
-### New Dataset Architecture
-
-| Dataset                | Purpose                                             |
-| ---------------------- | --------------------------------------------------- |
-| `raw_intelligence`     | Raw, unprocessed source data.                       |
-| `features`             | Engineered features for modeling.                   |
-| `training`             | Final, versioned training sets.                     |
-| `predictions`          | Model outputs and generated signals.                |
-| `monitoring`           | Performance metrics, data quality, model registry.  |
-| `archive`              | Snapshots and retired legacy objects.               |
-| `vegas_intelligence`   | Data for the "Vegas Intel" sales dashboard.         |
-
-### Naming Convention
-
-`asset_function_scope_regime_horizon`
-
--   **asset**: `zl` (Soybean Oil)
--   **function**: `features`, `training`, `predictions`, `monitoring`, `signals`
--   **scope**: `full` (research), `prod` (production), or model type
--   **regime**: `crisis`, `tradewar`, `all`, `precrisis`, `recovery`, `trump`
--   **horizon**: `1w`, `1m`, `3m`, `6m`, `12m`
+- **Rows**: 2,025 (from join_executor validation)
+- **Columns**: 1,175 (from join_executor validation)
+- **Date Range**: 2000-03-15 to 2025-11-14
+- **Status**: ✅ All tests passing
 
 ---
 
-### Migration Status
+## 3. BIGQUERY DATASET MAPPING
 
-**Note**: This section should be manually maintained based on migration progress.
+### Current Dataset Structure (November 19, 2025)
 
-| Legacy Dataset                  | Legacy Table/View Name                          | Type  | New Dataset            | New Table/View Name                                   | Status      | Notes                                                              |
-| ------------------------------- | ----------------------------------------------- | ----- | ---------------------- | ----------------------------------------------------- | ----------- | ------------------------------------------------------------------ |
-| *See detailed inventory above for current state* | | | | | | |
+| Dataset | Purpose | Tables | Status | Notes |
+|---------|---------|--------|--------|-------|
+| `forecasting_data_warehouse` | Primary raw data storage | 87 | ✅ Active | Main data warehouse |
+| `raw_intelligence` | Intelligence data (news, policy, weather) | 10 | ⚠️ Empty | New structure, tables created but empty |
+| `training` | Training datasets (ZL + MES) | 19 | ⚠️ Empty | New structure, tables created but empty |
+| `signals` | Derived signals and features | 34 | ⚠️ Missing | Dataset not found in audit |
+| `market_data` | Market data (futures, prices) | 4 | ✅ Active | Contains historical data |
+| `models_v4` | Training data + BQML models | 93 | ✅ Active | Production training tables |
+| `predictions` | Model predictions | 0 | ⚠️ Empty | No tables found |
+| `monitoring` | Performance tracking | 1 | ⚠️ Empty | Table exists but empty |
+| `yahoo_finance_comprehensive` | Historical Yahoo Finance data | 10 | ✅ Active | 801K rows total |
+
+### Key Production Tables
+
+#### Training Tables (Production)
+
+| Table | Rows | Columns | Date Range | Status |
+|-------|------|---------|------------|--------|
+| `training.zl_training_prod_allhistory_1w` | 1,472 | 305 | 2020+ | ✅ Populated |
+| `training.zl_training_prod_allhistory_1m` | 1,404 | 449 | 2020+ | ✅ Populated |
+| `training.zl_training_prod_allhistory_3m` | 1,475 | 305 | 2020+ | ✅ Populated |
+| `training.zl_training_prod_allhistory_6m` | 1,473 | 305 | 2020+ | ✅ Populated |
+| `training.zl_training_prod_allhistory_12m` | 1,473 | 306 | 2020+ | ✅ Populated |
+
+#### Models v4 Tables (Legacy Production)
+
+| Table | Rows | Columns | Status |
+|-------|------|---------|--------|
+| `models_v4.production_training_data_1w` | 1,448 | 290 | ✅ Populated |
+| `models_v4.production_training_data_1m` | 1,347 | 290 | ✅ Populated |
+| `models_v4.production_training_data_3m` | 1,329 | 290 | ✅ Populated |
+| `models_v4.production_training_data_6m` | 1,198 | 290 | ✅ Populated |
 
 ---
 
-### Action Plan
+## 4. NEWS COLLECTION MAPPING
 
-1.  **Review & Refine**: The project team will review this inventory and refine the mappings.
-2.  **Script Development**: A script will be created to perform the `Migrate` and `Recreate` actions.
-3.  **Execution**: The migration script will be run in a controlled environment.
-4.  **Validation**: Post-migration, data and views will be validated against the old structure.
-5.  **Decommission**: Once validated, legacy datasets will be backed up to the `archive` and then decommissioned.
+### News Collection Setup (November 19, 2025)
+
+#### Collection Scripts
+
+| Script | Status | Purpose | Target Table |
+|--------|--------|---------|-------------|
+| `collect_alpha_news_sentiment.py` | ❌ Missing | Alpha Vantage NEWS_SENTIMENT collection | `raw_intelligence.intelligence_news_alpha_raw_daily` |
+| `collect_news_scrapecreators_bucketed.py` | ✅ Ready | ScrapeCreators Google Search collection | `raw_intelligence.news_scrapecreators_google_search` |
+| `news_bucket_classifier.py` | ✅ Ready | Bucket classification for news articles | N/A (utility) |
+
+#### BigQuery Tables (News)
+
+| Table | Status | Rows | Purpose | Partitioning |
+|-------|--------|------|---------|---------------|
+| `raw_intelligence.intelligence_news_alpha_raw_daily` | ❌ Not created | 0 | Raw Alpha Vantage news | DATE(time_published) |
+| `raw_intelligence.intelligence_news_alpha_classified_daily` | ❌ Not created | 0 | GPT-classified news | DATE(time_published) |
+| `signals.hidden_relationship_signals` | ❌ Not created | 0 | Daily hidden driver scores | DATE(date) |
+
+#### DDL Files
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `config/bigquery/bigquery-sql/create_alpha_news_tables.sql` | ✅ Ready | Creates news tables in BigQuery |
+
+#### Documentation
+
+| Document | Status | Purpose |
+|----------|--------|---------|
+| `docs/setup/NEWS_COLLECTION_REGIME_BUCKETS.md` | ✅ Ready | Bucket taxonomy (10 buckets) |
+| `docs/audit/NEWS_COLLECTION_COMPARISON_ANALYSIS.md` | ✅ Ready | Alpha vs ScrapeCreators comparison |
+| `docs/setup/ALPHA_NEWS_INTEGRATION_ALIGNED.md` | ✅ Ready | Alpha Vantage integration spec |
+| `docs/audit/ALPHA_SCRAPECREATORS_WORKFLOW_ALIGNMENT.md` | ✅ Ready | Workflow alignment verification |
 
 ---
 
-**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
-**BigQuery Project**: `{PROJECT_ID}`  
-**Region**: `{BQ_REGION}`
+## 5. PREFIX-BY-PREFIX SOURCE MAPPING
+
+### Source Prefix Analysis
+
+| Prefix | Staging Files | BigQuery Tables | Status | Total Rows | Notes |
+|--------|---------------|-----------------|--------|------------|-------|
+| `alpha_` | 1 | 1 | ✅ Active | 10,719 | Alpha Vantage features populated |
+| `cftc_` | 1 | 1 | ✅ Active | 522 | CFTC commitments (2020-2024) |
+| `eia_` | 2 | 2 | ✅ Active | 1,656 | EIA biofuels + energy granular |
+| `es_` | 2 | 2 | ✅ Active | 6,329 | ES futures + intraday aggregated |
+| `fred_` | 1 | 1 | ✅ Active | 9,452 | FRED macro expanded |
+| `mes_` | 5 | 5 | ✅ Active | 236,428 | MES futures, intraday, features |
+| `palm_` / `barchart_palm_` | 1 | 1 | ✅ Active | 1,269 | Palm oil daily |
+| `policy_trump_` | 1 | 1 | ⚠️ Issue | 25 | Duplicate dates issue |
+| `usda_` | 1 | 1 | ✅ Active | 6 | USDA reports granular |
+| `vol_` / `volatility_` | 1 | 1 | ✅ Active | 9,069 | Volatility features |
+| `weather_` | 1 | 1 | ✅ Active | 9,438 | Weather granular |
+| `yahoo_` | 1 | 1 | ✅ Active | 6,380 | Yahoo historical prefixed |
+| `zl_` | 1 | 1 | ✅ Active | 3,998 | ZL intraday aggregated |
+
+---
+
+## 6. WORKFLOW MAPPING
+
+### Data Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CBI-V14 DATA WORKFLOW (BQ → Mac → BQ → Dashboard)   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Step 1: DATA COLLECTION (Mac M4)
+├── Cron jobs on Mac M4
+├── Ingestion scripts (src/ingestion/*.py, scripts/ingest/*.py)
+├── Collect from APIs: Yahoo, FRED, NOAA, CFTC, EPA, Alpha Vantage, etc.
+└── Upload to BigQuery Cloud (forecasting_data_warehouse, raw_intelligence)
+
+Step 2: FEATURE ENGINEERING (BigQuery Cloud)
+├── Raw tables → Feature views (signals.vw_*)
+├── SQL joins and aggregations
+└── Training tables (training.zl_training_prod_allhistory_*)
+
+Step 3: EXPORT FOR LOCAL TRAINING (BigQuery → Mac)
+├── Run: scripts/export_training_data.py
+├── Downloads from BigQuery → Parquet files
+└── Saves to: TrainingData/exports/zl_training_prod_allhistory_{horizon}.parquet
+
+Step 4: LOCAL TRAINING (Mac M4 - 100% Local)
+├── Hardware: Apple M4 Mac mini + TensorFlow Metal
+├── Scripts: src/training/baselines/*.py
+├── Input: TrainingData/exports/*.parquet
+└── Output: Models/local/horizon_{h}/prod/baselines/{model}_v001/
+
+Step 5: PREDICTION GENERATION (Mac M4 - 100% Local)
+├── Run: src/prediction/generate_local_predictions.py
+├── Input: Local models + latest data
+└── Output: predictions.parquet (in each model directory)
+
+Step 6: UPLOAD PREDICTIONS (Mac → BigQuery)
+├── Run: scripts/upload_predictions.py
+├── Input: Local predictions.parquet files
+└── Output: BigQuery predictions.vw_zl_{horizon}_latest views
+
+Step 7: DASHBOARD (Vercel → BigQuery)
+├── Dashboard reads from BigQuery only
+├── Source: predictions.vw_zl_{horizon}_latest
+└── NO dependencies on local models or Mac
+```
+
+### Staging File → Join Pipeline → Training Data Flow
+
+```
+Staging Files (TrainingData/staging/*.parquet)
+    ↓
+Join Executor (scripts/assemble/join_executor.py)
+    ↓
+Final Joined Dataset (6,380 rows × 1,175 columns)
+    ↓
+Feature Engineering (BigQuery SQL)
+    ↓
+Training Tables (training.zl_training_prod_allhistory_*)
+    ↓
+Export Script (scripts/export_training_data.py)
+    ↓
+Local Training (Mac M4)
+```
+
+---
+
+## 7. NAMING CONVENTIONS
+
+### Staging File Naming
+
+- **Format**: `{source}_{type}_{granularity}.parquet`
+- **Examples**:
+  - `yahoo_historical_prefixed.parquet`
+  - `fred_macro_expanded.parquet`
+  - `weather_granular.parquet`
+  - `cftc_commitments.parquet`
+
+### BigQuery Table Naming
+
+- **Raw Intelligence**: `intelligence_{category}_{source}_raw_daily`
+- **Training Tables**: `{asset}_training_{scope}_{regime}_{horizon}`
+- **Market Data**: `{source}_{type}_{granularity}`
+- **Signals**: `{signal_name}` or `vw_{view_name}`
+
+### Column Prefixing
+
+- **Yahoo**: `yahoo_*`
+- **FRED**: `fred_*`
+- **CFTC**: `cftc_*`
+- **USDA**: `usda_*`
+- **EIA**: `eia_*`
+- **Weather**: `weather_*`
+- **Alpha Vantage**: `alpha_*`
+- **Volatility**: `vol_*`
+- **Palm Oil**: `barchart_palm_*`
+- **Policy**: `policy_trump_*`
+- **ES Futures**: `es_*`
+- **MES Futures**: `mes_*`
+- **ZL Intraday**: `zl_*`
+
+---
+
+## 8. MIGRATION STATUS
+
+### Legacy → New Mapping
+
+| Legacy Dataset | Legacy Table | New Dataset | New Table | Status |
+|---------------|--------------|-------------|-----------|--------|
+| `forecasting_data_warehouse` | Various | `forecasting_data_warehouse` | Same | ✅ Active |
+| `models_v4` | `production_training_data_*` | `training` | `zl_training_prod_allhistory_*` | ✅ Migrated |
+| N/A | N/A | `raw_intelligence` | `intelligence_*_raw_daily` | 🆕 New |
+| N/A | N/A | `signals` | `hidden_relationship_signals` | 🆕 Planned |
+
+### Migration Progress
+
+- ✅ **Staging Files**: Standardized naming (19 files)
+- ✅ **Join Spec**: Updated to match new file names
+- ✅ **Training Tables**: New structure in `training` dataset
+- ⚠️ **News Collection**: Tables defined, scripts pending
+- ⚠️ **Signals Dataset**: Not found in audit (may need creation)
+
+---
+
+## 9. ACTION ITEMS
+
+### High Priority
+
+- [ ] **Fix policy_trump_signals.parquet**: Investigate duplicate dates (all 25 rows have same date)
+- [ ] **Create Alpha Vantage news collector**: `scripts/ingest/collect_alpha_news_sentiment.py`
+- [ ] **Run BigQuery DDL**: Execute `create_alpha_news_tables.sql` to create news tables
+- [ ] **Verify signals dataset**: Check if `signals` dataset exists or needs creation
+- [ ] **Load staging to BigQuery**: Run load scripts to populate empty tables
+
+### Medium Priority
+
+- [ ] **Standardize MES file naming**: Align `mes_*` files with naming conventions
+- [ ] **Document missing datasets**: Clarify which datasets are expected vs. missing
+- [ ] **Create staging → BQ load script**: Automate loading of all staging files
+- [ ] **Validate join pipeline**: Ensure all 17 join steps are working correctly
+
+### Low Priority
+
+- [ ] **Archive old staging files**: Remove `.bak` files and redundant copies
+- [ ] **Document column mappings**: Create detailed column-level mapping documentation
+- [ ] **Create data lineage diagram**: Visual representation of data flow
+
+---
+
+## 10. VERIFICATION AUDIT SUMMARY
+
+### November 19, 2025 Fresh Audit
+
+**Staging Files**:
+- ✅ 19 files found, 523,291 total rows
+- ⚠️ 1 file with duplicate dates (policy_trump_signals.parquet)
+- ✅ All other files healthy
+
+**BigQuery Tables**:
+- ⚠️ 30 tables audited, all empty (expected for new structure)
+- ✅ Datasets exist: `raw_intelligence`, `training`, `predictions`, `monitoring`
+- ❌ Dataset missing: `signals` (not found in audit)
+
+**Pipeline Validation**:
+- ✅ All tests passing
+- ✅ Final output: 2,025 rows × 1,175 columns
+- ✅ Date range: 2000-03-15 to 2025-11-14
+
+**News Collection**:
+- ✅ ScrapeCreators collector ready
+- ✅ Bucket classifier ready
+- ❌ Alpha Vantage collector missing
+- ❌ BigQuery tables not created yet
+
+---
+
+## 11. REFERENCE DOCUMENTS
+
+### Audit Reports
+
+- `docs/audit/FRESH_AUDIT_20251119_191350.md` - Latest comprehensive audit
+- `docs/audit/FORENSIC_AUDIT_20251118_SECOND_REVIEW.md` - Previous audit with corrections
+- `docs/audit/ALPHA_SCRAPECREATORS_WORKFLOW_ALIGNMENT.md` - Workflow alignment verification
+
+### Planning Documents
+
+- `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` - Training strategy
+- `docs/plans/FRESH_START_MASTER_PLAN.md` - Overall project plan
+- `registry/join_spec.yaml` - Join specification (source of truth)
+
+### Setup Documents
+
+- `docs/setup/NEWS_COLLECTION_REGIME_BUCKETS.md` - News bucket taxonomy
+- `docs/setup/ALPHA_NEWS_INTEGRATION_ALIGNED.md` - Alpha Vantage integration
+- `config/bigquery/bigquery-sql/create_alpha_news_tables.sql` - BigQuery DDL
+
+---
+
+**Generated**: November 19, 2025  
+**BigQuery Project**: `cbi-v14`  
+**Region**: `us-central1`  
+**Last Audit**: November 19, 2025 19:14:23

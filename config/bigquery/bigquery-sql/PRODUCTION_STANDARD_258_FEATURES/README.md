@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # PRODUCTION STANDARD: 258 FEATURES - ALL HORIZONS
 **Status:** ✅ PRODUCTION - USE THESE FILES ONLY  
 **Date Established:** November 5, 2025  

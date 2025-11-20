@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Critical Fixes Applied - Pre-Execution
 **Date**: November 16, 2025  
 **Status**: ✅ **ALL 8 BLOCKERS FIXED**  
@@ -103,7 +109,7 @@ else:
 
 ## Fix #4: Environment Variable Secrets ✅
 
-**Problem**: Hardcoded `FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"`
+**Problem**: Hardcoded `FRED_API_KEY` detected
 
 **Fix Applied**:
 - ✅ Changed to `os.getenv("FRED_API_KEY")`
@@ -115,7 +121,7 @@ else:
 **Code pattern**:
 ```python
 # BEFORE:
-FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"
+FRED_API_KEY = "<set via Keychain/env>"
 
 # AFTER:
 import os
@@ -374,4 +380,3 @@ grep -n "walk.forward\|cut_date" scripts/qa/pre_flight_harness.py
 **ALL FIXES COMPLETE** ✅  
 **SYSTEM HARDENED** ✅  
 **READY TO PROCEED** ✅
-

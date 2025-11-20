@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Mirror for Live Futures (Optional)
 
 This adds a mirror of live 1-minute OHLCV bars into BigQuery for analytics and dashboards, while keeping live endpoints serverless/local.

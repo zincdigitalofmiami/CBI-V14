@@ -73,7 +73,18 @@ class TruthSocialMonitor:
             except Exception as e:
                 logger.warning(f"⚠️  Secret Manager failed: {e}, using fallback")
         # Fallback to hardcoded (will be migrated)
-        return "B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+        import os
+        from pathlib import Path
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        try:
+            from src.utils.keychain_manager import get_api_key as _get_api
+        except Exception:
+            _get_api = None
+        key = os.getenv('SCRAPECREATORS_API_KEY') or (_get_api('SCRAPECREATORS_API_KEY') if _get_api else None)
+        if not key:
+            raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export or store in Keychain.")
+        return key
     
     def fetch_recent_posts(self, hours_back: int = 4) -> List[Dict]:
         """Fetch Trump's Truth Social posts from last N hours"""
@@ -301,4 +312,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

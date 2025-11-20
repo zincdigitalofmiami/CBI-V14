@@ -22,22 +22,24 @@ logger = logging.getLogger(__name__)
 # Configuration
 STAGING_DIR = Path("/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/staging")
 PROJECT_ID = get_gcp_project_id()
-DATASET_ID = "forecasting_data_warehouse"
 
-# Table mappings
-TABLE_MAPPINGS = {
-    "yahoo_historical_all_symbols.parquet": "yahoo_historical_prefixed",
-    "fred_macro_expanded.parquet": "fred_macro_expanded",
-    "weather_granular_daily.parquet": "weather_granular",
-    "cftc_commitments.parquet": "cftc_commitments",
-    "usda_reports_granular.parquet": "usda_reports_granular",
-    "eia_energy_granular.parquet": "eia_energy_granular",
-    "alpha_vantage_features.parquet": "alpha_vantage_features",
-    "volatility_daily.parquet": "volatility_features",
-    "barchart_palm_daily.parquet": "palm_oil_daily",
-    "policy_trump_signals.parquet": "policy_trump_signals",
-    "es_futures_daily.parquet": "es_futures_daily"  # ES futures with 50+ technical indicators
-}
+# Table mappings: (staging_file, dataset, table_name)
+# Updated to use correct datasets: market_data, raw_intelligence, features
+TABLE_MAPPINGS = [
+    # Market data → market_data dataset
+    ("yahoo_historical_prefixed.parquet", "market_data", "yahoo_historical_prefixed"),
+    ("es_futures_daily.parquet", "market_data", "es_futures_daily"),
+    
+    # Domain data → raw_intelligence dataset
+    ("fred_macro_expanded.parquet", "raw_intelligence", "fred_economic"),
+    ("weather_granular.parquet", "raw_intelligence", "weather_segmented"),
+    ("cftc_commitments.parquet", "raw_intelligence", "cftc_positioning"),
+    ("usda_reports_granular.parquet", "raw_intelligence", "usda_granular"),
+    ("eia_energy_granular.parquet", "raw_intelligence", "eia_biofuels"),
+    ("volatility_features.parquet", "raw_intelligence", "volatility_daily"),
+    ("palm_oil_daily.parquet", "raw_intelligence", "palm_oil_daily"),
+    ("policy_trump_signals.parquet", "raw_intelligence", "policy_events"),
+]
 
 def clean_column_names(df):
     """Clean column names for BigQuery compatibility."""
@@ -50,11 +52,22 @@ def clean_column_names(df):
          .replace(')', '')
          .replace('[', '')
          .replace(']', '')
+         .replace('{', '')
+         .replace('}', '')
+         .replace('=', '_')
+         .replace('+', '_')
+         .replace('*', '_')
+         .replace('&', '_')
+         .replace('%', '_')
+         .replace('$', '_')
+         .replace('#', '_')
+         .replace('@', '_')
+         .replace('!', '_')
         for c in df.columns
     ]
     return df
 
-def load_table_to_bigquery(staging_file, table_name, client):
+def load_table_to_bigquery(staging_file, dataset_id, table_name, client):
     """Load a single staging file to BigQuery."""
     file_path = STAGING_DIR / staging_file
     
@@ -74,7 +87,7 @@ def load_table_to_bigquery(staging_file, table_name, client):
         logger.info(f"  Loading {len(df):,} rows × {len(df.columns)} columns")
         
         # BigQuery table reference
-        table_id = f"{PROJECT_ID}.{DATASET_ID}.{table_name}"
+        table_id = f"{PROJECT_ID}.{dataset_id}.{table_name}"
         
         # Configure load job
         job_config = bigquery.LoadJobConfig(
@@ -90,7 +103,7 @@ def load_table_to_bigquery(staging_file, table_name, client):
         
         # Verify load
         table = client.get_table(table_id)
-        logger.info(f"  ✅ Loaded {table.num_rows:,} rows to {table_name}")
+        logger.info(f"  ✅ Loaded {table.num_rows:,} rows to {dataset_id}.{table_name}")
         
         return True
         
@@ -98,16 +111,16 @@ def load_table_to_bigquery(staging_file, table_name, client):
         logger.error(f"  ❌ Error loading {staging_file}: {str(e)}")
         return False
 
-def verify_table(table_name, expected_rows, client):
+def verify_table(dataset_id, table_name, expected_rows, client):
     """Verify a table has been loaded correctly."""
     try:
-        table_id = f"{PROJECT_ID}.{DATASET_ID}.{table_name}"
+        table_id = f"{PROJECT_ID}.{dataset_id}.{table_name}"
         table = client.get_table(table_id)
         
         # Check row count
         actual_rows = table.num_rows
         if actual_rows == 0:
-            logger.warning(f"  ⚠️  {table_name}: Empty table")
+            logger.warning(f"  ⚠️  {dataset_id}.{table_name}: Empty table")
             return False
         
         # Check schema
@@ -126,11 +139,11 @@ def verify_table(table_name, expected_rows, client):
         for row in result:
             min_date = row.min_date
             max_date = row.max_date
-            logger.info(f"  ✅ {table_name}: {actual_rows:,} rows, {num_columns} cols, {min_date} to {max_date}")
+            logger.info(f"  ✅ {dataset_id}.{table_name}: {actual_rows:,} rows, {num_columns} cols, {min_date} to {max_date}")
             return True
             
     except Exception as e:
-        logger.error(f"  ❌ Error verifying {table_name}: {str(e)}")
+        logger.error(f"  ❌ Error verifying {dataset_id}.{table_name}: {str(e)}")
         return False
 
 def main():
@@ -142,7 +155,7 @@ def main():
     # Initialize BigQuery client
     client = bigquery.Client(project=PROJECT_ID)
     logger.info(f"Project: {PROJECT_ID}")
-    logger.info(f"Dataset: {DATASET_ID}")
+    logger.info(f"Loading to datasets: market_data, raw_intelligence, features")
     
     # Load regime calendar first (if exists)
     regime_file = Path("/Volumes/Satechi Hub/Projects/CBI-V14/registry/regime_calendar.parquet")
@@ -158,7 +171,7 @@ def main():
         )
         job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
         job.result()
-        logger.info(f"  ✅ Loaded {len(df):,} rows to regime_calendar")
+        logger.info(f"  ✅ Loaded {len(df):,} rows to features.regime_calendar")
     
     # Load all staging tables
     logger.info("\n" + "="*80)
@@ -168,9 +181,9 @@ def main():
     success_count = 0
     failed_count = 0
     
-    for staging_file, table_name in TABLE_MAPPINGS.items():
-        logger.info(f"\n{staging_file} → {table_name}")
-        if load_table_to_bigquery(staging_file, table_name, client):
+    for staging_file, dataset_id, table_name in TABLE_MAPPINGS:
+        logger.info(f"\n{staging_file} → {dataset_id}.{table_name}")
+        if load_table_to_bigquery(staging_file, dataset_id, table_name, client):
             success_count += 1
         else:
             failed_count += 1
@@ -180,11 +193,11 @@ def main():
     logger.info("VERIFICATION")
     logger.info("="*80)
     
-    for staging_file, table_name in TABLE_MAPPINGS.items():
+    for staging_file, dataset_id, table_name in TABLE_MAPPINGS:
         file_path = STAGING_DIR / staging_file
         if file_path.exists():
             df = pd.read_parquet(file_path)
-            verify_table(table_name, len(df), client)
+            verify_table(dataset_id, table_name, len(df), client)
     
     # Summary
     logger.info("\n" + "="*80)
@@ -196,10 +209,10 @@ def main():
     if failed_count == 0:
         logger.info("\n🎉 ALL TABLES LOADED SUCCESSFULLY!")
         
-        # Create master view
+        # Create master features view
         logger.info("\nCreating master features view...")
         query = f"""
-        CREATE OR REPLACE VIEW `{PROJECT_ID}.{DATASET_ID}.master_features_all` AS
+        CREATE OR REPLACE VIEW `{PROJECT_ID}.features.master_features_all` AS
         SELECT 
             y.*,
             f.* EXCEPT(date),
@@ -207,31 +220,29 @@ def main():
             c.* EXCEPT(date),
             u.* EXCEPT(date),
             e.* EXCEPT(date),
-            a.* EXCEPT(date),
             v.* EXCEPT(date),
             p.* EXCEPT(date),
             pol.* EXCEPT(date),
             es.* EXCEPT(date, symbol),  -- Exclude symbol to avoid duplicate with yahoo
             r.regime,
             r.training_weight
-        FROM `{PROJECT_ID}.{DATASET_ID}.yahoo_historical_prefixed` y
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.fred_macro_expanded` f USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.weather_granular` w USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.cftc_commitments` c USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.usda_reports_granular` u USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.eia_energy_granular` e USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.alpha_vantage_features` a USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.volatility_features` v USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.palm_oil_daily` p USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.policy_trump_signals` pol USING(date)
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.es_futures_daily` es USING(date)
+        FROM `{PROJECT_ID}.market_data.yahoo_historical_prefixed` y
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.fred_economic` f USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.weather_segmented` w USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.cftc_positioning` c USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.usda_granular` u USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.eia_biofuels` e USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.volatility_daily` v USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.palm_oil_daily` p USING(date)
+        LEFT JOIN `{PROJECT_ID}.raw_intelligence.policy_events` pol USING(date)
+        LEFT JOIN `{PROJECT_ID}.market_data.es_futures_daily` es USING(date)
         LEFT JOIN `{PROJECT_ID}.features.regime_calendar` r USING(date)
         WHERE y.symbol = 'ZL=F'
         ORDER BY date
         """
         
         client.query(query).result()
-        logger.info("  ✅ Created master_features_all view")
+        logger.info("  ✅ Created features.master_features_all view")
     
     return success_count, failed_count
 

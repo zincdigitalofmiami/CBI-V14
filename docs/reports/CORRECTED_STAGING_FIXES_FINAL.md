@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CORRECTED STAGING FIXES - YAHOO ZL=F ONLY
 **Date:** November 17, 2025  
 **Critical Understanding:** Yahoo = ZL=F ONLY, Alpha = All Other Symbols + All Indicators
@@ -413,4 +419,8 @@ Alpha adds:
 **Phase 2 target:** 420,000 rows (full multi-symbol surface)
 
 **This aligns perfectly with plan:** "Yahoo Finance: ZL=F ONLY"
+
+
+
+
 

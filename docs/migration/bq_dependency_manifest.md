@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Dependency Manifest
 **Generated:** 2025-11-17 17:16:20
 **Purpose:** Refactoring checklist for FRESH_START migration

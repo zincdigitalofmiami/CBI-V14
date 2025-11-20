@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # ✅ ZL DATA READY - DOWNLOAD NOW!
 
 **Job ID:** GLBX-20251118-6KKCTK5KY3  
@@ -119,4 +125,8 @@ Once you extract the files, I'll:
 ---
 
 **This is EXCELLENT data - even better than OHLCV! Once downloaded, we'll have production-grade ZL microstructure features.** 🎯
+
+
+
+
 

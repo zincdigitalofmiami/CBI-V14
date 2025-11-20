@@ -42,7 +42,7 @@ class RateLimitedCollector:
         
         # API Keys (from existing working sources)
         self.api_keys = {
-            'fred': 'dc195c8658c46ee1df83bcd4fd8a690b',
+            'fred': os.getenv('FRED_API_KEY') or '',
             'eia': 'I4XUi5PYnAkfMXPU3GvchRsplERC65DWri1AApqs',
             'usda': '98AE1A55-11D0-304B-A5A5-F3FF61E86A31',
             'alpha_vantage': 'BA7CQWXKRFBNFY49'
@@ -480,7 +480,6 @@ if __name__ == '__main__':
     else:
         logger.error("⚠️ COLLECTION PARTIAL - <80% sources operational")
         exit(1)
-
 
 
 

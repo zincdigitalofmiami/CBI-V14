@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CBI-V14 Ingestion Pipeline Flow Analysis
 **Date:** November 12, 2025  
 **Last Reviewed:** November 14, 2025  

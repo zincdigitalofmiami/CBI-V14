@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Dataset Labeling Guide
 **Date:** November 18, 2025  
 **Purpose:** Organization and discovery of 12 BigQuery datasets
@@ -307,4 +313,8 @@ bq update --project_id=cbi-v14 \
 **Last Updated:** November 18, 2025  
 **Script:** `scripts/deployment/apply_bq_labels.sh`  
 **Status:** Production-ready
+
+
+
+
 

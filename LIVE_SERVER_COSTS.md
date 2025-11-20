@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Live Server Costs - Real Infrastructure Analysis
 **Date:** November 19, 2025  
 **Question:** What does it cost to run a live server for data feeds, cron jobs, and continuous collection?
@@ -383,4 +389,8 @@ spec:
 2. Set up continuous DataBento feed
 3. Configure cron jobs for scrapes
 4. Monitor resource usage (should be well under limits)
+
+
+
+
 

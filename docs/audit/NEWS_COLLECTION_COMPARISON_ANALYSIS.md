@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # News Collection Comparison Analysis: Alpha Vantage vs ScrapeCreators
 
 **Date**: November 18, 2025  
@@ -635,4 +641,8 @@ GROUP BY collection_date
 **Last Updated**: November 18, 2025  
 **Status**: Ready for Implementation  
 **Next Step**: Create Phase 1 proof of concept script
+
+
+
+
 

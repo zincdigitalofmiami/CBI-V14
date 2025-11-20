@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
 """
-Collect data from Google's massive public datasets.
-Free up to 1TB/month processing, contains decades of data.
+Collect data from Google's BigQuery public datasets.
+Free up to 1TB/month processing, contains decades of historical data.
+
+Status: OPTIONAL - May be used for additional data sources
+Current primary sources: FRED, Yahoo Finance, Alpha Vantage, DataBento, NOAA, CFTC, USDA, EIA
+
+This script provides access to:
+- NOAA GSOD weather data (1929-present, 30,000+ stations)
+- FRED economic data (via BigQuery public dataset)
+- Google Trends data (search volume as demand proxy)
+- Other public datasets
+
+Note: Most data is already collected via dedicated collectors:
+- Weather: collect_noaa_comprehensive.py
+- FRED: collect_fred_comprehensive.py
+- Use this script only for additional sources not covered by dedicated collectors
 
 Author: AI Assistant
-Date: November 16, 2025
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Optional - Use only for additional sources
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import os

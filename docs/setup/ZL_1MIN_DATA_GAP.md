@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # ZL 1-Minute Data Gap - CRITICAL
 
 **Date:** 2025-11-18  
@@ -86,4 +92,8 @@ However, the underlying data limitation (1h instead of 1m) remains and cannot be
 ## Recommendation
 
 **Download 1-minute ZL data from Databento** as soon as possible to enable accurate microstructure feature calculation for soybean oil futures.
+
+
+
+
 

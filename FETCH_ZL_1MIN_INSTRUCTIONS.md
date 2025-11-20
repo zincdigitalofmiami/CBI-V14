@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Fetch ZL 1-Minute Data - Quick Instructions
 
 ## Status: Ready to Download from Databento
@@ -206,4 +212,8 @@ PY
 ---
 
 **Once complete, the entire MES+ZL pipeline will be 100% production-ready!** 🎉
+
+
+
+
 

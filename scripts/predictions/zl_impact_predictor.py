@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """
-ZL (Soybean Oil) Impact Predictor
-Specifically analyzes how Trump actions and policy changes impact ZL prices.
-Provides procurement guidance in Chris's language.
+ZL (Soybean Oil Futures) Impact Predictor
+Analyzes how Trump actions and policy changes impact ZL prices.
+Provides procurement guidance and impact forecasts.
+
+Architecture: Local Mac M4 → Predictions → BigQuery
+- Reads policy signals from raw_intelligence.policy_events
+- Generates impact predictions locally
+- Uploads to BigQuery predictions tables
+- Dashboard reads from BigQuery views
 
 Author: AI Assistant
-Date: November 16, 2025
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Part of prediction pipeline
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import pandas as pd

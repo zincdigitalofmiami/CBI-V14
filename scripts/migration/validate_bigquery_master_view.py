@@ -144,3 +144,7 @@ def validate_bigquery_view():
 if __name__ == "__main__":
     success = validate_bigquery_view()
     sys.exit(0 if success else 1)
+
+
+
+

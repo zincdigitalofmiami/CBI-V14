@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 FRED Economic Data Deployment
-Using FRED API key: dc195c8658c46ee1df83bcd4fd8a690b
 Populates economic_indicators and fed_rates tables
 """
 
@@ -10,11 +9,33 @@ import pandas as pd
 from datetime import datetime, timedelta
 from google.cloud import bigquery
 from bigquery_utils import safe_load_to_bigquery
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
 import time
 
 PROJECT_ID = "cbi-v14"
 DATASET_ID = "forecasting_data_warehouse"
-FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"
+
+def _resolve_secret(env_name: str, key_name: str):
+    val = os.getenv(env_name)
+    if val:
+        return val
+    if _get_api:
+        try:
+            return _get_api(key_name)
+        except Exception:
+            return None
+    return None
+
+FRED_API_KEY = _resolve_secret('FRED_API_KEY', 'FRED_API_KEY')
+if not FRED_API_KEY:
+    raise RuntimeError("FRED_API_KEY not set. Export it or store in Keychain 'cbi-v14.FRED_API_KEY'.")
 
 # Economic series that impact commodity prices (15-20% variance)
 FRED_SERIES = {
@@ -106,7 +127,6 @@ class FREDEconomicDeployment:
 if __name__ == "__main__":
     fred = FREDEconomicDeployment()
     fred.deploy_all_economic_data()
-
 
 
 

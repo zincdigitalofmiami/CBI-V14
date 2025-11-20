@@ -31,7 +31,7 @@ END_DATE = "2025-11-17"    # Latest date in existing 1h data
 DATASET = "GLBX.MDP3"      # CME Globex MDP 3.0
 SYMBOLS = ["ZL"]           # Soybean Oil futures root symbol
 SCHEMA = "ohlcv-1m"        # 1-minute OHLCV bars
-STYPE = "continuous"       # Continuous contract (Databento will roll front month)
+# Note: Using parent symbology with .FUT suffix for continuous contracts
 
 def main():
     """Download ZL 1-minute data from Databento."""
@@ -66,17 +66,20 @@ def main():
     try:
         # Request historical data
         # Note: Large date ranges are best done via batch API
-        job = client.timeseries.submit_job(
+        # Using parent symbology for continuous contracts
+        job = client.batch.submit_job(
             dataset=DATASET,
-            symbols=SYMBOLS,
+            symbols=["ZL.FUT"],  # Parent symbology requires .FUT suffix
             schema=SCHEMA,
             start=START_DATE,
             end=END_DATE,
-            stype_in=STYPE,
+            stype_in="parent",  # Parent symbology (continuous)
             encoding="json",  # JSON with pretty_ts/pretty_px
             compression="zstd",
-            split_duration="1d",  # Split into daily files for easier processing
-            packaging="zip"
+            split_duration="month",  # Monthly splits for 1-minute data
+            pretty_px=True,
+            pretty_ts=True,
+            delivery="download"
         )
         
         print(f"✅ Job submitted: {job.id}")
@@ -97,7 +100,7 @@ def main():
         print(f"  3. Symbols: {', '.join(SYMBOLS)}")
         print(f"  4. Schema: {SCHEMA}")
         print(f"  5. Date Range: {START_DATE} to {END_DATE}")
-        print(f"  6. Symbol Type: {STYPE}")
+        print(f"  6. Symbol Type: parent (use ZL.FUT)")
         print("  7. Encoding: JSON (pretty_ts, pretty_px)")
         print("  8. Compression: zstd")
         print("  9. Download and extract to TrainingData/raw/databento_zl/")
@@ -119,4 +122,8 @@ def main():
 if __name__ == "__main__":
     import sys
     sys.exit(main())
+
+
+
+
 

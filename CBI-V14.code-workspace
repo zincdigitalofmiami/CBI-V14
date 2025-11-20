@@ -49,7 +49,12 @@
 			"${workspaceFolder}/forecast",
 			"${workspaceFolder}/vertex-ai"
 		],
-		"cursorpyright.analysis.typeCheckingMode": "basic"
+		"cursorpyright.analysis.typeCheckingMode": "basic",
+		"gemini-cli.debug.logging.enabled": true,
+		"geminicodeassist.rules": "\n\n\n",
+		"geminicodeassist.updateChannel": "Default",
+		"cloudcode.enableMultiSkaffoldConfigsKey": true,
+		"cloudcode.enableSkaffoldSkipUnreachableDirs": true
 	},
 	"extensions": {
 		"recommendations": [

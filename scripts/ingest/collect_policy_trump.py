@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
 """
-Policy & Trump Intelligence Collection
-======================================
-Collects Truth Social posts + policy feeds every 15 minutes.
-Focuses on trade policy, tariffs, biofuel mandates, and market-moving announcements.
+Comprehensive Sentiment & Policy Intelligence Collection
+========================================================
+Collects sentiment and policy signals from multiple sources every 15 minutes.
+
+Coverage Areas:
+- Soybean oil sentiment (price direction, market outlook, demand/supply sentiment)
+- Biofuel sentiment (market outlook, production trends, demand forecasts)
+- Trade relations (US-China, US-Brazil, US-Argentina, global trade relations)
+- ICE movements (Intercontinental Exchange announcements, rule changes, price movements)
+- Price direction sentiment (bullish, bearish, neutral price movements)
+- Tariffs (general tariffs, China tariffs, EU tariffs, other countries - NOT Trump-specific)
 
 Sources:
 - Truth Social: Trump + key policy accounts (via ScrapeCreators API)
-- Social Media: Facebook, Twitter/X, LinkedIn (NO Reddit, YouTube, TikTok)
-- Aggregated News: NewsAPI, Alpha Vantage News, RSS feeds
+- Social Media: Facebook, Twitter/X, LinkedIn, Bluesky (NO Reddit, YouTube, TikTok)
+- Aggregated News: NewsAPI, Alpha Vantage News, RSS feeds, Google Search
 - ICE Data: Intercontinental Exchange announcements, regulatory updates
-- Tariffs: USTR announcements, trade policy updates, Section 301 actions
+- Tariffs: USTR announcements, trade policy updates, Section 301/232 actions (non-Trump)
 - Executive Orders: White House executive orders, presidential proclamations
 - Policy Feeds: USDA announcements, EPA RFS updates, trade news
 
 Prefix: `policy_trump_*` on all columns except `date`, `timestamp`
+(Note: Prefix name retained for backward compatibility, but now covers broader sentiment)
 
 Coverage: Real-time (15-min cadence) + historical backfill
 
@@ -23,6 +31,12 @@ ScrapeCreators API:
 - API key stored in macOS keychain: cbi-v14.SCRAPECREATORS_API_KEY
 - See docs/setup/SCRAPECREATORS_API.md for full documentation
 - To add new pulls: extend account lists and run script
+
+Author: AI Assistant
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Core sentiment collection pipeline
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import requests
@@ -146,6 +160,13 @@ SEARCH_QUERIES = {
     'biofuel_policy': [
         'EPA biofuel announcement', 'RFS waiver', 'biofuel mandate update',
         'renewable fuel standard', 'biofuel credit policy',
+        'RIN price movement', 'biodiesel production', 'ethanol blend mandate',
+        'biofuel credit trading', 'renewable fuel volume obligation',
+    ],
+    'biofuel_sentiment': [
+        'biofuel market outlook', 'biodiesel demand forecast', 'ethanol production trend',
+        'biofuel industry sentiment', 'renewable fuel market analysis',
+        'biofuel credit market sentiment', 'biodiesel price forecast',
     ],
     'biofuel_spread': [
         'petro renewable spread', 'biofuel crude spread', 'ethanol gasoline spread',
@@ -178,6 +199,80 @@ SEARCH_QUERIES = {
     'market_structure': [
         'CME rule change', 'ICE exchange update', 'margin hike agriculture',
         'exchange rule agriculture', 'futures exchange update',
+    ],
+    
+    # Soybean Oil Specific Sentiment
+    'soybean_oil_sentiment': [
+        'soybean oil price forecast', 'soybean oil market outlook', 'soybean oil demand',
+        'soybean oil supply sentiment', 'soybean oil price direction', 'soybean oil trend',
+        'soybean oil market analysis', 'soybean oil price prediction', 'soybean oil sentiment',
+        'soybean oil bullish', 'soybean oil bearish', 'soybean oil price movement',
+    ],
+    
+    # Trade Relations (Non-Trump)
+    'trade_relations_us_china': [
+        'US China trade relations', 'US China agriculture trade', 'China US soybean trade',
+        'US China trade agreement agriculture', 'China US trade relations update',
+    ],
+    'trade_relations_us_brazil': [
+        'US Brazil trade relations', 'US Brazil agriculture trade', 'Brazil US trade agreement',
+        'US Brazil trade policy', 'Brazil US soybean trade',
+    ],
+    'trade_relations_us_argentina': [
+        'US Argentina trade relations', 'US Argentina agriculture trade', 'Argentina US trade',
+        'US Argentina trade policy', 'Argentina US soybean trade',
+    ],
+    'trade_relations_global': [
+        'international trade relations agriculture', 'global trade relations soybean',
+        'trade relations commodity markets', 'international agriculture trade',
+    ],
+    
+    # ICE (Intercontinental Exchange) Movements
+    'ice_exchange_movements': [
+        'ICE exchange announcement', 'ICE futures update', 'ICE rule change',
+        'ICE margin requirement', 'ICE contract specification change',
+        'ICE trading halt', 'ICE market update', 'ICE exchange news',
+        'ICE futures contract change', 'ICE regulatory update',
+    ],
+    'ice_price_movements': [
+        'ICE soybean oil price', 'ICE futures price movement', 'ICE contract price',
+        'ICE trading activity', 'ICE volume spike', 'ICE open interest change',
+    ],
+    
+    # Price Direction Sentiment
+    'price_direction_bullish': [
+        'soybean oil price rise', 'soybean oil rally', 'soybean oil price increase',
+        'soybean oil bullish trend', 'soybean oil price up', 'soybean oil surge',
+        'soybean oil price gain', 'soybean oil price climb',
+    ],
+    'price_direction_bearish': [
+        'soybean oil price drop', 'soybean oil decline', 'soybean oil price decrease',
+        'soybean oil bearish trend', 'soybean oil price down', 'soybean oil fall',
+        'soybean oil price loss', 'soybean oil price slide',
+    ],
+    'price_direction_neutral': [
+        'soybean oil price stable', 'soybean oil price range', 'soybean oil consolidation',
+        'soybean oil price flat', 'soybean oil sideways', 'soybean oil price steady',
+    ],
+    
+    # Tariffs (Non-Trump Related)
+    'tariff_general': [
+        'soybean tariff', 'agriculture tariff', 'trade tariff agriculture',
+        'import tariff soybean', 'export tariff agriculture', 'tariff policy agriculture',
+        'Section 301 tariff agriculture', 'Section 232 tariff agriculture',
+        'retaliatory tariff agriculture', 'trade war tariff agriculture',
+    ],
+    'tariff_china': [
+        'China tariff agriculture', 'China soybean tariff', 'China import tariff',
+        'China trade tariff', 'China retaliatory tariff',
+    ],
+    'tariff_eu': [
+        'EU tariff agriculture', 'European Union tariff', 'EU import tariff agriculture',
+        'EU trade tariff', 'EU soybean tariff',
+    ],
+    'tariff_other_countries': [
+        'India tariff agriculture', 'Brazil tariff', 'Argentina tariff',
+        'Mexico tariff agriculture', 'Canada tariff agriculture',
     ],
 }
 
@@ -237,6 +332,7 @@ TOPIC_MULTIPLIERS = {
     
     # Biofuel/Energy policy → 0.85
     'biofuel_policy': 0.85,
+    'biofuel_sentiment': 0.85,
     'biofuel_spread': 0.85,
     'energy_crude': 0.85,
     
@@ -258,6 +354,30 @@ TOPIC_MULTIPLIERS = {
     # Market structure/positioning (lowest impact) → 0.50
     'market_positioning': 0.50,
     'market_structure': 0.50,
+    
+    # Soybean Oil Sentiment → 0.90 (high impact for ZL)
+    'soybean_oil_sentiment': 0.90,
+    
+    # Trade Relations → 0.88 (very high impact)
+    'trade_relations_us_china': 0.88,
+    'trade_relations_us_brazil': 0.88,
+    'trade_relations_us_argentina': 0.88,
+    'trade_relations_global': 0.85,
+    
+    # ICE Movements → 0.80 (market structure impact)
+    'ice_exchange_movements': 0.80,
+    'ice_price_movements': 0.75,
+    
+    # Price Direction → 0.70 (sentiment indicator)
+    'price_direction_bullish': 0.70,
+    'price_direction_bearish': 0.70,
+    'price_direction_neutral': 0.60,
+    
+    # Tariffs (Non-Trump) → 0.92 (very high impact)
+    'tariff_general': 0.92,
+    'tariff_china': 0.95,
+    'tariff_eu': 0.90,
+    'tariff_other_countries': 0.88,
     
     # Default fallback
     'default': 0.75,  # Mid-range for unknown categories
@@ -722,6 +842,26 @@ def classify_category_to_prefix_buckets(category: str) -> list:
     # Energy bucket
     if category.startswith('energy_'):
         return ['energy']
+    
+    # Soybean oil sentiment (affects both market and supply)
+    if category.startswith('soybean_oil_'):
+        return ['market', 'supply']
+    
+    # Trade relations (goes to trade bucket)
+    if category.startswith('trade_relations_'):
+        return ['trade']
+    
+    # ICE movements (market structure)
+    if category.startswith('ice_'):
+        return ['market']
+    
+    # Price direction (market sentiment)
+    if category.startswith('price_direction_'):
+        return ['market']
+    
+    # Tariffs (affects both trade and policy)
+    if category.startswith('tariff_'):
+        return ['trade', 'policy']
     
     # Default fallback
     return ['policy']  # Default to policy for unknown categories
@@ -1439,9 +1579,96 @@ def main():
     # 9. Sort by date
     combined_df = combined_df.sort_values('date').reset_index(drop=True)
     
-    # 10. Save raw data
-    output_file = RAW_DIR / f"policy_trump_{datetime.now().strftime('%Y%m%d_%H%M')}.parquet"
-    combined_df.to_parquet(output_file, index=False)
+    # 10. Segment data by category into separate buckets with appropriate prefixes
+    timestamp_str = datetime.now().strftime('%Y%m%d_%H%M')
+    
+    # Define prefix mapping based on category
+    def get_prefix_for_category(category: str, source_type: str) -> str:
+        """Determine prefix based on category and source type."""
+        if pd.isna(category):
+            category = 'default'
+        category = str(category).lower()
+        source_type = str(source_type).lower()
+        
+        # Trump-specific sources get policy_trump_ prefix
+        if 'truth_social' in source_type or 'trump' in category or 'executive_order' in source_type:
+            return 'policy_trump'
+        
+        # Map categories to sentiment prefixes
+        if category.startswith('soybean_oil_'):
+            return 'sentiment_soybean_oil'
+        elif category.startswith('biofuel_'):
+            return 'sentiment_biofuel'
+        elif category.startswith('trade_relations_'):
+            return 'sentiment_trade_relations'
+        elif category.startswith('ice_'):
+            return 'sentiment_ice'
+        elif category.startswith('price_direction_'):
+            return 'sentiment_price_direction'
+        elif category.startswith('tariff_'):
+            return 'sentiment_tariff'
+        elif category.startswith('policy_') or category.startswith('trade_'):
+            # General policy/trade (non-Trump) - use sentiment prefix
+            if 'trump' in category.lower():
+                return 'policy_trump'
+            else:
+                return 'sentiment_policy'  # General policy sentiment
+        else:
+            # Default to sentiment_market for unknown categories
+            return 'sentiment_market'
+    
+    # Segment data by prefix
+    segmented_data = {}
+    
+    for idx, row in combined_df.iterrows():
+        category = row.get('policy_trump_category', 'default')
+        source_type = row.get('policy_trump_source_type', row.get('source_type', 'unknown'))
+        prefix = get_prefix_for_category(category, source_type)
+        
+        if prefix not in segmented_data:
+            segmented_data[prefix] = []
+        segmented_data[prefix].append(row)
+    
+    # Save segmented files with appropriate prefixes
+    saved_files = []
+    for prefix, rows in segmented_data.items():
+        if not rows:
+            continue
+        
+        segment_df = pd.DataFrame(rows)
+        
+        # Rename columns to use the appropriate prefix
+        rename_dict = {}
+        for col in segment_df.columns:
+            if col not in ['date', 'timestamp']:
+                # Remove old prefix if present
+                if col.startswith('policy_trump_'):
+                    new_col = col.replace('policy_trump_', f'{prefix}_')
+                else:
+                    new_col = f'{prefix}_{col}'
+                rename_dict[col] = new_col
+        
+        segment_df = segment_df.rename(columns=rename_dict)
+        
+        # Save to appropriate directory
+        if prefix == 'policy_trump':
+            output_dir = RAW_DIR
+            filename = f"policy_trump_{timestamp_str}.parquet"
+        else:
+            # Create sentiment subdirectory
+            sentiment_dir = RAW_DIR.parent / "sentiment"
+            sentiment_dir.mkdir(parents=True, exist_ok=True)
+            output_dir = sentiment_dir
+            filename = f"{prefix}_{timestamp_str}.parquet"
+        
+        output_file = output_dir / filename
+        segment_df.to_parquet(output_file, index=False)
+        saved_files.append((prefix, len(segment_df), output_file))
+        logger.info(f"   ✅ {prefix}: {len(segment_df):,} rows → {output_file.name}")
+    
+    # Also save combined file for backward compatibility (will be phased out)
+    combined_output_file = RAW_DIR / f"policy_trump_{timestamp_str}.parquet"
+    combined_df.to_parquet(combined_output_file, index=False)
     
     # Deduplicate by unique_id
     if 'policy_trump_unique_id' in combined_df.columns:

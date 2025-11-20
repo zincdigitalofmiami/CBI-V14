@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 🎯 Answer: Would V3 with Better L1 Have Performed Better?
 
 **Short Answer**: **YES!** And we have proof - **V4 is exactly that!**

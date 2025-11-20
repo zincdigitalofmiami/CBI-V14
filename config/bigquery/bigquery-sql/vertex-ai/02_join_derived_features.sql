@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- 02_join_derived_features.sql
 -- Joins pre-computed derived features tables to the master spine
 -- These tables are ALREADY feature-engineered and daily

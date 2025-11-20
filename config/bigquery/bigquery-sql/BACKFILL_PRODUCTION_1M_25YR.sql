@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- BACKFILL PRODUCTION_TRAINING_DATA_1M
 -- Expand from 1,404 rows (2020-2025) to ~6,300 rows (2000-2025)

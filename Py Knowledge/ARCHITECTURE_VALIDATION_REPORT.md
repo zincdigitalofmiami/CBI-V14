@@ -241,3 +241,7 @@ write_to_bq(final_features, 'training.zl_training_prod_allhistory_1m')
 
 *Report Generated: November 2025*  
 *Based on: FINAL_GPT_INTEGRATION_DIRECTIVE.md, EXECUTIVE_SUMMARY_FOR_GPT.md, GPT5_READ_FIRST.md*
+
+
+
+

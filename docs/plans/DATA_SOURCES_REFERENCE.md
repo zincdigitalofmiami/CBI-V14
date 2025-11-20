@@ -1,4 +1,13 @@
-# CBI-V14 Data Sources Reference
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
+**📋 BEST PRACTICES:** See `.cursorrules` and `docs/reference/BEST_PRACTICES_DRAFT.md` for mandatory best practices including: no fake data, always check before creating, always audit after work, us-central1 only, no costly resources without approval, research best practices, research quant finance modeling.
+
+# CBI-V14 Data Sources Reference (Archived)
+Note: This reference is archived. For active data authority and orchestration, see `docs/plans/REFERENCE.md` and `docs/plans/BIGQUERY_MIGRATION_PLAN.md`.
 **Date**: November 17, 2025  
 **Status**: Reference Document - Data Source Catalog  
 **Purpose**: Comprehensive catalog of data sources, APIs, and scraping endpoints for CBI-V14
@@ -194,12 +203,7 @@ This document catalogs all known data sources, APIs, and scraping endpoints that
 
 ### Alpha Vantage
 
-**API Format**: `https://www.alphavantage.co/query?...&apikey={key}`
-
-**Status**: ⚠️ **KEY STORED** - Confirm actual usage  
-**Authentication**: Query param `apikey`  
-**Current Usage**: Key found in `multi_source_collector.py` but usage unclear  
-**Security Note**: ⚠️ API key hardcoded - needs migration to Keychain
+Status: Not used for technical indicators. If retained at all, Alpha may be used for news only (optional). Prefer provider‑agnostic `raw_intelligence.news_articles` and compute TA in‑house from DataBento OHLCV.
 
 ---
 
@@ -511,6 +515,9 @@ All data sources must:
 
 **Last Updated**: November 17, 2025  
 **Status**: Reference document - Data source catalog
+
+
+
 
 
 

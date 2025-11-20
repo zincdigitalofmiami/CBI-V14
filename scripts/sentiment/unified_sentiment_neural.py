@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """
 Unified Sentiment Analysis System
-Combines ALL qualitative data sources with neural network analysis
-to create a comprehensive market sentiment indicator.
+Combines qualitative data sources with neural network analysis
+to create comprehensive market sentiment indicators.
+
+Architecture: Hybrid Python + Neural Networks
+- Combines: Social sentiment, news sentiment, policy sentiment, market microstructure
+- Uses: TensorFlow/PyTorch for neural sentiment classification
+- Output: Sentiment scores stored in raw_intelligence tables
+
+Note: This is part of the complex Python-based feature engineering.
+Simple sentiment aggregation is done in BigQuery SQL.
 
 Author: AI Assistant
-Date: November 16, 2025
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Part of feature engineering pipeline
+Reference: docs/plans/MASTER_PLAN.md (Hybrid Python + BigQuery SQL section)
 """
 
 import os

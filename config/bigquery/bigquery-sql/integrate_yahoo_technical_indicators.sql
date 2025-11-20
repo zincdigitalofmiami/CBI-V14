@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- Integrate Yahoo Finance Technical Indicators into Training Dataset
 -- Joins technical indicators (RSI, MACD, Bollinger Bands) and related commodity data

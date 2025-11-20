@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Forward-Fill Audit: Root Cause Analysis
 **Date:** November 5, 2025  
 **Issue:** Forward-fill operations didn't improve coverage

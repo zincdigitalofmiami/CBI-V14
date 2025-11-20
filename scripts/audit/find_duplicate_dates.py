@@ -28,3 +28,7 @@ def find_duplicates(file_path):
 
 if __name__ == "__main__":
     find_duplicates(TARGET_FILE)
+
+
+
+

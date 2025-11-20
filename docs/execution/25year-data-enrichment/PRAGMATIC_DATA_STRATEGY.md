@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 📊 PRAGMATIC DATA COLLECTION STRATEGY
 
 **Date**: November 16, 2025  
@@ -83,7 +89,7 @@ weather_sources = {
     },
     'usa': {
         'api': 'https://www.ncei.noaa.gov/cdo-web/api/v2/data',
-        'token': 'rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi',  # Move to env
+        'token': '<NOAA_API_TOKEN>',  # Set via env/Keychain
         'coverage': '10,000+ stations, daily, 1900-present'
     },
     'global_forecast': {
@@ -172,7 +178,7 @@ market_sources = {
 social_sources = {
     'truthsocial': {
         'api': 'https://api.scrapecreators.com/v1/truthsocial',
-        'key': 'B1TOgQvMVSV6TDglqB8lJ2cirqi2',  # Move to env
+        'key': '<SCRAPECREATORS_API_KEY>',  # Set via env/Keychain
         'targets': [
             '@realDonaldTrump',
             '@DevinNunes',

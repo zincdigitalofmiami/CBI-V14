@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Naming Architecture Migration - Execution Log
 
 **Date**: November 14, 2025  
@@ -161,6 +167,10 @@ All new tables verified:
 - Shim views provide backward compatibility during transition
 - Full surface tables are placeholders (will rebuild from ULTIMATE_DATA_CONSOLIDATION.sql)
 - All training scripts now support `--surface` parameter (prod/full)
+
+
+
+
 
 
 

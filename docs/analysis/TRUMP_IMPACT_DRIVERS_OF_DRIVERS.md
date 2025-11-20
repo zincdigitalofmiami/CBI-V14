@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # 🔥 TRUMP'S BULLSHIT & THE DRIVERS OF DRIVERS
 ## How Trump's Policies Are Fucking the Soybean Market (Nov 2025)
 

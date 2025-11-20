@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 <!-- 54cc6542-3f87-4cff-8720-b5d318bccad7 296fa9d9-0f21-45d0-95a7-2bc790577525 -->
 # Complete 25-Year Data Enrichment - Institutional Grade
 
@@ -51,7 +57,8 @@
 **📡 Data Sources Catalog**: See `../../plans/DATA_SOURCES_REFERENCE.md` for comprehensive data source catalog:
 - Weather and climate APIs (INMET, NOAA, Argentina SMN, Copernicus, Meteomatics)
 - Economic data sources (FRED, Treasury, BLS, Central Banks, Economic Calendars)
-- Market data APIs (TradingEconomics, Polygon.io, Alpha Vantage)
+- Market data APIs (TradingEconomics, Polygon.io). Alpha Vantage not used for indicators.
+- Cost guardrail: No unapproved historical backfills; live DataBento forward‑only and agency feeds only.
 - Trade/policy/news sources (Federal Register, government agencies, think tanks)
 - Social media sources (Truth Social, Facebook, Reddit via ScrapeCreators)
 - Shipping/logistics (MarineTraffic)
@@ -211,7 +218,7 @@ import pandas as pd
 import time
 from pathlib import Path
 
-FRED_API_KEY = "dc195c8658c46ee1df83bcd4fd8a690b"
+# FRED_API_KEY is set via env/Keychain
 RAW_DIR = Path("/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/raw")
 CACHE_DIR = RAW_DIR / ".cache"
 CACHE_DIR.mkdir(exist_ok=True)

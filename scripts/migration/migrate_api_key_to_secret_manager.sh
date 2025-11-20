@@ -8,7 +8,18 @@ set -e
 
 PROJECT="cbi-v14"
 SECRET_NAME="scrapecreators-api-key"
-API_KEY="B1TOgQvMVSV6TDglqB8lJ2cirqi2"
+# Resolve API key from environment (do not hardcode)
+API_KEY="${SCRAPECREATORS_API_KEY:-}"
+if [[ -z "$API_KEY" ]]; then
+  # Try macOS Keychain if available
+  if command -v security >/dev/null 2>&1; then
+    API_KEY=$(security find-generic-password -a default -s cbi-v14.SCRAPECREATORS_API_KEY -w 2>/dev/null || true)
+  fi
+fi
+if [[ -z "$API_KEY" ]]; then
+  echo "❌ SCRAPECREATORS_API_KEY not set. Export it or store in Keychain (cbi-v14.SCRAPECREATORS_API_KEY)." >&2
+  exit 1
+fi
 
 echo "================================================================================"
 echo "MIGRATING SCRAPE CREATORS API KEY TO SECRET MANAGER"
@@ -86,7 +97,6 @@ echo "  2. Update trump_truth_social_monitor.py (already configured)"
 echo "  3. Remove hardcoded API key from source files"
 echo "  4. Rotate API key at Scrape Creators"
 echo ""
-
 
 
 

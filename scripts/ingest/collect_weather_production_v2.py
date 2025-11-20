@@ -35,7 +35,17 @@ logger = logging.getLogger(__name__)
 CLIENT = bigquery.Client(project='cbi-v14')
 START_DATE = "2000-01-01"
 END_DATE = datetime.now().strftime("%Y-%m-%d")
-NOAA_API_TOKEN = "rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi"  # Move to env
+import os
+from pathlib import Path as _Path
+import sys as _sys
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
+NOAA_API_TOKEN = os.getenv('NOAA_API_TOKEN') or (_get_api('NOAA_API_TOKEN') if _get_api else None)
+if not NOAA_API_TOKEN:
+    raise RuntimeError('NOAA_API_TOKEN not set. Export or store in Keychain.')
 
 # External drive paths
 EXTERNAL_DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14")

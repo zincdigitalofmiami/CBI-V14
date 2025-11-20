@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # INDIVIDUAL DATA SOURCE REQUIREMENTS - EACH IS UNIQUE
 **Date:** November 17, 2025  
 **Analysis:** Per-source investigation based on actual usage in codebase  
@@ -579,4 +585,8 @@ Final: 416,110 rows × ~120 columns ✅ NO EXPLOSIONS
 4. Domain-specific logic (US Midwest weather, series code mapping, etc.)
 
 **NOT uniform - each source handled according to its specific characteristics.**
+
+
+
+
 

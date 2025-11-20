@@ -98,7 +98,7 @@ EXPECTED_VIEWS = {
         "vw_zl_training_prod_allhistory_12m",
     ],
     "signals": [
-        "vw_big_seven_signals",
+        "vw_big8_signals",
     ],
     "features": [
         "vw_mes_intraday_overlay",
@@ -301,7 +301,7 @@ def smoke_test_views(client):
         ("api", "vw_futures_overlay_1w"),
         ("predictions", "vw_zl_1w_latest"),
         ("regimes", "vw_live_regime_overlay"),
-        ("signals", "vw_big_seven_signals"),
+        ("signals", "vw_big8_signals"),
     ]
     
     all_pass = True
@@ -447,4 +447,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

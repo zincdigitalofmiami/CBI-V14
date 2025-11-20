@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Cost Analysis - With Automated Data Collection
 **Date**: November 18, 2025  
 **Scenario**: 24/7 automated data pulls every 5-15 minutes
@@ -437,4 +443,8 @@ As long as you:
 5. Monitor with `bq ls` and Cloud Console
 
 See `EXTERNAL_DRIVE_TO_BIGQUERY_PLAN.md` for upload strategy.
+
+
+
+
 

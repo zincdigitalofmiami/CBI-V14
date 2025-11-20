@@ -15,8 +15,20 @@ import json
 import os
 
 # Get API keys from environment or use defaults
-FRED_API_KEY = os.getenv('FRED_API_KEY', "dc195c8658c46ee1df83bcd4fd8a690b")
-NOAA_API_KEY = os.getenv('NOAA_API_KEY', "rxoLrCxYOlQyWvVjbBGRlMMhIRElWKZi")
+FRED_API_KEY = os.getenv('FRED_API_KEY')
+NOAA_API_KEY = os.getenv('NOAA_API_KEY')
+if not FRED_API_KEY:
+    try:
+        from src.utils.keychain_manager import get_api_key
+        FRED_API_KEY = get_api_key('FRED_API_KEY')
+    except Exception:
+        FRED_API_KEY = None
+if not NOAA_API_KEY:
+    try:
+        from src.utils.keychain_manager import get_api_key
+        NOAA_API_KEY = get_api_key('NOAA_API_TOKEN')
+    except Exception:
+        NOAA_API_KEY = None
 
 client = bigquery.Client(project='cbi-v14')
 
@@ -600,4 +612,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

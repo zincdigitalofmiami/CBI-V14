@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Alpha Vantage NEWS_SENTIMENT Integration - Naming Aligned
 
 **Date**: November 18, 2025  
@@ -769,4 +775,8 @@ ORDER BY date DESC;
 **Last Updated**: November 18, 2025  
 **Status**: Ready for Implementation  
 **Naming**: ✅ Fully Aligned with CBI-V14 Conventions
+
+
+
+
 

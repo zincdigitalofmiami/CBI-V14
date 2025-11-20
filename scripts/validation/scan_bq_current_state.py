@@ -10,6 +10,13 @@ import re
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 from datetime import datetime
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+try:
+    from src.utils.output_paths import safe_write_text
+except Exception:
+    safe_write_text = None
 
 PROJECT_ID = "cbi-v14"
 LOCATION = "us-central1"
@@ -220,10 +227,13 @@ def main():
     print(f"📝 Generating report: {REPORT_FILE}")
     report = generate_report(expected_datasets, expected_tables, current_datasets, current_tables)
     
-    with open(REPORT_FILE, 'w') as f:
-        f.write(report)
-    
-    print(f"✅ Report saved to: {REPORT_FILE}")
+    if safe_write_text:
+        out_path = safe_write_text(REPORT_FILE, report, subdir="reports")
+        print(f"✅ Report saved to: {out_path}")
+    else:
+        with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+            f.write(report)
+        print(f"✅ Report saved to: {REPORT_FILE}")
     print()
     
     # Summary
@@ -237,4 +247,7 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
+
+
+
 

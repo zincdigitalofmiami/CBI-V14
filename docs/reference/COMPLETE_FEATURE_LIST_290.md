@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Complete Feature List - production_training_data_* (290 columns)
 **Generated**: November 5, 2025  
 **Source**: cbi-v14.models_v4.production_training_data_1m  

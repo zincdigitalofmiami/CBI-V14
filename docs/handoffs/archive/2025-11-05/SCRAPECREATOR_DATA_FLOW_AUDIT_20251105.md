@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Scrape Creator Data Flow - Reverse Engineering Audit
 **Date:** November 5, 2025  
 **Purpose:** Understand existing Scrape Creator integration before making changes
@@ -119,7 +125,7 @@ WHEN MATCHED THEN UPDATE SET ...
 
 ### ✅ Historical Backfill via Scrape Creator API
 
-**Available via Scrape Creator API (key: B1TOgQvMVSV6TDglqB8lJ2cirqi2):**
+**Available via Scrape Creator API (key: <SCRAPECREATORS_API_KEY>):**
 
 1. **Twitter Profiles** (via `ingest_scrapecreators_institutional.py`)
    - Any Twitter handle (companies, individuals, organizations)
@@ -191,7 +197,6 @@ WHEN MATCHED THEN UPDATE SET ...
 5. ⏳ **Run backfills** and verify data flows to production
 
 **Status:** Ready to proceed with historical backfill using existing scrapers
-
 
 
 

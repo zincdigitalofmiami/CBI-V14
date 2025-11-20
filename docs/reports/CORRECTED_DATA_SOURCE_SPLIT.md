@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # CORRECTED DATA SOURCE SPLIT - YAHOO ZL ONLY
 **Date:** November 17, 2025  
 **Critical Correction:** Yahoo = ZL=F ONLY, Alpha = Everything Else
@@ -258,4 +264,8 @@ def create_yahoo_staging():
 ```
 
 **Result:** 6,380 rows (not 416,110), ready for Phase 1 training surface rebuild
+
+
+
+
 

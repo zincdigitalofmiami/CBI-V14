@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Migration Phase Completion Summary
 
 **Date**: 2025-11-14  
@@ -63,6 +69,10 @@ The system is now ready to:
 1. Update SQL files (Phase 5)
 2. Test end-to-end workflow
 3. Update ingestion scripts (Phase 8)
+
+
+
+
 
 
 

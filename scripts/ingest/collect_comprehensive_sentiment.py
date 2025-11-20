@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
 """
-Comprehensive sentiment collection using ScrapeCreators API and other sources.
-Monitors Truth Social, Facebook, Reddit for real market-moving sentiment.
+Comprehensive Sentiment Collection (LEGACY/SUPERSEDED)
+This script has been superseded by collect_policy_trump.py
+
+Status: SUPERSEDED - Use collect_policy_trump.py instead
+- collect_policy_trump.py handles: Truth Social, Facebook, Twitter/X, LinkedIn, Bluesky
+- collect_policy_trump.py includes: Google Search, news aggregation, policy events
+- collect_policy_trump.py provides: Policy shock scoring, sentiment classification
+
+This script is kept for reference only. Do not use in production.
+
+Current active sentiment collection:
+- scripts/ingest/collect_policy_trump.py (primary)
+- scripts/sentiment/unified_sentiment_neural.py (neural sentiment analysis)
 
 Author: AI Assistant
 Date: November 16, 2025
+Last Updated: November 17, 2025
+Status: SUPERSEDED - Use collect_policy_trump.py
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import os
@@ -28,7 +42,15 @@ RAW_DIR = DRIVE / "TrainingData/raw/sentiment"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 # API Configuration (MOVE TO ENVIRONMENT VARIABLES!)
-SCRAPE_CREATORS_KEY = os.getenv('SCRAPE_CREATORS_KEY', 'B1TOgQvMVSV6TDglqB8lJ2cirqi2')
+SCRAPE_CREATORS_KEY = os.getenv('SCRAPE_CREATORS_KEY') or os.getenv('SCRAPECREATORS_API_KEY')
+if not SCRAPE_CREATORS_KEY:
+    try:
+        from src.utils.keychain_manager import get_api_key
+        SCRAPE_CREATORS_KEY = get_api_key('SCRAPECREATORS_API_KEY')
+    except Exception:
+        SCRAPE_CREATORS_KEY = None
+if not SCRAPE_CREATORS_KEY:
+    raise RuntimeError('SCRAPECREATORS_API_KEY not set. Export or store in Keychain.')
 
 
 class ComprehensiveSentimentCollector:

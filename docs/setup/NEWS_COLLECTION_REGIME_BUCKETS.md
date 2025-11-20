@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # News Collection Regime Buckets - ZL Intelligence
 
 **Date**: November 18, 2025  
@@ -379,4 +385,8 @@ OPTIONS (
 **Last Updated**: November 18, 2025  
 **Status**: Schema Design Complete - Ready for Implementation  
 **Next**: Implement bucket classification and run collection
+
+
+
+
 

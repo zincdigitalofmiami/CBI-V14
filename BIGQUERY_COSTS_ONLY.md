@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # BigQuery Costs Only (Storage + Queries)
 **Date:** November 19, 2025  
 **Source:** Direct queries to `cbi-v14` BigQuery project  
@@ -194,4 +200,8 @@ AS SELECT * FROM forecasting_data_warehouse.prices;
 ---
 
 **Reference:** Run `python3 scripts/analysis/get_real_bq_costs.py` to get latest costs.
+
+
+
+
 

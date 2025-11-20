@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- Phase 2: Create New Datasets
 -- Creates all required datasets for the new naming architecture
 -- Run this before migrating tables
@@ -52,6 +57,10 @@ OPTIONS(
 );
 
 -- Note: yahoo_finance_comprehensive stays unchanged
+
+
+
+
 
 
 

@@ -1,3 +1,8 @@
+# ⚠️ CRITICAL: NO FAKE DATA ⚠️
+# This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+# All data must come from authenticated APIs, official sources, or validated historical records.
+#
+
 version: "1.0"
 description: "Centralized data source registry - add new sources by editing this file"
 last_updated: "2025-11-16"
@@ -131,6 +136,10 @@ sources:
 #     reliability: 0.85
 #     free: false
 #     description: "MPOB Malaysia - palm oil prices"
+
+
+
+
 
 
 

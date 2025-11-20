@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- Phase 6: Create Shim Views for Backward Compatibility
 -- These views point old table names to new tables
 -- Will be removed after 30-day grace period

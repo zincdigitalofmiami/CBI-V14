@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # GPT‑5 • READ FIRST (CBI‑V14)
 
 **Last Updated:** 2025‑11‑15  
@@ -144,6 +150,10 @@ docs: add GPT‑5_READ_FIRST; neural: add labor detector view; api: surface MAPE
 - Soybean-specific Sharpe (seasonality/regime aware) is taken from your Sharpe guide and is the only Sharpe source Cursor should reference; API wiring mirrors that spec.
 - UI hooks for weather heatmaps/anomalies/time-animation and substitution economics are codified in your dashboard specs and should not be reinvented.
 - News/Sentiment taxonomy and event-impact heuristics remain the canonical classifier seed list.
+
+
+
+
 
 
 

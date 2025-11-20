@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # MES/ZL Pipeline Fix - Execution Summary
 
 **Date:** 2025-11-18  
@@ -162,4 +168,8 @@ python3 scripts/train/build_mes_15min_dataset.py
 - [x] ZL 1-minute data gap documented
 
 **Pipeline is now production-ready for MES. ZL requires 1-minute data download for accurate microstructure features.**
+
+
+
+
 

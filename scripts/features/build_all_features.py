@@ -1,8 +1,24 @@
 #!/usr/bin/env python3
 """
-SINGLE-PASS FEATURE ENGINEERING
-Calculate all 300+ features ONCE, then reuse for all 5 horizons.
-FIXED: Groupwise target shift, determinism controls, 10 file exports.
+Feature Engineering Orchestrator
+Builds complete feature set by joining all data sources and applying feature calculations.
+
+This script:
+1. Loads joined data from staging (via join_executor.py)
+2. Applies regime-based training weights (from registry/regime_weights.yaml)
+3. Calls feature_calculations.py for complex Python-based features
+4. Exports final feature set for training
+
+Architecture: Hybrid Python + BigQuery SQL
+- Joins handled by: scripts/assemble/join_executor.py
+- Simple features: BigQuery SQL (correlations, moving averages, regimes)
+- Complex features: Python via feature_calculations.py (sentiment, NLP, policy)
+
+Author: AI Assistant
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Core feature engineering pipeline
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import os
@@ -69,24 +85,25 @@ def apply_regime_weights(df):
     print("APPLYING REGIME WEIGHTS")
     print("="*80)
     
-    # Check regime column exists
-    if 'market_regime' not in df.columns:
-        raise ValueError("market_regime column missing - check join with regime_calendar")
+    # Check regime column exists (use 'regime' not 'market_regime')
+    regime_col = 'regime' if 'regime' in df.columns else 'market_regime'
+    if regime_col not in df.columns:
+        raise ValueError("regime column missing - check join with regime_calendar")
     
     # Assert every date has a regime
-    missing_regime = df['market_regime'].isnull().sum()
+    missing_regime = df[regime_col].isnull().sum()
     if missing_regime > 0:
         raise ValueError(f"{missing_regime} rows missing regime assignment")
     
     print(f"✅ All rows have regime assignment")
     
     # Apply weights
-    df['training_weight'] = df['market_regime'].map(REGIME_WEIGHTS).astype('float64')
+    df['training_weight'] = df[regime_col].map(REGIME_WEIGHTS).astype('float64')
     
     # Check for unmapped regimes
     missing_weight = df['training_weight'].isnull().sum()
     if missing_weight > 0:
-        missing_regimes = df[df['training_weight'].isnull()]['market_regime'].unique()
+        missing_regimes = df[df['training_weight'].isnull()][regime_col].unique()
         raise ValueError(
             f"Missing weight mapping for {len(missing_regimes)} regimes: {missing_regimes.tolist()}\n"
             f"Add these to REGIME_WEIGHTS dict in apply_regime_weights()"
@@ -123,8 +140,8 @@ def apply_regime_weights(df):
 
 def build_features_single_pass():
     """
-    Execute declarative joins, calculate all features.
-    INTEGRATES: Existing calculations + Alpha Vantage indicators
+    Execute declarative joins and calculate all features.
+    Policy: All technical indicators are computed in‑house from DataBento OHLCV.
     """
     
     # VALIDATION CHECKPOINT: Must have validation certificate
@@ -135,27 +152,25 @@ def build_features_single_pass():
         print("="*80)
         print("✅ Validation certificate found - proceeding with feature build")
     else:
-        print("\n⚠️  Validation certificate not found (optional for Phase 1)")
-        print("   Run: python3 scripts/validation/final_alpha_validation.py (after Alpha data collection)")
+        print("\n⚠️  Validation certificate not found (optional)")
     
-    # Step 1: Execute joins per spec (includes Alpha join)
+    # Step 1: Execute joins per spec (Alpha join removed)
     print("\n📋 Step 1: Executing declarative joins...")
     import sys
     sys.path.insert(0, str(DRIVE / "scripts"))
     from assemble.execute_joins import JoinExecutor
     
     executor = JoinExecutor(DRIVE / "registry/join_spec.yaml")
-    df_base = executor.execute()  # All sources joined (including Alpha)
+    df_base = executor.execute()  # All sources joined (no Alpha join)
     
     print(f"\n✅ Base joined: {len(df_base)} rows × {len(df_base.columns)} cols")
-    print(f"   Includes Alpha indicators: {sum('alpha_RSI_14' in c or 'alpha_MACD' in c for c in df_base.columns)} columns")
     
     # Step 2: Calculate features (all categories)
     print("\n📊 Step 2: Feature engineering...")
     
     # Import feature calculation functions
     from feature_calculations import (
-        calculate_technical_indicators,      # NOTE: May skip if Alpha provides
+        calculate_technical_indicators,      # Compute from OHLCV (DataBento/Yahoo bridge)
         calculate_cross_asset_features,       # KEEP: ZL correlations with FRED
         calculate_volatility_features,       # KEEP: Custom volatility
         calculate_seasonal_features,          # KEEP: Seasonality
@@ -165,30 +180,10 @@ def build_features_single_pass():
         add_override_flags
     )
     
-    # INTEGRATION STRATEGY:
-    # - Alpha provides 50+ technical indicators (pre-calculated)
-    # - Our calculations provide: correlations, volatility, seasonal, macro, weather
-    # - Both are needed: Alpha for technicals, ours for custom features
-    
     df_features = df_base.copy()
-    
-    # Check if Alpha indicators already present (from join)
-    # NOTE: Alpha is TOTALLY SEPARATE - has NO ZL data
-    # ZL rows will have NaN for Alpha indicators (this is correct)
-    # For ZL: Use Yahoo indicators (prefixed with 'yahoo_') + calculate custom technicals
-    # For other symbols: Use Alpha indicators (prefixed with 'alpha_') if present
-    alpha_indicators_present = any('alpha_RSI_14' in c or 'alpha_MACD_line' in c for c in df_features.columns)
-    
-    if alpha_indicators_present:
-        print("✅ Alpha technical indicators found in joined data (for non-ZL symbols)")
-        print("   ZL uses Yahoo indicators only (Alpha has no ZL data)")
-        print("   Calculating custom technical features for all symbols")
-        df_features = calculate_technical_indicators(df_features)  # Still calculate for ZL and custom features
-        df_features = calculate_cross_asset_features(df_features)
-    else:
-        print("⚠️  Alpha indicators not found - calculating technical indicators for all symbols")
-        df_features = calculate_technical_indicators(df_features)
-        df_features = calculate_cross_asset_features(df_features)
+    # Always compute technical/cross-asset features in-house
+    df_features = calculate_technical_indicators(df_features)
+    df_features = calculate_cross_asset_features(df_features)
     
     # Always calculate these (Alpha doesn't provide):
     try:
@@ -208,18 +203,14 @@ def build_features_single_pass():
         
         # Show feature breakdown
         tech_features = len([c for c in df_features.columns if c.startswith('tech_')])
-               alpha_features = len([c for c in df_features.columns if c.startswith('alpha_')])
-               yahoo_features = len([c for c in df_features.columns if c.startswith('yahoo_')])
         cross_features = len([c for c in df_features.columns if c.startswith('cross_')])
         vol_features = len([c for c in df_features.columns if c.startswith('vol_')])
         seas_features = len([c for c in df_features.columns if c.startswith('seas_')])
         macro_features = len([c for c in df_features.columns if c.startswith('macro_')])
         weather_features = len([c for c in df_features.columns if c.startswith('weather_')])
         flag_features = len([c for c in df_features.columns if c.startswith('flag_')])
-        
+
         print(f"\n   Feature breakdown:")
-               print(f"   - Alpha indicators: {alpha_features} (prefixed with 'alpha_')")
-               print(f"   - Yahoo indicators: {yahoo_features} (prefixed with 'yahoo_')")
         print(f"   - Custom technical: {tech_features}")
         print(f"   - Cross-asset: {cross_features}")
         print(f"   - Volatility: {vol_features}")
@@ -310,3 +301,7 @@ def create_horizon_exports(df_features):
 if __name__ == '__main__':
     df_features = build_features_single_pass()
     create_horizon_exports(df_features)
+
+
+
+

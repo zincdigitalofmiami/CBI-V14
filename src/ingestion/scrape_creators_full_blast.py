@@ -12,11 +12,32 @@ from datetime import datetime, timezone
 import uuid
 import time
 import logging
+import os
+from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from src.utils.keychain_manager import get_api_key as _get_api
+except Exception:
+    _get_api = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_KEY = 'B1TOgQvMVSV6TDglqB8lJ2cirqi2'
+def _resolve_secret(env_name: str, key_name: str):
+    val = os.getenv(env_name)
+    if val:
+        return val
+    if _get_api:
+        try:
+            return _get_api(key_name)
+        except Exception:
+            return None
+    return None
+
+API_KEY = _resolve_secret('SCRAPECREATORS_API_KEY', 'SCRAPECREATORS_API_KEY')
+if not API_KEY:
+    raise RuntimeError("SCRAPECREATORS_API_KEY not set. Export it or store in Keychain 'cbi-v14.SCRAPECREATORS_API_KEY'.")
 PROJECT_ID = 'cbi-v14'
 client = bigquery.Client(project=PROJECT_ID)
 
@@ -218,5 +239,4 @@ def main():
 if __name__ == '__main__':
     success = main()
     exit(0 if success else 1)
-
 

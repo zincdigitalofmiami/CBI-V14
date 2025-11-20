@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 
 -- Update zl_training_prod_allhistory_1m with RIN proxy features
 -- These replace the NULL RIN columns with calculated proxies

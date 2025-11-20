@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # YAHOO JOIN CONFLICT AUDIT - READ ONLY
 **Date:** November 17, 2025  
 **Status:** READ ONLY - NO CHANGES  
@@ -215,4 +221,8 @@ for symbol in ['CORN', 'WHEAT', 'WTI', 'BRENT', 'NATURAL_GAS', 'COTTON', 'SUGAR'
 3. Review all plans for conflicting statements about ZL
 4. Check if there are multiple join pipelines
 5. Verify what the user means by "yahoo joined with yahoo"
+
+
+
+
 

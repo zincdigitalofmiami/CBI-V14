@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Data Integration History
 **Last Updated**: November 14, 2025  
 **Purpose**: Consolidated history of all major data integration efforts
@@ -169,6 +175,10 @@ Added 11 new columns:
 
 **Last Reviewed**: November 14, 2025  
 **Training Approach**: Local Mac M4 + TensorFlow Metal (BQML deprecated)
+
+
+
+
 
 
 

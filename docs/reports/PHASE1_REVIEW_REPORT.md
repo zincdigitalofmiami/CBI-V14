@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # PHASE 1 IMPLEMENTATION REVIEW - November 17, 2025
 
 ## Executive Summary
@@ -627,4 +633,8 @@ TrainingData/raw/alpha/
 **Phase 2 infrastructure is 100% complete.** All validation, staging, sync, and client wrapper code is ready. Remaining Phase 2 tasks require BigQuery access or actual Alpha Vantage data collection.
 
 **Recommendation:** Fix FRED staging issue, complete Phase 1 rebuild and verification, then proceed to Phase 2 BigQuery setup and data collection.
+
+
+
+
 

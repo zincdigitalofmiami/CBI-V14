@@ -1,0 +1,199 @@
+# ⚠️ CRITICAL: NO FAKE DATA ⚠️
+# This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+# All data must come from authenticated APIs, official sources, or validated historical records.
+#
+
+# ============================================================================
+# DataBento Symbol Configuration for CBI-V14
+# ============================================================================
+# Date: November 19, 2025
+# Purpose: Define public and private symbols for DataBento ingestion
+# ============================================================================
+
+# Public symbols (visible in ZL dashboard)
+public_symbols:
+  # Primary commodity (Soybean Oil)
+  - root: ZL
+    description: "Soybean Oil Futures"
+    exchange: CBOT
+    schemas: ["ohlcv-1m", "ohlcv-1d", "bbo-1m"]
+  
+  # Soy Complex
+  - root: ZS
+    description: "Soybeans"
+    exchange: CBOT
+    schemas: ["ohlcv-1d"]
+  
+  - root: ZM
+    description: "Soybean Meal"
+    exchange: CBOT
+    schemas: ["ohlcv-1d"]
+  
+  # Grains (correlated with ZL)
+  - root: ZC
+    description: "Corn"
+    exchange: CBOT
+    schemas: ["ohlcv-1d"]
+  
+  - root: ZW
+    description: "Wheat"
+    exchange: CBOT
+    schemas: ["ohlcv-1d"]
+  
+  # Energy (biofuel correlation)
+  - root: CL
+    description: "Crude Oil"
+    exchange: NYMEX
+    schemas: ["ohlcv-1d"]
+  
+  - root: HO
+    description: "Heating Oil"
+    exchange: NYMEX
+    schemas: ["ohlcv-1d"]
+  
+  - root: RB
+    description: "RBOB Gasoline"
+    exchange: NYMEX
+    schemas: ["ohlcv-1d"]
+  
+  # FX (major trading pairs)
+  - root: 6L
+    description: "Brazilian Real"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: 6E
+    description: "Euro FX"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: 6J
+    description: "Japanese Yen"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: 6C
+    description: "Canadian Dollar"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+
+# Private symbols (MES dashboard page only)
+private_symbols:
+  # Micro E-mini Equity Index Futures
+  - root: MES
+    description: "Micro E-mini S&P 500"
+    exchange: CME
+    schemas: ["ohlcv-1m", "ohlcv-1d", "bbo-1m", "trades"]
+    special_requirements:
+      - "1-minute bars for microstructure"
+      - "Tick data for order imbalance"
+      - "Quarterly roll schedule (H, M, U, Z)"
+  
+  # Additional Micro E-minis (optional expansion)
+  - root: MNQ
+    description: "Micro E-mini Nasdaq-100"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+    
+  - root: M2K
+    description: "Micro E-mini Russell 2000"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: MYM
+    description: "Micro E-mini Dow"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  # Reference indices (for correlation)
+  - root: ES
+    description: "E-mini S&P 500 (reference)"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: NQ
+    description: "E-mini Nasdaq-100 (reference)"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+  
+  - root: RTY
+    description: "E-mini Russell 2000 (reference)"
+    exchange: CME
+    schemas: ["ohlcv-1d"]
+
+# Ingestion Configuration
+ingestion:
+  # DataBento settings
+  dataset: "GLBX.MDP3"
+  stype_in: "parent"  # Use parent symbology (e.g., MES.FUT)
+  
+  # Frequency settings
+  public_interval_minutes: 5    # 5-minute batch for public symbols
+  private_interval_minutes: 1   # 1-minute updates for MES microstructure
+  
+  # Lookback windows
+  initial_lookback_days: 7      # Initial historical data on first run
+  recovery_lookback_hours: 24   # Recovery window after outage
+  
+  # Storage paths
+  external_drive: "/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData"
+  live_data_path: "01_raw/databento/live"
+  historical_data_path: "01_raw/databento/historical"
+  
+  # BigQuery settings
+  bq_project: "cbi-v14"
+  bq_dataset_public: "raw_intelligence"
+  bq_dataset_private: "raw_intelligence"  # Same dataset, access controlled via policies
+  
+  # GCS settings
+  gcs_bucket: "cbi-v14-market-data"
+  gcs_prefix_public: "public/futures"
+  gcs_prefix_private: "private/mes"
+
+# Contract Roll Rules
+roll_calendar:
+  MES:
+    months: ["H", "M", "U", "Z"]  # March, June, September, December
+    roll_days_before_expiry: 8
+    roll_method: "volume_weighted"
+    
+  ZL:
+    months: ["F", "H", "K", "N", "Q", "U", "V", "Z"]  # All months
+    roll_days_before_expiry: 10
+    roll_method: "open_interest"
+
+# Data Quality Rules
+quality_checks:
+  - name: "No calendar spreads"
+    rule: "symbol NOT LIKE '%-%'"
+    
+  - name: "Realistic prices"
+    rules:
+      MES: "close BETWEEN 1000 AND 10000"
+      ZL: "close BETWEEN 20 AND 100"
+      CL: "close BETWEEN 10 AND 200"
+      
+  - name: "Non-zero volume"
+    rule: "volume > 0"
+    
+  - name: "OHLC consistency"
+    rule: "low <= close AND close <= high AND low <= open AND open <= high"
+
+# Access Control
+access_control:
+  public_viewers:
+    - "serviceAccount:dashboard@cbi-v14.iam.gserviceaccount.com"
+    - "user:chris@procurementdashboard.com"  # Example public user
+    
+  mes_viewers:
+    - "user:kirkmusick@gmail.com"
+    - "serviceAccount:mes-viewer@cbi-v14.iam.gserviceaccount.com"
+    - "serviceAccount:admin@cbi-v14.iam.gserviceaccount.com"
+    
+  admin_users:
+    - "user:kirkmusick@gmail.com"
+    - "serviceAccount:admin@cbi-v14.iam.gserviceaccount.com"
+
+
+
+

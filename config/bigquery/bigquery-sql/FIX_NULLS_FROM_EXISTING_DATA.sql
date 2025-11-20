@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- ============================================
 -- FIX NULLS USING MERGE SYNTAX (DUPLICATE-SAFE VERSION)
 -- Ensures one row per date to avoid MERGE constraint violations

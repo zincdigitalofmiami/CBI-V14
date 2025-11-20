@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Non-Training Features Documentation
 
 ## Overview
@@ -152,4 +158,8 @@ These have been **corrected in `registry/join_spec.yaml`**.
 - This document should be updated as new data sources are integrated
 - Feature selection should be validated empirically (SHAP, ablation studies)
 - Regime-specific models may have different feature availability
+
+
+
+
 

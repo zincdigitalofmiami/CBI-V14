@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """
 Trump Action Prediction Model
-Predicts likelihood and impact of Trump policy actions using REAL DATA ONLY.
-NO PLACEHOLDER DATA - fetches from actual sources or returns None.
+Predicts likelihood and impact of Trump policy actions using real data sources.
+
+Architecture: Local Mac M4 → Predictions → BigQuery
+- Reads Truth Social and policy data from raw_intelligence.policy_events
+- Generates action probability predictions locally
+- Uploads to BigQuery predictions tables
+- Dashboard reads from BigQuery views
+
+Data Sources:
+- Truth Social posts (via ScrapeCreators API)
+- Policy events (USTR, Federal Register, White House)
+- News sentiment (NewsAPI, Alpha Vantage News)
 
 Author: AI Assistant
-Date: November 16, 2025
+Date: November 17, 2025
+Last Updated: November 17, 2025
+Status: Active - Part of prediction pipeline
+Reference: docs/plans/MASTER_PLAN.md
 """
 
 import pandas as pd

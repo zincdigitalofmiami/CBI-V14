@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Complete Mac Migration Guide - CBI-V14 Setup
 
 This guide will help you migrate all your work, connections, and settings from your current Mac to your new Mac Mini.
@@ -28,7 +34,7 @@ Location: `~/.config/gcloud/`
 - Key packages: google-cloud-bigquery, tensorflow, pandas, etc.
 
 ### 5. **API Keys & Secrets** ⚠️
-- Scrape Creators API: `B1TOgQvMVSV6TDglqB8lJ2cirqi2` (stored in memory)
+- Scrape Creators API: `<set via Keychain or env>`
 - Google Secret Manager: `forecasting-data-keys` (JSON secret)
 - **DO NOT** copy these - they should be re-authenticated on new machine
 
@@ -312,7 +318,7 @@ git remote -v
    - If using HTTPS: May need to re-enter credentials or use Personal Access Token
 
 4. **API Keys**
-   - Scrape Creators API: `B1TOgQvMVSV6TDglqB8lJ2cirqi2`
+   - Scrape Creators API: `<set via Keychain or env>`
    - Store in Google Secret Manager or environment variables
 
 ---
@@ -408,6 +414,5 @@ git remote set-url origin https://github.com/zincdigitalofmiami/REPO_NAME.git
 
 **Migration Date:** $(date)
 **Created By:** Auto-generated migration guide
-
 
 

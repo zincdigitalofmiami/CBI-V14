@@ -69,3 +69,7 @@ class ManifestGenerator:
                 sha256.update(chunk)
         return sha256.hexdigest()
 
+
+
+
+

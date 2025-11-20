@@ -1,3 +1,8 @@
+-- ⚠️ CRITICAL: NO FAKE DATA ⚠️
+-- This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+-- All data must come from authenticated APIs, official sources, or validated historical records.
+--
+
 -- Find all columns that are 100% NULL for 6M training rows
 SELECT 
   'news_article_count' as col, COUNTIF(news_article_count IS NULL) as nulls, COUNT(*) as total FROM `cbi-v14.models_v4.training_dataset_super_enriched` WHERE target_6m IS NOT NULL

@@ -1,3 +1,9 @@
+---
+**⚠️ CRITICAL: NO FAKE DATA ⚠️**
+This project uses ONLY real, verified data sources. NO placeholders, NO synthetic data, NO fake values.
+All data must come from authenticated APIs, official sources, or validated historical records.
+---
+
 # Day 2 Baseline Training Scripts - Complete
 **Date:** November 12, 2025  
 **Status:** ✅ **COMPLETE** - All Day 2 scripts implemented and ready for execution
