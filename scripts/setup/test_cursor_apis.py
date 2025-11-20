@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""
+Test Cursor Gemini and OpenAI API Keys
+Actually tests the keys work, not just that they're configured
+"""
+
+import subprocess
+import json
+import sqlite3
+from pathlib import Path
+import sys
+
+SETTINGS_FILE = Path.home() / "Library/Application Support/Cursor/User/settings.json"
+STATE_DB = Path.home() / "Library/Application Support/Cursor/User/globalStorage/state.vscdb"
+
+def test_gemini_key(key: str) -> bool:
+    """Test Gemini API key by making actual API call."""
+    print("🧪 Testing Gemini API key...")
+    
+    try:
+        result = subprocess.run([
+            "curl", "-s", "--max-time", "10",
+            f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+        ], capture_output=True, text=True, timeout=15)
+        
+        if result.returncode != 0:
+            print(f"   ❌ Request failed: {result.stderr[:200]}")
+            return False
+        
+        try:
+            data = json.loads(result.stdout)
+            
+            if "error" in data:
+                error = data["error"]
+                print(f"   ❌ API Error: {error.get('message', 'Unknown error')}")
+                print(f"   ❌ Status: {error.get('status', 'Unknown')}")
+                return False
+            
+            if "models" in data or len(data) > 0:
+                print("   ✅ Gemini API key is VALID and WORKING")
+                print(f"   ✅ Successfully connected to Gemini API")
+                return True
+            else:
+                print(f"   ⚠️  Unexpected response: {result.stdout[:200]}")
+                return False
+                
+        except json.JSONDecodeError:
+            print(f"   ❌ Invalid JSON response: {result.stdout[:200]}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print("   ❌ Request timed out")
+        return False
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return False
+
+def test_openai_key(key: str) -> bool:
+    """Test OpenAI API key by making actual API call."""
+    print("🧪 Testing OpenAI API key...")
+    
+    try:
+        result = subprocess.run([
+            "curl", "-s", "--max-time", "10",
+            "https://api.openai.com/v1/models",
+            "-H", f"Authorization: Bearer {key}",
+            "-H", "Content-Type: application/json"
+        ], capture_output=True, text=True, timeout=15)
+        
+        if result.returncode != 0:
+            print(f"   ❌ Request failed: {result.stderr[:200]}")
+            return False
+        
+        try:
+            data = json.loads(result.stdout)
+            
+            if "error" in data:
+                error = data["error"]
+                print(f"   ❌ API Error: {error.get('message', 'Unknown error')}")
+                print(f"   ❌ Type: {error.get('type', 'Unknown')}")
+                print(f"   ❌ Code: {error.get('code', 'Unknown')}")
+                
+                # Check for specific errors
+                if "organization" in error.get('message', '').lower():
+                    print(f"   💡 Fix: Verify organization at https://platform.openai.com/settings/organization/general")
+                
+                return False
+            
+            if "data" in data or isinstance(data, list):
+                print("   ✅ OpenAI API key is VALID and WORKING")
+                print(f"   ✅ Successfully connected to OpenAI API")
+                return True
+            else:
+                print(f"   ⚠️  Unexpected response: {result.stdout[:200]}")
+                return False
+                
+        except json.JSONDecodeError:
+            print(f"   ❌ Invalid JSON response: {result.stdout[:200]}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print("   ❌ Request timed out")
+        return False
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return False
+
+def main():
+    """Test both API keys."""
+    print("="*80)
+    print("TESTING CURSOR GEMINI & OPENAI API KEYS")
+    print("="*80)
+    print()
+    
+    all_passed = True
+    
+    # Test Gemini
+    print("1. GEMINI API KEY TEST")
+    print("-" * 60)
+    
+    if not SETTINGS_FILE.exists():
+        print("   ❌ Settings file not found")
+        all_passed = False
+    else:
+        with open(SETTINGS_FILE, 'r') as f:
+            settings = json.load(f)
+        
+        gemini_key = settings.get("geminicodeassist.apiKey")
+        if not gemini_key:
+            print("   ❌ Gemini API key not found in settings")
+            all_passed = False
+        else:
+            print(f"   Key: {gemini_key[:20]}...")
+            if test_gemini_key(gemini_key):
+                print("   ✅ Gemini: WORKING")
+            else:
+                print("   ❌ Gemini: NOT WORKING")
+                all_passed = False
+    
+    print()
+    
+    # Test OpenAI
+    print("2. OPENAI API KEY TEST")
+    print("-" * 60)
+    
+    if not STATE_DB.exists():
+        print("   ❌ Cursor database not found")
+        all_passed = False
+    else:
+        try:
+            conn = sqlite3.connect(STATE_DB)
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM ItemTable WHERE key = 'cursorAuth/openAIKey' LIMIT 1")
+            result = cursor.fetchone()
+            conn.close()
+            
+            if not result:
+                print("   ❌ OpenAI key not found in database")
+                all_passed = False
+            else:
+                openai_key = result[0]
+                print(f"   Key: {openai_key[:20]}...")
+                if test_openai_key(openai_key):
+                    print("   ✅ OpenAI: WORKING")
+                else:
+                    print("   ❌ OpenAI: NOT WORKING")
+                    all_passed = False
+                    
+        except Exception as e:
+            print(f"   ❌ Error reading database: {e}")
+            all_passed = False
+    
+    print()
+    print("="*80)
+    print("TEST RESULTS")
+    print("="*80)
+    
+    if all_passed:
+        print("✅ BOTH API KEYS ARE WORKING!")
+        print()
+        print("🔄 Restart Cursor to use them:")
+        print("   Cmd + Q → Quit → Reopen Cursor")
+        return 0
+    else:
+        print("⚠️  SOME API KEYS ARE NOT WORKING")
+        print()
+        print("Check the errors above and fix:")
+        print("  - Invalid/expired keys")
+        print("  - Missing permissions")
+        print("  - Organization verification needed (OpenAI)")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
