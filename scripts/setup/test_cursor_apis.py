@@ -163,9 +163,23 @@ def test_openai_key(key: str) -> bool:
                     or "insufficient_quota" in code_lower
                     or "rate_limit" in type_lower
                     or "rate_limit" in code_lower
+                    or "rate_limit_exceeded" in code_lower
+                    or "tokens per min" in message_lower
+                    or "tpm" in message_lower
+                    or ("limit" in message_lower and "requested" in message_lower)
                 ):
                     print("   ⚠️ This looks like an OPENAI QUOTA/RATE LIMIT issue.")
-                    print("   💡 Check https://platform.openai.com/usage and your plan limits.")
+                    
+                    # Extract TPM info if present
+                    if "tokens per min" in message_lower or "tpm" in message_lower:
+                        if "Limit" in message and "Requested" in message:
+                            print("   📊 This is a TOKENS PER MINUTE (TPM) limit issue.")
+                            print("   💡 Your request is too large - reduce input/output tokens.")
+                            print("   💡 See https://platform.openai.com/account/rate-limits")
+                        else:
+                            print("   💡 Check https://platform.openai.com/usage and your plan limits.")
+                    else:
+                        print("   💡 Check https://platform.openai.com/usage and your plan limits.")
                 else:
                     print("   ℹ️ This does NOT look like a quota error.")
                     print("   ℹ️ For auth/organization issues, see docs/setup/FIX_OPENAI_GEMINI_ERRORS.md.")

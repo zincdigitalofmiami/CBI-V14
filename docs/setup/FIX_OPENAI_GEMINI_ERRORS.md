@@ -127,6 +127,8 @@ This makes Gemini use individual tier which may avoid the parameter issue.
 
 ## 🧪 QUOTAS VS REAL ERRORS
 
+### Previous Issues (NOT Quota Related)
+
 From direct API tests:
 - Made multiple rapid requests to the Gemini API with your key
 - No rate limit or quota errors occurred
@@ -137,15 +139,35 @@ The real issues were:
 - `ERROR_BAD_USER_API_KEY` → Expired/invalid Cursor authentication token (not Gemini/OpenAI keys)
 - OpenAI "organization must be verified" → Security requirement from OpenAI
 
-If quotas were the problem, error messages would look like:
+### NEW: Actual Quota Error (TPM Rate Limit)
+
+**If you see this error:**
+```
+Request too large for gpt-5.1 on tokens per min (TPM): Limit 30000, Requested 162807
+```
+
+**This IS a quota/rate limit issue:**
+- ✅ Real rate limit error
+- ✅ TPM (Tokens Per Minute) limit exceeded
+- ✅ Request is too large for your plan
+
+**Fix:** See `docs/setup/OPENAI_TPM_RATE_LIMIT_FIX.md` for solutions
+
+### How to Tell the Difference
+
+**Quota/Rate Limit Errors:**
+- `rate_limit_exceeded`
+- `tokens per min (TPM)`
+- `Limit X, Requested Y`
 - `429 Too Many Requests`
 - `Quota exceeded`
-- `Rate limit exceeded`
 - `RESOURCE_EXHAUSTED`
 
-You're not seeing those in Cursor. That means:
-- Quotas and limits docs are good reference material
-- But your current failures are caused by Cursor bugs, expired auth, and org verification—not quota exhaustion
+**NOT Quota Errors:**
+- `top_k parameter` → Cursor bug
+- `ERROR_BAD_USER_API_KEY` → Expired auth
+- `organization must be verified` → Security requirement
+- `Invalid JSON payload` → Parameter mismatch
 
 ---
 
