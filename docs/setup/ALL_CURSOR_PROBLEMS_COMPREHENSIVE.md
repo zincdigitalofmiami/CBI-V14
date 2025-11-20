@@ -782,6 +782,7 @@ python3 scripts/setup/audit_cursor_auth.py
 - `docs/setup/TOP_K_ERROR_FINAL_FIX.md` - top_k error fix
 - `docs/setup/CURSOR_AUTH_AUDIT_REPORT.md` - Authentication audit
 - `docs/setup/FIX_OPENAI_GEMINI_ERRORS.md` - General error fixes
+- `docs/setup/GEMINI_CODE_ASSIST_QUOTAS_LIMITS.md` - Quota and limit information
 
 ---
 
