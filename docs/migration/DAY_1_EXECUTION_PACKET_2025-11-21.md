@@ -66,17 +66,28 @@ CREATE TABLE IF NOT EXISTS features.daily_ml_matrix (
   pivots STRUCT<
     P FLOAT64, R1 FLOAT64, R2 FLOAT64, S1 FLOAT64, S2 FLOAT64,
     distance_to_P FLOAT64,
-    distance_to_nearest FLOAT64,
-    weekly_P_distance FLOAT64,
-    is_above_P BOOL
+    distance_to_nearest_pivot FLOAT64,
+    weekly_pivot_distance FLOAT64,
+    price_above_P BOOL
   >,
 
   policy STRUCT<
     trump_action_prob FLOAT64,
+    trump_expected_zl_move FLOAT64,
     trump_score FLOAT64,
+    trump_score_signed FLOAT64,
+    trump_confidence FLOAT64,
     trump_sentiment_7d FLOAT64,
     trump_tariff_intensity FLOAT64,
-    is_shock_regime BOOL
+    trump_procurement_alert BOOL,
+    trump_mentions INT64,
+    trumpxi_china_mentions INT64,
+    trumpxi_sentiment_volatility FLOAT64,
+    trumpxi_policy_impact FLOAT64,
+    trumpxi_volatility_30d_ma FLOAT64,
+    trump_soybean_sentiment_7d FLOAT64,
+    policy_trump_topic_multiplier FLOAT64,
+    policy_trump_recency_decay FLOAT64
   >,
 
   golden_zone STRUCT<
@@ -105,11 +116,15 @@ OPTIONS (description = 'Master ML Feature Matrix. Denormalized. 1-Hour Micro-Bat
 
 ## 4) Producer ↔ schema handshake (pivots)
 - Ensure `cloud_function_pivot_calculator.py` outputs exactly:
-  `P, R1, R2, S1, S2, distance_to_P, distance_to_nearest, weekly_P_distance, is_above_P`
+  `P, R1, R2, S1, S2, distance_to_P, distance_to_nearest_pivot, weekly_pivot_distance, price_above_P`
 - 1-row test (pseudo):
 ```
 sample = producer_output_one_row()
-schema_keys = {"P","R1","R2","S1","S2","distance_to_P","distance_to_nearest","weekly_P_distance","is_above_P"}
+schema_keys = {
+  "P","R1","R2","S1","S2",
+  "distance_to_P","distance_to_nearest_pivot",
+  "weekly_pivot_distance","price_above_P"
+}
 assert set(sample.keys()) == schema_keys
 ```
 
