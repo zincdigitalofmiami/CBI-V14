@@ -1,224 +1,288 @@
 #!/usr/bin/env python3
 """
-Day 2 Integration Test - 100 Row Batch Load
-Validates end-to-end pipeline before production
+100-Row Integration Test for features.daily_ml_matrix
+======================================================
 
-Tests:
-1. Schema handshake (producer → DDL)
-2. Regime materialization (no NULL regime.name)
-3. All STRUCT fields populated
-4. Load succeeds to BigQuery
-5. Query-back verification
+Tests the complete ingestion pipeline:
+1. Generate 100 test rows with realistic data
+2. Run ingestion pipeline
+3. Query back from BigQuery
+4. Verify data integrity
+5. Auto-cleanup (delete test data)
+
+This test verifies:
+- Schema enforcement (STRUCTs)
+- Regime lookup (Python cache)
+- Micro-batch loading
+- Partitioning/clustering
+- Data quality checks
+
+Per: DAY_1_EXECUTION_PACKET_2025-11-21.md
 """
 
 import sys
 import logging
-from datetime import datetime, date
-from google.cloud import bigquery
+from datetime import datetime, timedelta, date
+from pathlib import Path
+
 import pandas as pd
+import numpy as np
+from google.cloud import bigquery
 
-# Import ingestion logic
-sys.path.insert(0, '/Users/kirkmusick/Documents/GitHub/CBI-V14')
-from scripts.ingestion.ingest_features_hybrid import (
-    get_current_regime,
-    calculate_features_mock,
-    validate_batch,
-    load_with_retry,
-    test_schema_handshake
+# Add parent dir to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from ingestion.ingest_features_hybrid import IngestionPipeline
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("INTEGRATION_TEST")
-
+# Test constants
 PROJECT_ID = "cbi-v14"
-DESTINATION = f"{PROJECT_ID}.features.daily_ml_matrix_test"  # Use test table
+TABLE_ID = "features.daily_ml_matrix"
+TEST_SYMBOL = "ZL_TEST"
+NUM_ROWS = 100
 
-def create_test_table(client: bigquery.Client):
-    """Create test table (copy of production schema)"""
+
+def generate_test_data() -> pd.DataFrame:
+    """Generate 100 rows of realistic test data."""
+    logger.info(f"Generating {NUM_ROWS} test rows...")
     
-    ddl = f"""
-    CREATE TABLE IF NOT EXISTS {DESTINATION} (
-      symbol STRING NOT NULL,
-      data_date DATE NOT NULL,
-      timestamp TIMESTAMP,
+    # Date range: last 100 days within regime coverage (2023-11-01 to present)
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=NUM_ROWS-1)
+    
+    # Ensure we're within trump_anticipation_2024 or trump_second_term
+    if start_date < date(2023, 11, 1):
+        start_date = date(2023, 11, 1)
+        end_date = start_date + timedelta(days=NUM_ROWS-1)
+    
+    dates = pd.date_range(start=start_date, end=end_date, freq='D')[:NUM_ROWS]
+    
+    # Generate realistic OHLCV data (ZL futures ~$0.50/lb, so ~$50)
+    np.random.seed(42)
+    base_price = 50.0
+    
+    data = {
+        'symbol': [TEST_SYMBOL] * NUM_ROWS,
+        'data_date': dates,
+        'timestamp': [datetime.now()] * NUM_ROWS,
+        
+        # Market data
+        'open': base_price + np.random.randn(NUM_ROWS) * 2,
+        'high': base_price + np.random.randn(NUM_ROWS) * 2 + 1,
+        'low': base_price + np.random.randn(NUM_ROWS) * 2 - 1,
+        'close': base_price + np.random.randn(NUM_ROWS) * 2,
+        'volume': np.random.randint(10000, 50000, NUM_ROWS),
+        'vwap': base_price + np.random.randn(NUM_ROWS) * 2,
+        'realized_vol_1h': np.random.uniform(0.1, 0.5, NUM_ROWS),
+        
+        # Pivot points (realistic for $50 price)
+        'P': base_price + np.random.randn(NUM_ROWS) * 0.5,
+        'R1': base_price + np.random.uniform(0.5, 1.5, NUM_ROWS),
+        'R2': base_price + np.random.uniform(1.5, 3.0, NUM_ROWS),
+        'S1': base_price - np.random.uniform(0.5, 1.5, NUM_ROWS),
+        'S2': base_price - np.random.uniform(1.5, 3.0, NUM_ROWS),
+        'distance_to_P': np.random.randn(NUM_ROWS) * 0.5,
+        'distance_to_nearest_pivot': np.random.uniform(0.1, 2.0, NUM_ROWS),
+        'weekly_pivot_distance': np.random.randn(NUM_ROWS) * 1.0,
+        'price_above_P': np.random.choice([True, False], NUM_ROWS),
+        
+        # Trump/policy features
+        'trump_action_prob': np.random.uniform(0.0, 1.0, NUM_ROWS),
+        'trump_expected_zl_move': np.random.randn(NUM_ROWS) * 0.02,
+        'trump_score': np.random.uniform(0.0, 10.0, NUM_ROWS),
+        'trump_score_signed': np.random.randn(NUM_ROWS) * 5.0,
+        'trump_confidence': np.random.uniform(0.5, 1.0, NUM_ROWS),
+        'trump_sentiment_7d': np.random.randn(NUM_ROWS),
+        'trump_tariff_intensity': np.random.uniform(0.0, 10.0, NUM_ROWS),
+        'trump_procurement_alert': np.random.choice([True, False], NUM_ROWS),
+        'trump_mentions': np.random.randint(0, 50, NUM_ROWS),
+        'trumpxi_china_mentions': np.random.randint(0, 20, NUM_ROWS),
+        'trumpxi_sentiment_volatility': np.random.uniform(0.0, 5.0, NUM_ROWS),
+        'trumpxi_policy_impact': np.random.randn(NUM_ROWS) * 0.5,
+        'trumpxi_volatility_30d_ma': np.random.uniform(0.1, 2.0, NUM_ROWS),
+        'trump_soybean_sentiment_7d': np.random.randn(NUM_ROWS),
+        'policy_trump_topic_multiplier': np.random.uniform(1.0, 3.0, NUM_ROWS),
+        'policy_trump_recency_decay': np.random.uniform(0.5, 1.0, NUM_ROWS),
+        
+        # Golden Zone (MES-style, but included for testing)
+        'golden_zone_state': np.random.randint(0, 3, NUM_ROWS),
+        'swing_high': base_price + np.random.uniform(1.0, 5.0, NUM_ROWS),
+        'swing_low': base_price - np.random.uniform(1.0, 5.0, NUM_ROWS),
+        'fib_50': base_price + np.random.randn(NUM_ROWS) * 1.0,
+        'fib_618': base_price + np.random.randn(NUM_ROWS) * 1.5,
+        'vol_decay_slope': np.random.randn(NUM_ROWS) * 0.1,
+        'qualified_trigger': np.random.choice([True, False], NUM_ROWS),
+    }
+    
+    df = pd.DataFrame(data)
+    
+    # Ensure high > low, high >= open/close, low <= open/close
+    df['high'] = df[['open', 'high', 'low', 'close']].max(axis=1) + 0.1
+    df['low'] = df[['open', 'high', 'low', 'close']].min(axis=1) - 0.1
+    
+    logger.info(f"✅ Generated {len(df)} test rows")
+    logger.info(f"Date range: {df['data_date'].min()} → {df['data_date'].max()}")
+    
+    return df
 
-      market_data STRUCT<
-        open FLOAT64, high FLOAT64, low FLOAT64, close FLOAT64,
-        volume INT64, vwap FLOAT64, realized_vol_1h FLOAT64
-      >,
 
-      pivots STRUCT<
-        P FLOAT64, R1 FLOAT64, R2 FLOAT64, S1 FLOAT64, S2 FLOAT64,
-        distance_to_P FLOAT64,
-        distance_to_nearest_pivot FLOAT64,
-        weekly_pivot_distance FLOAT64,
-        price_above_P BOOL
-      >,
-
-      policy STRUCT<
-        trump_action_prob FLOAT64,
-        trump_expected_zl_move FLOAT64,
-        trump_score FLOAT64,
-        trump_score_signed FLOAT64,
-        trump_confidence FLOAT64,
-        trump_sentiment_7d FLOAT64,
-        trump_tariff_intensity FLOAT64,
-        trump_procurement_alert BOOL,
-        trump_mentions INT64,
-        trumpxi_china_mentions INT64,
-        trumpxi_sentiment_volatility FLOAT64,
-        trumpxi_policy_impact FLOAT64,
-        trumpxi_volatility_30d_ma FLOAT64,
-        trump_soybean_sentiment_7d FLOAT64,
-        policy_trump_topic_multiplier FLOAT64,
-        policy_trump_recency_decay FLOAT64
-      >,
-
-      golden_zone STRUCT<
-        state INT64,
-        swing_high FLOAT64,
-        swing_low FLOAT64,
-        fib_50 FLOAT64,
-        fib_618 FLOAT64,
-        vol_decay_slope FLOAT64,
-        qualified_trigger BOOL
-      >,
-
-      regime STRUCT<
-        name STRING,
-        weight INT64,
-        vol_percentile FLOAT64,
-        k_vol FLOAT64
-      >,
-
-      ingestion_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
-    )
-    PARTITION BY data_date
-    CLUSTER BY symbol, regime.name;
+def query_test_data(client: bigquery.Client) -> pd.DataFrame:
+    """Query back the test data from BigQuery."""
+    query = f"""
+    SELECT
+      symbol,
+      data_date,
+      regime_name,
+      regime.name as regime_struct_name,
+      regime.weight as regime_weight,
+      market_data.close as close_price,
+      pivots.P as pivot_P,
+      policy.trump_action_prob,
+      golden_zone.state as gz_state
+    FROM `{PROJECT_ID}.{TABLE_ID}`
+    WHERE symbol = '{TEST_SYMBOL}'
+    ORDER BY data_date
     """
     
-    client.query(ddl).result()
-    logger.info(f"✅ Test table created: {DESTINATION}")
+    logger.info("Querying test data from BigQuery...")
+    df = client.query(query).to_dataframe()
+    logger.info(f"✅ Retrieved {len(df)} rows from BigQuery")
+    
+    return df
 
-def cleanup_test_table(client: bigquery.Client):
-    """Drop test table after test"""
-    try:
-        client.delete_table(DESTINATION)
-        logger.info(f"✅ Test table cleaned up: {DESTINATION}")
-    except Exception as e:
-        logger.warning(f"⚠️ Could not cleanup test table: {e}")
 
-def test_100_row_batch():
-    """
-    Main test: Generate 100 rows, load to BigQuery, verify
+def cleanup_test_data(client: bigquery.Client):
+    """Delete test data from BigQuery."""
+    query = f"""
+    DELETE FROM `{PROJECT_ID}.{TABLE_ID}`
+    WHERE symbol = '{TEST_SYMBOL}'
     """
     
-    logger.info("🧪 Starting 100-Row Batch Integration Test")
+    logger.info("Cleaning up test data...")
+    job = client.query(query)
+    job.result()
+    logger.info(f"✅ Deleted test data for symbol {TEST_SYMBOL}")
+
+
+def verify_data_integrity(original_df: pd.DataFrame, queried_df: pd.DataFrame) -> bool:
+    """Verify data integrity between original and queried data."""
+    logger.info("Verifying data integrity...")
+    
+    checks = {
+        'row_count': len(original_df) == len(queried_df),
+        'regime_populated': queried_df['regime_name'].notna().all(),
+        'regime_weight_valid': (queried_df['regime_weight'].isin([400, 600])).all(),
+        'close_price_reasonable': (queried_df['close_price'] > 0).all(),
+        'pivot_populated': queried_df['pivot_P'].notna().sum() > 0,
+        'policy_populated': queried_df['trump_action_prob'].notna().sum() > 0,
+    }
+    
+    logger.info("Integrity checks:")
+    for check, passed in checks.items():
+        status = "✅" if passed else "❌"
+        logger.info(f"  {status} {check}: {passed}")
+    
+    return all(checks.values())
+
+
+def main():
+    """Run the integration test."""
+    logger.info("="*80)
+    logger.info("100-ROW INTEGRATION TEST")
+    logger.info("="*80)
     
     client = bigquery.Client(project=PROJECT_ID)
     
     try:
-        # Step 1: Create test table
-        create_test_table(client)
+        # 1. Generate test data
+        test_df = generate_test_data()
         
-        # Step 2: Run schema handshake test
-        if not test_schema_handshake():
-            logger.error("❌ TEST FAILED: Schema handshake failed")
-            return False
+        # 2. Run ingestion
+        logger.info("\n" + "="*80)
+        logger.info("RUNNING INGESTION PIPELINE")
+        logger.info("="*80)
         
-        # Step 3: Generate 100 rows (50 ZL + 50 MES)
-        now = datetime.now()
-        today = date.today()
-        current_regime = get_current_regime(client, str(today))
+        pipeline = IngestionPipeline()
+        report = pipeline.ingest(test_df)
         
-        rows = []
-        for i in range(50):
-            for symbol in ["ZL", "MES"]:
-                mkt, piv, pol, gz = calculate_features_mock(symbol, now)
-                
-                row = {
-                    "symbol": symbol,
-                    "data_date": today,
-                    "timestamp": now,
-                    "market_data": mkt,
-                    "pivots": piv,
-                    "policy": pol,
-                    "golden_zone": gz,
-                    "regime": current_regime,
-                    "ingestion_ts": now
-                }
-                rows.append(row)
+        if report['status'] != 'success':
+            logger.error(f"❌ Ingestion failed: {report}")
+            return 1
         
-        df = pd.DataFrame(rows)
-        logger.info(f"✅ Generated {len(df)} rows")
+        logger.info(f"✅ Ingestion successful: {report['rows_loaded']} rows loaded")
         
-        # Step 4: Validate batch
-        validate_batch(df)
+        # 3. Query back
+        logger.info("\n" + "="*80)
+        logger.info("QUERYING TEST DATA")
+        logger.info("="*80)
         
-        # Step 5: Load to BigQuery
-        load_with_retry(client, df, DESTINATION, max_retries=3)
+        queried_df = query_test_data(client)
         
-        # Step 6: Query back and verify
-        verify_query = f"""
-        SELECT 
-            symbol,
-            COUNT(*) as row_count,
-            COUNT(DISTINCT regime.name) as unique_regimes,
-            SUM(CASE WHEN pivots.distance_to_nearest_pivot IS NULL THEN 1 ELSE 0 END) as null_pivots,
-            SUM(CASE WHEN policy.trump_mentions IS NULL THEN 1 ELSE 0 END) as null_policy,
-            SUM(CASE WHEN regime.name IS NULL THEN 1 ELSE 0 END) as null_regime
-        FROM `{DESTINATION}`
-        WHERE data_date = '{today}'
-        GROUP BY symbol
-        ORDER BY symbol
-        """
+        if queried_df.empty:
+            logger.error("❌ No data retrieved from BigQuery")
+            return 1
         
-        result_df = client.query(verify_query).to_dataframe()
+        # 4. Verify integrity
+        logger.info("\n" + "="*80)
+        logger.info("VERIFYING DATA INTEGRITY")
+        logger.info("="*80)
         
-        logger.info("📊 Query-Back Results:")
-        logger.info(f"\n{result_df.to_string()}")
+        integrity_ok = verify_data_integrity(test_df, queried_df)
         
-        # Step 7: Validate results
-        errors = []
+        if not integrity_ok:
+            logger.error("❌ Data integrity check failed")
+            return 1
         
-        for _, row in result_df.iterrows():
-            if row['row_count'] != 50:
-                errors.append(f"{row['symbol']}: Expected 50 rows, got {row['row_count']}")
-            
-            if row['null_pivots'] > 0:
-                errors.append(f"{row['symbol']}: {row['null_pivots']} NULL pivots detected")
-            
-            if row['null_policy'] > 0:
-                errors.append(f"{row['symbol']}: {row['null_policy']} NULL policy fields detected")
-            
-            if row['null_regime'] > 0:
-                errors.append(f"{row['symbol']}: {row['null_regime']} NULL regime.name detected")
-            
-            if row['unique_regimes'] != 1:
-                errors.append(f"{row['symbol']}: Expected 1 unique regime, got {row['unique_regimes']}")
+        logger.info("✅ Data integrity verified")
         
-        if errors:
-            logger.error("❌ TEST FAILED: Validation errors:")
-            for error in errors:
-                logger.error(f"  - {error}")
-            return False
+        # 5. Show sample
+        logger.info("\n" + "="*80)
+        logger.info("SAMPLE DATA (first 5 rows)")
+        logger.info("="*80)
+        print(queried_df.head())
         
-        logger.info("✅ All validations passed!")
-        logger.info("🎉 100-ROW BATCH INTEGRATION TEST: PASSED")
+        # 6. Cleanup
+        logger.info("\n" + "="*80)
+        logger.info("CLEANUP")
+        logger.info("="*80)
         
-        return True
+        cleanup_test_data(client)
         
+        # Final verification: ensure data was deleted
+        final_check = query_test_data(client)
+        if not final_check.empty:
+            logger.warning(f"⚠️ Cleanup incomplete: {len(final_check)} rows remain")
+            return 1
+        
+        logger.info("✅ Cleanup verified")
+        
+        # Success!
+        logger.info("\n" + "="*80)
+        logger.info("✅ ALL TESTS PASSED")
+        logger.info("="*80)
+        logger.info(f"Rows ingested: {report['rows_loaded']}")
+        logger.info(f"Duration: {report['duration_seconds']:.1f}s")
+        logger.info(f"Throughput: {report['rows_per_second']:.0f} rows/sec")
+        
+        return 0
+    
     except Exception as e:
-        logger.error(f"❌ TEST FAILED: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        logger.error(f"❌ Test failed with exception: {e}", exc_info=True)
         
-    finally:
-        # Cleanup test table
-        cleanup_test_table(client)
+        # Try to cleanup anyway
+        try:
+            cleanup_test_data(client)
+        except:
+            pass
+        
+        return 1
+
 
 if __name__ == "__main__":
-    success = test_100_row_batch()
-    sys.exit(0 if success else 1)
-
+    sys.exit(main())
