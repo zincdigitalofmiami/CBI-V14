@@ -65,6 +65,7 @@ cache/
 TrainingData/
 Models/
 Logs/
+Full BQ Data Backup/
 
 # Reorganization directories to ignore
 legacy/bqml-work/sql/*.log

@@ -187,3 +187,4 @@ def get_cached_response(query):
 **Current Status: ⚠️ TPM at 85% - Monitor closely, optimize token usage**
 
 
+

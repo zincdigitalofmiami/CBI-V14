@@ -379,11 +379,28 @@ CREATE OR REPLACE TABLE features.master_features (
   yahoo_zl_mfi_14 FLOAT64,
   yahoo_zl_obv FLOAT64,
   yahoo_zl_vwap FLOAT64,
-  yahoo_zl_pivot_point FLOAT64,
-  yahoo_zl_resistance_1 FLOAT64,
-  yahoo_zl_resistance_2 FLOAT64,
-  yahoo_zl_support_1 FLOAT64,
-  yahoo_zl_support_2 FLOAT64,
+  
+  -- ========== PIVOT POINTS (Databento-based, Phase 1 Core) ==========
+  -- Source: features.pivot_math_daily (cloud_function_pivot_calculator.py output)
+  -- ✅ VERIFIED: Column names match calculator output exactly (Integration Test passed)
+  -- Phase 1: Core pivots (9 columns) | Phase 2: Extended pivots deferred (R3/R4, M1-M8, Monthly/Quarterly)
+  
+  -- Raw pivot levels (daily) - from _daily_pivots() function
+  P FLOAT64,                          -- Daily pivot point
+  R1 FLOAT64,                         -- Daily resistance 1
+  R2 FLOAT64,                         -- Daily resistance 2
+  S1 FLOAT64,                         -- Daily support 1
+  S2 FLOAT64,                         -- Daily support 2
+  
+  -- Distance features (absolute values) - calculated in handler()
+  distance_to_P FLOAT64,              -- Distance to daily pivot
+  distance_to_nearest_pivot FLOAT64,  -- Distance to nearest pivot level
+  
+  -- Weekly context - from _range_pivots() function
+  weekly_pivot_distance FLOAT64,      -- Distance to weekly pivot (not the level itself)
+  
+  -- Boolean flags - calculated in handler()
+  price_above_P BOOL,                 -- Price above daily pivot (directional indicator)
   yahoo_zl_williams_r FLOAT64,
   yahoo_zl_roc_10 FLOAT64,
   yahoo_zl_momentum_10 FLOAT64,
@@ -642,7 +659,7 @@ CREATE OR REPLACE TABLE features.master_features (
 PARTITION BY date
 CLUSTER BY symbol, regime
 OPTIONS (
-  description='Complete master features table - 400-500 columns per Training Plan requirements'
+  description='Complete master features table - 404-509 columns (Phase 1 pivot swap applied)'
 );
 
 -- ============================================================================

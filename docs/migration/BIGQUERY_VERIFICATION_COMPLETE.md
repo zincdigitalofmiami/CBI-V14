@@ -4,9 +4,22 @@ This project uses ONLY real, verified data sources. NO placeholders, NO syntheti
 All data must come from authenticated APIs, official sources, or validated historical records.
 ---
 
-# BigQuery Load Verification Report
+---
+**🔴 OUTDATED - PRE-CLEANUP STATE 🔴**
+
+This document refers to the state BEFORE the BigQuery cleanup and institutional naming migration.
+**DO NOT USE** for current BigQuery assumptions.
+
+**Current State:** BigQuery has been intentionally cleaned to empty shells with correct institutional naming.
+
+**See Instead:** `docs/migration/BQ_AUDIT_2025-11-21.md` (fresh audit of actual current state)
+
+**Kept For:** Historical reference only
+---
+
+# BigQuery Load Verification Report (LEGACY)
 **Date:** November 19, 2025  
-**Status:** ✅ **ALL CHECKS PASSED - VERIFIED COMPLETE**
+**Status:** ⚠️ **OUTDATED - PRE-CLEANUP STATE**
 
 ---
 

@@ -131,3 +131,4 @@ If Cursor has a built-in Gemini option that doesn't require your API key:
 
 
 
+

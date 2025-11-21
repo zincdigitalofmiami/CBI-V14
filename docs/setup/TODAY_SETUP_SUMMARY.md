@@ -180,3 +180,4 @@ python3 scripts/research/research_market_regimes.py --asset ZL
 **Everything is set up and documented. Just add your OpenAI key and you're ready to research! 🚀**
 
 
+

@@ -476,3 +476,4 @@ def validate_load(table_id: str, expected_rows: int, date_range: tuple):
 
 **Last Updated:** November 20, 2025
 
+

@@ -167,3 +167,4 @@ This resets model preferences to use Cursor defaults.
 
 **Status:** ✅ Use Cursor Built-In Models - No API Keys Needed!
 
+

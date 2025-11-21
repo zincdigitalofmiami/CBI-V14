@@ -67,3 +67,4 @@ security find-generic-password -a default -s cbi-v14.GEMINI_API_KEY -w
 **Status:** ✅ All locations updated. Restart Cursor to apply changes.
 
 
+

@@ -100,3 +100,4 @@ cat ~/Library/Application\ Support/Cursor/User/settings.json | grep -i apikey
 **After fixing, you should be able to use Cursor features normally again.**
 
 
+

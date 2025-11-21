@@ -192,3 +192,4 @@ If UI doesn't work, edit settings directly:
 **Most likely fix:** Re-enable extensions and restart Cursor. The keys are still in your settings, they just need the extensions to be active.
 
 
+

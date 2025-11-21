@@ -179,3 +179,4 @@ cp ~/Library/Application\ Support/Cursor/User/globalStorage/state.vscdb.backup_T
 
 **Status:** ✅ Cursor Models Restored - Restart Cursor to Apply
 
+
