@@ -104,3 +104,4 @@ ADD COLUMN IF NOT EXISTS soyb_vol_vs_5d_avg FLOAT64;
 
 
 
+

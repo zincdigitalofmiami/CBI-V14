@@ -180,3 +180,4 @@ FROM `cbi-v14.yahoo_finance_comprehensive.yahoo_cross_asset_daily`;
 
 
 
+

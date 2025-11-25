@@ -167,3 +167,4 @@ FROM ML.EVALUATE(MODEL `cbi-v14.models_v4.bqml_1w_focused`)
 
 
 
+
