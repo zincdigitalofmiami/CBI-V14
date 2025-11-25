@@ -18,14 +18,14 @@ All data must come from authenticated APIs, official sources, or validated histo
 ### Architecture Shift (Summary)
 - BigQuery is the system of record and orchestrator (Scheduled Queries/Dataform) for curated surfaces and dashboard views.
 - Mac M4 pulls Parquet bundles from GCS, trains/scores locally, and pushes forecasts/diagnostics back to BigQuery.
-- Data authority: DataBento (2010→present), Yahoo ZL pre‑2010 bridge, FRED macro. Discontinued: CME CVOL indices. Vendor daily bars deprecated where overlapping.
+- Data authority: DataBento (2000→present, full history), FRED macro. Discontinued: CME CVOL indices. Vendor daily bars deprecated where overlapping.
 - 5‑minute batch ingestion to BigQuery; dashboard polls BQ views every 5 minutes.
 
 ## PHILOSOPHY
 
 **"Clean slate, proper architecture, source-prefixed columns, robust data collection"**
 
-- **Source Prefixing:** ALL columns prefixed with source (`yahoo_`, `databento_`, `fred_`, etc.) - industry best practice
+- **Source Prefixing:** ALL columns prefixed with source (`databento_`, `fred_`, etc.) - industry best practice
 - **Mac M4:** ALL training + ALL feature engineering (local, deterministic)
 - **BigQuery:** Storage + Scheduling + Dashboard (NOT training)
 - **External Drive:** PRIMARY data storage + Backup
@@ -57,9 +57,8 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ### Data Sources (Formalized November 2025)
 1. **FRED**: 30+ economic series (interest rates, inflation, employment, GDP) via `collect_fred_comprehensive.py`
-2. **DataBento**: Futures OHLCV (GLBX.MDP3) — primary authoritative feed (1m/1d)
-3. **Yahoo Finance**: ZL=F OHLCV bridge only for 2000–2010 (no indicators)
-4. **World Bank (Alternative Macro)**: Optional complementary macro series (growth, development, trade) via `scripts/ingest/collect_worldbank_alternative.py`. Used only where explicitly documented and never as a stealth replacement for FRED series.
+2. **DataBento**: All market data (GLBX.MDP3) — primary authoritative feed for futures, FX, and options (2000→present)
+3. **World Bank (Alternative Macro)**: Optional complementary macro series (growth, development, trade) via `scripts/ingest/collect_worldbank_alternative.py`. Used only where explicitly documented and never as a stealth replacement for FRED series.
 
 ### Primary Documents
 - `docs/plans/MASTER_PLAN.md` (this document) – Source of truth
@@ -110,7 +109,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 8. **API Keys MUST be stored in macOS Keychain** - Use `src/utils/keychain_manager.py` to retrieve keys. Never hardcode keys (env only as temporary fallback).
 9. Technical indicators are computed in‑house from DataBento OHLCV (no third‑party TA providers).
 10. **Follow existing collection patterns** - Collectors write Parquet to external drive and mirror to BigQuery; transforms centralized in BigQuery/Dataform.
-11. **Cost Guardrail — Historical Data**: No new historical backfills outside the approved plan. Only allowed historical dataset is the existing Yahoo ZL=F bridge (2000–2010). All other acquisition must be live DataBento (forward‑only) or approved agency feeds (FRED/EIA/USDA/CFTC/NOAA). Any additional historical pulls must be explicitly approved due to cost.
+11. **Cost Guardrail — Historical Data**: No new historical backfills outside the approved plan. DataBento provides full history (2000→present). All acquisition must be DataBento or approved agency feeds (FRED/EIA/USDA/CFTC/NOAA). Any additional historical pulls must be explicitly approved due to cost.
 12. **PyTorch architecture decisions** - Follow refined architecture: TCN vs LSTM bake-off, 30-60 curated features, single-asset (ZL) first, PyTorch → BigQuery inference path (NOT CoreML primary), focus on MAPE/Sharpe quality not throughput.
 13. **ZL = Soybean Oil Futures** - NOT corn. Primary commodity for single-asset baseline.
 
@@ -173,19 +172,18 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ## QUICK DATA SOURCES OVERVIEW
 
-- New live source: DataBento GLBX.MDP3 (CME/CBOT/NYMEX/COMEX)
-  - Schemas: `ohlcv-1m`, `ohlcv-1h`, `ohlcv-1d`
-  - Usage: forward-only from cutover; store local Parquet under `TrainingData/live/` and `TrainingData/live_continuous/`
+- Primary source: DataBento GLBX.MDP3 (CME/CBOT/NYMEX/COMEX)
+  - Schemas: `ohlcv-1m`, `ohlcv-1h`, `ohlcv-1d`, `definition`, `mbo`, `tbbo`
+  - Coverage: Full history 2000→present for futures, FX, and options
   - Symbology: `{ROOT}.FUT` via `stype_in='parent'` (e.g., `ES.FUT`, `ZL.FUT`); exclude spreads (`symbol` contains `-`)
 
-- Existing pulls (historical remains in place):
-- Yahoo Finance: ZL=F OHLCV only for 2000–2010 bridge (indicators are computed in‑house from OHLCV)
-  - DataBento: ALL futures 2010-present (primary source)
+- Data sources:
+  - DataBento: ALL futures, FX, and options (2000→present, primary source)
   - FRED: 55–60 macro series
   - EIA / USDA / EPA / World Bank / CFTC: domain‑specific datasets (biofuels, exports, RINs, pink sheet, positioning)
 
 - What we have now (high level):
-  - Historical OHLCV (ZL via Yahoo 2000–2010; ALL via DataBento 2010+); indicators computed in‑house from OHLCV
+  - Historical OHLCV (ALL via DataBento 2000→present); indicators computed in‑house from OHLCV
   - Macro (FRED) and domain series (EIA/USDA/etc.) staged and/or mirrored
   - Live futures via DataBento GLBX.MDP3, continuous front built hourly/daily
 
@@ -209,9 +207,9 @@ All data must come from authenticated APIs, official sources, or validated histo
 - Exclude calendar spreads (symbols containing `-`)
 
 **Cutover Strategy:**
-- Keep historical exactly as-is (Yahoo/DataBento/BigQuery).  
-- Begin forward-only ingestion today via DataBento and store Parquet under `TrainingData/live/` and continuous under `TrainingData/live_continuous/`.
-- Stitch historical + live at query time (or via stitcher) to form unified continuous series.
+- DataBento provides full historical coverage (2000→present).
+- Store Parquet under `TrainingData/live/` and continuous under `TrainingData/live_continuous/`.
+- Unified continuous series built from DataBento data.
 
 **Security:**
 - Key: `DATABENTO_API_KEY` (server-side only). Store via macOS Keychain.  
@@ -230,38 +228,25 @@ All data must come from authenticated APIs, official sources, or validated histo
   - Latest 1m: `scripts/api/databento_latest_1m.py`  
   - API routes: `dashboard-nextjs/src/app/api/v1/market/{ohlcv,latest-1m}/route.ts`
 
-### Yahoo Finance
-**Role:** ZL Historical Bridge (2000-2010 ONLY)  
-**Provides:**
-- ZL=F raw OHLCV (2000-2010)
-- ZL=F technical indicators (46+): RSI_14, MACD, SMA_5, etc.
-- **Prefix:** `yahoo_` on ALL columns except `date`, `symbol`
-
-**Why Yahoo for Historical:**
-- DataBento only goes back to 2010-06-06
-- Need 2000-2010 for 25-year training window
-- One-time backfill, then static (no updates)
-
----
-
-### DataBento (Primary Live Feed)
-**Role:** All futures (CME/CBOT/NYMEX/COMEX) — primary authoritative feed  
+### DataBento (Primary Data Source)
+**Role:** All market data (CME/CBOT/NYMEX/COMEX) — single authoritative source for futures, FX, and options  
 **Provides:**
 - **All Futures:** ZL, ES, MES, ZS, ZM, CL, NG, RB, HO, GC, SI, HG (29 total)
-- **FX Futures:** 6L (BRL), CNH (Yuan), 6E (EUR) - direct CME contracts
+- **FX Futures (CME):** 6L (BRL), CNH (Yuan), 6E (EUR), 6J (JPY), 6A (AUD), 6C (CAD), 6S (CHF), 6M (MXN) - primary source for all FX exposure
+- **Options:** ZL Options (OZL), ES/MES Options (EW, ES opts), Crude Options (LO) - for implied vol and skew
 - **Microstructure:** trades, TBBO, MBP-10 for orderflow analysis
 - **Calendar Spreads:** All month-to-month spreads
-- **Historical:** Back to 2010-06-06 (Yahoo fills 2000-2010)
+- **Historical:** Full coverage 2000→present
 - **Collection Frequency:** 
   - ZL: 5-minute priority
   - MES: 1-minute for intraday
   - Others: 1-hour standard
+- **Schemas:** `ohlcv-1m`, `ohlcv-1h`, `ohlcv-1d`, `definition`, `mbo`, `tbbo` for options
 - **Prefix:** `databento_` on ALL columns except `date`, `symbol`
 
 **Does NOT Provide:**
-- Palm oil futures (not on CME)
-- Pre-2010 history (use Yahoo)
-- Calculated indicators (compute locally)
+- Palm oil futures (not on CME - use Barchart/ICE)
+- Calculated indicators (compute locally from OHLCV)
 - News/sentiment (use ScrapeCreators)
 
 ---
@@ -358,9 +343,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 /Volumes/Satechi Hub/Projects/CBI-V14/
 ├── TrainingData/
 │   ├── raw/                    # Immutable source zone
-│   │   ├── yahoo_finance/      # ZL=F ONLY
-│   │   │   └── prices/commodities/ZL_F.parquet
-│   │   ├── databento/          # DataBento futures data
+│   │   ├── databento/          # DataBento market data (futures, FX, options)
 │   │   │   ├── prices/
 │   │   │   │   ├── commodities/ (CORN, WHEAT, WTI, etc.)
 │   │   │   │   ├── fx/          (USD/BRL, USD/CNY, etc.)
@@ -381,7 +364,6 @@ All data must come from authenticated APIs, official sources, or validated histo
 │   │   └── .cache/             # Cache (outside raw/)
 │   │
 │   ├── staging/                # Validated, conformed, PREFIXED
-│   │   ├── yahoo_zl_only.parquet          # ZL=F with yahoo_ prefix
 │   │   ├── databento_futures_daily.parquet   # All futures with databento_ prefix
 │   │   ├── databento_mes_1min.parquet # MES 1min with databento_ prefix
 │   │   ├── databento_mes_5min.parquet # MES 5min with databento_ prefix
@@ -429,7 +411,6 @@ All data must come from authenticated APIs, official sources, or validated histo
 │
 └── scripts/
     ├── ingest/                 # API pulls → raw/
-    │   ├── collect_yahoo_zl_only.py
     │   ├── collect_databento_live.py
     │   ├── collect_fred_expanded.py      # NEW: 55-60 series
     │   ├── collect_databento_mes_intraday.py  # NEW: MES intraday (1min, 5min, 15min, 30min, 1hr, 4hr) + daily+ (1d, 7d, 30d, 3m, 6m, 12m)
@@ -454,7 +435,6 @@ All data must come from authenticated APIs, official sources, or validated histo
 ### Industry Best Practice: Source Prefix Pattern
 
 **All columns prefixed with source identifier:**
-- `yahoo_open`, `yahoo_high`, `yahoo_close`, `yahoo_rsi_14`, `yahoo_macd`
 - `databento_open`, `databento_high`, `databento_close`, `databento_volume`, `databento_oi`
 - `fred_fed_funds_rate`, `fred_vix`, `fred_treasury_10y`
 - `weather_us_iowa_tavg_c`, `weather_us_illinois_prcp_mm`, `weather_br_mato_grosso_tavg_c`
@@ -483,17 +463,16 @@ All data must come from authenticated APIs, official sources, or validated histo
    - Keep historical sources intact; stitch at analysis time.
 
 ### Phase 1: Core Data (Week 1)
-1. **Yahoo:** ZL=F historical (2000–2010) OHLCV only → `yahoo_` prefix
-2. **DataBento:** ALL futures (2010-present) → `databento_` prefix
+1. **DataBento:** ALL futures, FX, and options (2000→present) → `databento_` prefix
    - Use `scripts/live/databento_live_poller.py` for real-time collection
    - Historical backfill via `databento.timeseries.get_range()`
    - Store in `TrainingData/live/` and `TrainingData/live_continuous/`
-3. **FRED:** Expand to 55-60 series → `fred_` prefix
+2. **FRED:** Expand to 55-60 series → `fred_` prefix
    - Use `scripts/ingest/collect_fred_comprehensive.py` with a valid API key (32-char lowercase alphanumeric, no hyphens). Store via `security add-generic-password -s "FRED_API_KEY" -w "<key>"`. Official docs: https://fred.stlouisfed.org/docs/api/fred/
    - Default real-time period is "today" (FRED). Only set `realtime_start`/`realtime_end` if we explicitly need ALFRED vintage data; most users want latest revisions, so stick with FRED defaults.
    - Series catalog curated to 53 valid IDs (removed `NAPMPI`, `NAPM`, `GOLDPMGBD228NLBM` which no longer exist). Drop FRED's `series_id` column before merging so each series becomes a single `fred_*` column in the wide frame.
-4. **Technical Indicators:** Calculate locally from OHLCV data → prefix by source
-5. **Microstructure:** DataBento trades/TBBO/MBP-10 → `databento_` prefix
+3. **Technical Indicators:** Calculate locally from DataBento OHLCV data → `databento_` prefix
+4. **Microstructure:** DataBento trades/TBBO/MBP-10 → `databento_` prefix
 
 ### Phase 2: Supporting Data (Week 2)
 7. **Weather:** All key regions (US states, Brazil states, Argentina provinces) → Granular wide format with region-specific prefixes.
@@ -514,8 +493,8 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ### Join Sequence with Prefixes:
 
-1. **base_prices** (Yahoo ZL=F)
-   - Columns: `date`, `symbol`, `yahoo_open`, `yahoo_high`, `yahoo_low`, `yahoo_close`, `yahoo_volume`, `yahoo_rsi_14`, `yahoo_macd`, etc.
+1. **base_prices** (DataBento)
+   - Columns: `date`, `symbol`, `databento_open`, `databento_high`, `databento_low`, `databento_close`, `databento_volume`, etc.
 
 2. **add_macro** (FRED)
    - Columns: `date`, `fred_fed_funds_rate`, `fred_vix`, `fred_treasury_10y`, etc.
@@ -560,7 +539,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 11. **add_databento_enhanced** (DataBento)
    - Columns: `date`, `symbol`, `databento_open`, `databento_high`, `databento_close`, `databento_volume`, etc.
    - Join: `on: ["date", "symbol"]`
-   - **Note:** Pre-2010 rows use Yahoo data, post-2010 use DataBento
+   - **Note:** DataBento provides full history (2000→present)
 
 **MES Handling:** `collect_databento_mes_intraday.py` collects MES data across all 12 horizons (1min, 5min, 15min, 30min, 1hr, 4hr, 1d, 7d, 30d, 3m, 6m, 12m) from DataBento. For intraday horizons (1min-4hr), `build_mes_intraday_features.py` collapses them into daily aggregates (returns, vol, session bias) before the join above. Latest 15-minute snapshots also flow directly to the Big 8 service without waiting for the daily build.
 
@@ -569,7 +548,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 ## SCRIPT UPDATES REQUIRED
 
 ### 1. `scripts/staging/create_staging_files.py`
-- ✅ Already updated: Prefixes Yahoo with `yahoo_`
+- ✅ Already updated: Prefixes DataBento with `databento_`
 - ✅ Already updated: Prefixes FRED with `fred_` (when expanded)
 - ⚠️ **CRITICAL UPDATE NEEDED:** Weather staging logic must be rewritten.
   - **Old:** Generic wide format (`weather_us_*`).
@@ -633,7 +612,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ### 9. `scripts/features/build_all_features.py`
 - ✅ Already updated: Detects `databento_` prefixed features
-- ✅ Already updated: Uses `yahoo_` OHLCV for ZL (indicators computed in‑house)
+- ✅ Already updated: Uses DataBento OHLCV for all symbols (indicators computed in‑house)
 - ⚠️ **NEW:** Load regime weights from `registry/regime_weights.yaml` (or parquet), drop hard-coded dict
 - ⚠️ **NEW:** Incorporate palm, volatility, and policy_trump joins + computed vol regimes
 - ⚠️ **NEW:** Compute shock flags/scores (policy/vol/supply/biofuel) and decayed scores; apply capped weight multiplier (≤1000)
@@ -1190,7 +1169,7 @@ See `docs/PAGE_BUILDOUT_ROADMAP.md` for Sentiment page layout:
 5. **Run Pipelines & Reconcile**
    - Populate the prefixed tables by running the Full Backfill pipeline (local collectors, staging promotion, feature build, sync).
    - For at least one week, run both the legacy and prefixed pipelines in parallel.
-   - Use reconciliation SQL (e.g., `SELECT date, close FROM old_table EXCEPT DISTINCT SELECT date, yahoo_close FROM new_table`) to confirm the new data matches the old results for every downstream table/view.
+   - Use reconciliation SQL (e.g., `SELECT date, close FROM old_table EXCEPT DISTINCT SELECT date, databento_close FROM new_table`) to confirm the new data matches the old results for every downstream table/view.
 
 6. **Cutover (Final Switch)**
    - Using the dependency manifest, refactor every downstream consumer (views, scheduled queries, dashboards) to point to the prefixed tables.
@@ -1216,7 +1195,7 @@ MERGE `cbi-v14.features.master_features` T
 USING `cbi-v14.tmp.master_features_batch` S
 ON T.date = S.date AND T.symbol = S.symbol
 WHEN MATCHED THEN UPDATE SET
-  yahoo_zl_close = S.yahoo_zl_close,
+  databento_zl_close = S.databento_zl_close,
   databento_zl_volume = S.databento_zl_volume,
   -- list every column explicitly
 WHEN NOT MATCHED THEN INSERT ROW;
@@ -1231,8 +1210,7 @@ Temporary tables can be loaded via `load_table_from_dataframe` or `LOAD DATA`.
 ## EXECUTION ORDER & DEPENDENCIES
 
 ### Full Backfill (Clean Install)
-1. `scripts/ingest/collect_yahoo_zl_only.py`
-2. `scripts/ingest/collect_databento_live.py`
+1. `scripts/ingest/collect_databento_live.py`
 3. `scripts/ingest/collect_palm_barchart.py`
 4. `scripts/ingest/collect_volatility_intraday.py`
 5. `scripts/ingest/collect_policy_trump.py`
@@ -1281,17 +1259,17 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 
 ### Scope
 - Historical coverage: 2000-01-01 → present for all daily sources; DataBento from 2010-06-06.
-- Sources: Yahoo ZL (2000-2010), DataBento futures (2010+), FRED (55-60 series), palm (Barchart), volatility (computed from DataBento), policy/trump (limited to 2020+ due to availability), weather, CFTC, USDA, EIA.
+- Sources: DataBento futures (2000→present), FRED (55-60 series), palm (Barchart), volatility (computed from DataBento), policy/trump (limited to 2020+ due to availability), weather, CFTC, USDA, EIA.
 
 ### Approach
 1. **DataBento Limits:** Manage API calls efficiently; use batch requests where possible.
-2. **Yahoo Backfill:** Use historical CSV download or yfinance fork to pull 25 years of ZL OHLCV only (no indicators).
+2. **DataBento Backfill:** Use `databento.timeseries.get_range()` for full 25-year history (2000→present).
 3. **Palm Backfill:** If KO*0 page limits history, iterate contract codes (KOF26, KOM25, etc.) and stitch into one continuous series offline before writing to staging.
 4. **MES Intraday:** DataBento provides full history from 2010-06-06; 1-minute data for all intraday horizons.
 5. **Government Data:** FRED, CFTC, USDA, EIA allow bulk downloads; run once per source to seed raw/bronze folders.
-6. **Parallelization:** Run ingestion scripts sequentially per source to respect rate limits, but you can execute independent sources in parallel (e.g., FRED + Yahoo) if system resources allow.
+6. **Parallelization:** Run ingestion scripts sequentially per source to respect rate limits, but you can execute independent sources in parallel (e.g., FRED + DataBento) if system resources allow.
 7. **Validation:** After each source backfill, run source-specific QA (row counts, freshness, staleness) before promoting to staging.
-8. **Timeline Estimate:** Expect 2-3 hours for DataBento historical pull, <1 hour for Yahoo (2000-2010), <30 min for government data, 1-2 hours for palm contract stitching.
+8. **Timeline Estimate:** Expect 2-3 hours for DataBento full historical pull (2000→present), <30 min for government data, 1-2 hours for palm contract stitching.
 
 ### Recovery
 - If an API fails mid-backfill, write the failed batch metadata (symbol, timeframe, last successful date) to `quarantine/databento_backfill_failures.json` and resume later.
@@ -1334,8 +1312,7 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 ## SUCCESS CRITERIA
 
 ### Data Collection:
-- ✅ Yahoo: ZL=F (2000-2010), all columns prefixed `yahoo_`
-- ✅ DataBento: All futures (29 symbols), all columns prefixed `databento_`
+- ✅ DataBento: All futures, FX, and options (2000→present), all columns prefixed `databento_`
 - ✅ FRED: 55-60 series, all prefixed `fred_`
 - ✅ Weather: Granular wide format, with a unique column for each key agricultural region (e.g., `weather_us_iowa_tavg_c`).
 - ✅ CFTC: Prefixed `cftc_`.
@@ -1347,16 +1324,14 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 
 ### Join Pipeline:
 - ✅ All joins work with prefixed columns
-- ✅ ZL uses Yahoo for 2000-2010, DataBento for 2010+
-- ✅ All symbols get DataBento data from 2010+
+- ✅ All symbols use DataBento for full history (2000→present)
 - ✅ Date range: 2000-2025 (25 years)
 - ✅ No cartesian products
 - ✅ MES intraday collapsed to daily aggregates before join (no timeframe mismatch)
 - ✅ Policy/volatility/palm joins land prior to regime enrichment
 
 ### Feature Engineering:
-- ✅ ZL historical period indicators are computed in‑house (no Yahoo indicators)
-- ✅ All symbols use locally calculated indicators from DataBento data
+- ✅ All indicators computed in‑house from DataBento OHLCV data
 - ✅ Custom features calculated for all
 - ✅ Regime weights applied (50-1000 scale)
 - ✅ Volatility regime + VIX z-scores computed (`vol_*`)
