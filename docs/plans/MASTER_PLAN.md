@@ -170,6 +170,24 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ---
 
+## KNOWLEDGE / GPT PULSES
+
+Curated AI assistant insights that have been reviewed and captured as reusable patterns.  
+See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
+
+- Pulse 1 – BigQuery/Dataform guardrails: assertions, `INFORMATION_SCHEMA.JOBS` lineage, and SRE-style backfill/rollback habits.
+- Pulse 2 – Databento pricing and dataset coverage: Standard plan economics, GLBX.MDP3 microstructure coverage, and IFUS.IMPACT extension for ICE softs/FX/metals.
+- Pulse 3 – Climate/ENSO/drought features: CFSv2 seasonal anomalies, ENSO regimes, and CPC drought outlook flags for soybean/soy-oil regions.
+- Pulse 4 – Regime calendar weighting: `training.regime_calendar` schema and BigQuery export pattern for regime-dependent training weights.
+- Pulse 5 – High-signal research workflow: Google `site:` operator packs and X Lists for curated policy/market/weather monitoring.
+- Pulse 6 – Vercel deployment hardening: “Require Verified Commits” for GitHub-connected projects so only cryptographically signed commits can deploy.
+- Pulse 7 – NOAA climate staples: GHCN-Daily station history, CPC NLDAS soil moisture, and CFSv2 seasonal outlooks wired into the feature store.
+- Pulse 8 – Palm-oil stress indicators: Indonesian plantation seizures/protests in Riau and Malaysian palm futures pressure as inputs to the soy/palm spread lens.
+- Pulse 9 – Diesel–Brent spread stress: European distillate cracks blowing out while crude stays muted, and how that feeds into biofuels and veg-oil risk.
+- Pulse 10 – Signal-weighting drift control: regime-tagged scalers, sample-weight rebalancing, and parity/SHAP stability checks to keep ZL forecasts robust across regimes.
+
+---
+
 ## QUICK DATA SOURCES OVERVIEW
 
 - Primary source: DataBento GLBX.MDP3 (CME/CBOT/NYMEX/COMEX)
@@ -1349,7 +1367,7 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 
 ## MODELING ARCHITECTURE (Aligned with Training Master Execution Plan)
 
-**Goal:** Progressive modeling stack that respects Mac M4 thermals/memory (16GB unified) while driving 60-85% uplift from baseline. All training is 100% local on M4 Mac.
+**Goal:** Progressive modeling stack that respects Mac M4 thermals/memory (24GB unified) while driving 60-85% uplift from baseline. All training is 100% local on M4 Mac.
 
 **Reference:** See `docs/plans/TRAINING_MASTER_EXECUTION_PLAN.md` for detailed day-by-day execution plan.
 
@@ -1453,7 +1471,7 @@ class RegimeRouter:
 - Optional: 1-2 TINY attention (heads ≤4, d_model ≤256, seq_len ≤256)
 
 **Memory Constraints:**
-- FP16 mixed precision (MANDATORY for 16GB RAM)
+- FP16 mixed precision (MANDATORY for 24GB RAM)
 - Batch sizes: LSTM ≤32, TCN ≤32, attention ≤16
 - Sequential training (one GPU job at a time)
 - Gradient checkpointing and memory cleanup
@@ -1470,11 +1488,20 @@ class RegimeRouter:
 - Convert tree models to ONNX
 - `ProductionPredictor` class handles scaling, feature selection, regime routing, monotonicity checks, and bounds enforcement (±30% annualized)
 
+### Training Environment
+
+- Machine: Apple Silicon Mac (M-series, 24GB unified memory)
+- OS: macOS
+- Python: 3.x in a local virtual environment
+- Key libs: PyTorch (MPS backend), LightGBM, XGBoost, CatBoost, MAPIE, SHAP, Polars, Pandas
+
+All training and inference run locally on this Mac.  
+There is **no dependency on Vertex AI, BQML, or Conda**.
+
 ### Memory & Scheduling Controls
 
 **Hardware Constraints:**
-- Mac M4: 16GB unified memory + TensorFlow Metal GPU
-- Environment: `vertex-metal-312` (Python 3.12.6)
+- Mac M-series: 24GB unified memory + TensorFlow Metal GPU
 - Sequential training: One GPU job at a time (prevent thermal throttling)
 
 **Memory Management:**
@@ -1492,6 +1519,51 @@ def cleanup_session():
 import time
 time.sleep(60)  # Prevent thermal throttling
 ```
+
+## FUTURE PHASE – MICRO FORECASTERS & FINAL ENSEMBLE (IMPLEMENT AFTER BASELINES)
+
+**Targets (lock now):** Use price levels for all horizons. Example: `target_1w = ZL settle at T+5 trading days (price level)`; analogous definitions for 1m/3m/6m/12m and MES horizons. Keep this consistent with MAPE/directional accuracy.
+
+**Three-phase structure (both ZL and MES):**
+- **Phase 1 (now):** Baselines per horizon with raw factor families only.
+- **Phase 2 (now):** Regime-aware, horizon-specific models with the same raw factors; no micros.
+- **Phase 3 (later):** Add micro-forecasters and a final meta-ensemble; wrap around Phase 2 models.
+
+**Factor families (raw features in the denormalized matrix):**
+- A. Price & Technicals (OHLCV, returns, momentum, RSI/MACD, ATR, pivots).
+- B. Fundamentals / Basis / Spreads (RINs, biodiesel margins, crush, palm/ZL, HOBO, crack, basis).
+- C. Macro & Risk-On/Off (VIX/VVIX, MOVE, rates, DXY, curve slopes, equities).
+- D. Volatility (realized vol for ZL/MES, vol regimes, term-structure slopes).
+- E. Positioning / Flow (CFTC COT, OI levels/changes, crowding/extremes).
+- F. Microstructure (MES intraday only: imbalance, VWAP deviation, short-term vol).
+- G. Events & Policy (tariffs, mandates, EPA/USTR actions, USDA prints, margin changes).
+- H. Text Sentiment (topic-segmented NLP scores only; no numeric drivers here).
+
+**Phase 3 micro-forecasters (future add):**
+- Small specialists per family (10–30 features each), e.g., `biofuel_impact_score`, `weather_impact_score`, `tariff_impact_score`, `policy_impact_score`, `crush_impact_score`, `positioning_risk_score`, `sentiment_impact_score`, optional `macro_risk_score`, and MES-only `microstruct_impact_score`.
+- Micros consume only their bucket(s); output one scalar per date (or bar for MES intraday).
+- Outputs are written back into the denormalized feature tables as additional columns (no new joins).
+
+**Final ensemble (future add):**
+- Per-horizon meta-learner (LightGBM) that ingests: Phase 1/2 predictions, regime fields, and all micro scores (optionally a linear domain_composite).
+- Training discipline: strict walk-forward and out-of-fold micro predictions to avoid leakage; regime-weighted loss as needed.
+- Outputs: production forecasts + intervals (conformal/calibrated) and SHAP grouped by factor family and micro signals.
+- MES_SPECIAL intraday follows the same pattern but remains a trading/risk gauge, not the procurement brain.
+
+**Dashboard mapping (future add):**
+- Home/Strategy: final ensemble forecasts; SHAP grouped by factor family (biofuels, weather, policy, positioning, sentiment, macro).
+- Sentiment page: topic sentiment buckets + `sentiment_impact_score`.
+- Legislation: policy/tariffs micros; Trump is one lane, not the whole architecture.
+- MES page: MES_MAIN/MES_SPECIAL outputs and microstructure gauges; ZL micros only as light context if needed.
+- Vegas Intel: separate; no ZL/MES trading language.
+
+**Prereqs before Phase 3:**
+- Clean, prefixed denormalized feature table with factor families A–H populated.
+- Regime calendar/weights finalized (balanced; no single regime overweight).
+- Confirm staging rewrites (weather/USDA/EIA) and intraday MES ingestion are correct.
+- Baseline and regime-aware models trained/validated on Mac with price-level targets.
+
+---
 
 **Feature Counts by Phase:**
 - Phase 1 (Baselines): 400 features (full feature set)

@@ -8,14 +8,14 @@ description: "Declarative join specification with automated tests for 25-year da
 last_updated: "2025-11-17"
 
 joins:
-  # === BASE: Yahoo Historical Data (ZL=F ONLY - Alpha is TOTALLY SEPARATE, no ZL data) ===
+  # === BASE: DataBento ZL Prices (Primary source - Full history 2010→present) ===
   - name: "base_prices"
-    source: "staging/yahoo_historical_prefixed.parquet"
+    source: "staging/databento_base_prices.parquet"
     tests:
-      - expect_date_range: ["2000-03-15", "2025-01-01"]  # ZL futures started March 15, 2000
-      - expect_symbols_count_gte: 1  # Changed from 55 - ZL=F ONLY now
-      - expect_zl_rows_gte: 6000
-      - expect_columns_prefixed: ["yahoo_"]  # All columns except date, symbol should have yahoo_ prefix
+      - expect_date_range: ["2010-06-06", "2025-11-14"]  # DataBento ZL coverage
+      - expect_symbols_count_gte: 1  # ZL.FUT only
+      - expect_zl_rows_gte: 3500
+      - expect_columns_prefixed: ["databento_"]  # All columns except date, symbol should have databento_ prefix
 
   # === JOIN: FRED Macro Data (PREFIXED) ===
   - name: "add_macro"
@@ -166,19 +166,20 @@ joins:
       - expect_rows_preserved
       - expect_columns_added: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"] # Sample of new features
 
-  # === JOIN: 9-Layer Sentiment Daily (Production - Verified Nov 19, 2025) ===
-  - name: "add_sentiment"
-    left: "<<add_es_intraday_features>>"
-    right: "staging/sentiment_daily.parquet"
-    on: ["date"]
-    how: "left"
-    null_policy:
-      allow: true
-      fill_method: "ffill"  # Sentiment signals persist until new calculation
-    tests:
-      - expect_rows_preserved
-      - expect_columns_added: ["procurement_sentiment_index", "core_zl_price_sentiment", "biofuel_policy_sentiment", "geopolitical_tariff_sentiment"]
-      - expect_columns_added: ["tariff_pinball", "rin_moon_pinball", "drought_pinball"]
+  # === JOIN: 9-Layer Sentiment Daily (SKIPPED FOR FIRST RUN - file not yet generated) ===
+  # Uncomment after running scripts/features/sentiment_layers.py
+  # - name: "add_sentiment"
+  #   left: "<<add_es_intraday_features>>"
+  #   right: "staging/sentiment_daily.parquet"
+  #   on: ["date"]
+  #   how: "left"
+  #   null_policy:
+  #     allow: true
+  #     fill_method: "ffill"
+  #   tests:
+  #     - expect_rows_preserved
+  #     - expect_columns_added: ["procurement_sentiment_index", "core_zl_price_sentiment", "biofuel_policy_sentiment", "geopolitical_tariff_sentiment"]
+  #     - expect_columns_added: ["tariff_pinball", "rin_moon_pinball", "drought_pinball"]
 
   # === JOIN: MES Futures (daily) ===
   - name: "add_mes_futures"
@@ -235,12 +236,12 @@ joins:
 
 # === FINAL TESTS (Must Pass Before Feature Engineering) ===
 final_tests:
-  - expect_total_rows_gte: 6000
+  - expect_total_rows_gte: 3500  # DataBento data starts 2010-06-06
   - expect_total_cols_gte: 100
   - expect_no_duplicate_dates
-  - expect_date_range: ["2000-03-15", "2025-11-14"]  # Updated: ZL=F trading started March 15, 2000; end date matches current data availability
+  - expect_date_range: ["2010-06-06", "2025-11-14"]  # DataBento ZL data starts 2010-06-06
   - expect_regime_cardinality_gte: 7
-  - expect_weight_range: [50, 1000]  # Updated Nov 17, 2025: Changed from 50-5000 to 50-1000
+  - expect_weight_range: [50, 500]  # Current regime weights max at 500
   - expect_columns_present: ["es_5min_realized_vol", "es_30min_realized_vol", "es_60min_realized_vol"]
 
 

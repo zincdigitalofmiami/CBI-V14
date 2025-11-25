@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData")
+REPO = Path("/Users/zincdigital/CBI-V14")
 
 class JoinExecutor:
     def __init__(self, spec_path):
@@ -30,15 +31,17 @@ class JoinExecutor:
         # Handle YAML 1.1 "on" -> True parsing issue
         join_keys = join_spec.get('on', join_spec.get(True, []))
         right_cols = [c for c in right_df.columns if c not in join_keys]
+        # Only keep columns that actually exist in merged df
+        right_cols = [c for c in right_cols if c in df.columns]
         
         # Sort by date for proper forward fill
         df = df.sort_values('date')
         
         # Forward fill method - ONLY on newly joined columns
-        if policy.get('fill_method') == 'ffill':
+        if policy.get('fill_method') == 'ffill' and right_cols:
             df[right_cols] = df[right_cols].ffill()
             print(f"    ✅ Applied ffill to {len(right_cols)} newly joined columns")
-        elif policy.get('fill_method') == 'bfill':
+        elif policy.get('fill_method') == 'bfill' and right_cols:
             df[right_cols] = df[right_cols].bfill()
             print(f"    ✅ Applied bfill to {len(right_cols)} newly joined columns")
         
@@ -165,17 +168,21 @@ class JoinExecutor:
             elif 'expect_zl_rows_gte' in test:
                 if 'symbol' in df.columns:
                     min_zl = test['expect_zl_rows_gte']
-                    actual = len(df[df['symbol'] == 'ZL=F'])
+                    # Handle both symbol formats: ZL=F (Yahoo) and ZL.FUT (DataBento)
+                    zl_mask = df['symbol'].str.contains('ZL', case=False, na=False)
+                    actual = len(df[zl_mask])
                     assert actual >= min_zl, \
                         f"Only {actual} ZL rows (need {min_zl}+)"
                     print(f"    ✅ ZL rows: {actual} (≥{min_zl})")
             
             # NEW: expect_cftc_available_after
             elif 'expect_cftc_available_after' in test:
-                cutoff = pd.to_datetime(test['expect_cftc_available_after'])
+                cutoff = pd.to_datetime(test['expect_cftc_available_after']).date()
                 cftc_cols = [c for c in df.columns if c.startswith('cftc_')]
                 if cftc_cols:
-                    early_data = df.loc[df['date'] < cutoff, cftc_cols].notna().any().any()
+                    # Convert date column to date type if needed for comparison
+                    date_col = pd.to_datetime(df['date']).dt.date if hasattr(df['date'].dtype, 'date') else df['date']
+                    early_data = df.loc[date_col < cutoff, cftc_cols].notna().any().any()
                     assert not early_data, \
                         f"CFTC data present before {cutoff} (availability leak)"
                     print(f"    ✅ CFTC data only after {cutoff}")
@@ -256,9 +263,15 @@ class JoinExecutor:
         return current_df
 
 if __name__ == "__main__":
-    executor = JoinExecutor(DRIVE / "registry/join_spec.yaml")
+    executor = JoinExecutor(REPO / "registry/join_spec.yaml")
     df_final = executor.execute()
+    
+    # Save master_features
+    output_path = DRIVE / "features/master_features_2000_2025.parquet"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df_final.to_parquet(output_path, index=False)
     print(f"\n✅ Join execution complete: {len(df_final)} rows × {len(df_final.columns)} cols")
+    print(f"   Saved to: {output_path}")
 
 
 
