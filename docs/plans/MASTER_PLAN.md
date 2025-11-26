@@ -41,7 +41,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 > **This section is essential reading for all AI assistants working on CBI-V14. It provides critical architecture context, guardrails, and workflow patterns.**
 
-### Current Architecture (snapshot as of November 17, 2025)
+### Current Architecture (snapshot as of November 26, 2025)
 - Apple M4 Mac handles every training and inference task (TensorFlow Metal + PyTorch MPS + CPU tree libs).
 - BigQuery = storage plus dashboard read layer only; no BigQuery ML, no AutoML jobs.
 - Predictions generated locally, uploaded with `scripts/upload_predictions.py`, then read by the Vercel dashboard.

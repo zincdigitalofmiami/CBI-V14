@@ -29,9 +29,9 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 **IGNORE:**
 - Everything in `archive/` subdirectory
-- Files dated before November 12, 2025
+- Files dated before November 26, 2025
 - BQML-specific plans (we use Vertex AI now)
 
 ---
 
-**Last Updated**: November 12, 2025
+**Last Updated**: November 26, 2025

@@ -8,7 +8,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 # CBI-V14 Data Sources Reference (Archived)
 Note: This reference is archived. For active data authority and orchestration, see `docs/plans/REFERENCE.md` and `docs/plans/BIGQUERY_MIGRATION_PLAN.md`.
-**Date**: November 17, 2025  
+**Date**: November 26, 2025  
 **Status**: Reference Document - Data Source Catalog  
 **Purpose**: Comprehensive catalog of data sources, APIs, and scraping endpoints for CBI-V14
 
@@ -513,7 +513,7 @@ All data sources must:
 
 ---
 
-**Last Updated**: November 17, 2025  
+**Last Updated**: November 26, 2025  
 **Status**: Reference document - Data source catalog
 
 

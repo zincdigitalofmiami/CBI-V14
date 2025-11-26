@@ -8,7 +8,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 # CBI-V14 Quick Reference
 **Purpose:** Fast lookup for tables, data sources, and key information  
-**Updated:** November 19, 2025
+**Updated:** November 26, 2025
 
 ---
 

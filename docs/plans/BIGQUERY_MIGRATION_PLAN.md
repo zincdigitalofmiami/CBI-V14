@@ -7,7 +7,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 **📋 BEST PRACTICES:** See `.cursorrules` and `docs/reference/BEST_PRACTICES_DRAFT.md` for mandatory best practices including: no fake data, always check before creating, always audit after work, us-central1 only, no costly resources without approval, research best practices, research quant finance modeling.
 
 # BigQuery‑Centric Architecture Migration Plan
-Date: November 18, 2025
+Date: November 26, 2025
 Status: Adopted
 
 ## Overview
