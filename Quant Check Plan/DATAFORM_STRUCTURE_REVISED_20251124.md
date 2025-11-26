@@ -1,7 +1,8 @@
 # Dataform Structure - Revised with Best Practices
 **Date**: November 24, 2025  
-**Based on**: User feedback + Maximum Quality Training Strategy  
-**Principle**: Production-grade, no compromises, handles edge cases
+**Last Updated**: November 26, 2025  
+**Based on**: User feedback + Maximum Quality Training Strategy + Grok refinements + FEC political intelligence  
+**Principle**: Production-grade, no compromises, handles edge cases, "drivers behind drivers" framework
 
 ---
 
@@ -917,5 +918,518 @@ dataform/
 
 ---
 
-**STATUS**: Revised structure with all corrections applied. Production-grade, handles edge cases, maximum quality training ready.
+## 11. FEC Political Intelligence Features (NEW - November 26, 2025)
+
+**Source**: `bigquery-public-data.fec.*`  
+**Theory**: "Drivers behind drivers" - Observable proxies for hidden financial motivations
+
+### Why FEC Matters for ZL
+
+```
+Hidden Layer (unknowable):
+├── Trump family finance connections
+├── Hedge fund Argentina debt exposure (Elliott, Appaloosa)
+├── Quid pro quo policy coordination
+└── Personal financial interests of decision-makers
+
+Observable Layer (FEC captures):
+├── PAC donation timing vs policy announcements
+├── Donor occupation (literal "Distressed Debt Investor")
+├── Sector clustering (biofuel vs oil vs ag)
+└── Network effects (who donates to whom)
+
+Model learns:
+├── Pattern: Donations spike → Policy shift → Market move
+├── Without knowing: WHY donations happened
+└── Just needs: Enough examples of outcome
+```
+
+### FEC Ingestion Pipeline
+
+```sql
+-- definitions/01_raw/fec_contributions.sqlx
+config {
+  type: "declaration",
+  database: "bigquery-public-data",
+  schema: "fec",
+  name: "contributions_2020"  -- Union with 2022, 2024
+}
+```
+
+```sql
+-- definitions/02_staging/fec_ag_energy_pacs.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["contribution_id"],
+  tags: ["staging", "fec", "policy"]
+}
+
+WITH raw_contributions AS (
+  SELECT *
+  FROM ${ref("fec_contributions_2020")}
+  UNION ALL
+  SELECT * FROM ${ref("fec_contributions_2022")}
+  UNION ALL
+  SELECT * FROM ${ref("fec_contributions_2024")}
+),
+
+classified AS (
+  SELECT
+    contribution_receipt_date AS date,
+    contributor_name,
+    contributor_occupation,
+    contributor_employer,
+    contribution_receipt_amount AS amount,
+    committee_name,
+    
+    -- Classify by sector
+    CASE
+      WHEN LOWER(contributor_employer) LIKE '%elliott%' 
+           OR LOWER(contributor_employer) LIKE '%appaloosa%'
+           OR LOWER(contributor_employer) LIKE '%aurelius%'
+           OR LOWER(contributor_occupation) LIKE '%distress%'
+        THEN 'distressed_debt'
+      WHEN LOWER(committee_name) LIKE '%growth energy%'
+           OR LOWER(committee_name) LIKE '%renewable fuel%'
+           OR LOWER(committee_name) LIKE '%biofuel%'
+           OR LOWER(committee_name) LIKE '%ethanol%'
+        THEN 'biofuel_lobby'
+      WHEN LOWER(contributor_employer) LIKE '%adm%'
+           OR LOWER(contributor_employer) LIKE '%bunge%'
+           OR LOWER(contributor_employer) LIKE '%cargill%'
+           OR LOWER(contributor_employer) LIKE '%soy%'
+        THEN 'ag_commodity'
+      WHEN LOWER(contributor_employer) LIKE '%exxon%'
+           OR LOWER(contributor_employer) LIKE '%chevron%'
+           OR LOWER(contributor_employer) LIKE '%oil%'
+        THEN 'oil_major'
+      ELSE 'other'
+    END AS donor_sector,
+    
+    -- Argentina exposure flag (known distressed debt shops)
+    LOWER(contributor_employer) LIKE '%elliott%' 
+      OR LOWER(contributor_employer) LIKE '%aurelius%' AS argentina_exposure_likely
+
+  FROM raw_contributions
+  WHERE contribution_receipt_amount > 1000  -- Material donations only
+)
+
+SELECT * FROM classified
+WHERE donor_sector != 'other'  -- Focus on relevant sectors
+```
+
+### FEC Feature Engineering
+
+```sql
+-- definitions/03_features/fec_policy_signals.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["fec_regime"]
+  },
+  tags: ["features", "fec", "policy", "hidden_drivers"]
+}
+
+WITH daily_donations AS (
+  SELECT
+    date,
+    donor_sector,
+    SUM(amount) AS sector_amount,
+    COUNT(*) AS sector_count,
+    COUNTIF(argentina_exposure_likely) AS argentina_exposed_donors
+  FROM ${ref("fec_ag_energy_pacs")}
+  GROUP BY date, donor_sector
+),
+
+pivoted AS (
+  SELECT
+    date,
+    SUM(IF(donor_sector = 'distressed_debt', sector_amount, 0)) AS distressed_debt_amt,
+    SUM(IF(donor_sector = 'biofuel_lobby', sector_amount, 0)) AS biofuel_lobby_amt,
+    SUM(IF(donor_sector = 'ag_commodity', sector_amount, 0)) AS ag_commodity_amt,
+    SUM(IF(donor_sector = 'oil_major', sector_amount, 0)) AS oil_major_amt,
+    SUM(argentina_exposed_donors) AS argentina_exposed_count
+  FROM daily_donations
+  GROUP BY date
+),
+
+with_rolling AS (
+  SELECT
+    date,
+    distressed_debt_amt,
+    biofuel_lobby_amt,
+    
+    -- 30-day rolling sums
+    SUM(distressed_debt_amt) OVER w30 AS distressed_debt_30d,
+    SUM(biofuel_lobby_amt) OVER w30 AS biofuel_lobby_30d,
+    SUM(argentina_exposed_count) OVER w30 AS argentina_exposed_30d,
+    
+    -- 90-day baseline for z-scores
+    AVG(distressed_debt_amt) OVER w90 AS distressed_debt_avg_90d,
+    STDDEV(distressed_debt_amt) OVER w90 AS distressed_debt_std_90d,
+    AVG(biofuel_lobby_amt) OVER w90 AS biofuel_lobby_avg_90d,
+    STDDEV(biofuel_lobby_amt) OVER w90 AS biofuel_lobby_std_90d
+    
+  FROM pivoted
+  WINDOW
+    w30 AS (ORDER BY date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW),
+    w90 AS (ORDER BY date ROWS BETWEEN 89 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  
+  -- Feature 1: Distressed debt spike (Elliott, Appaloosa activity)
+  SAFE_DIVIDE(
+    distressed_debt_30d - distressed_debt_avg_90d,
+    NULLIF(distressed_debt_std_90d, 0)
+  ) AS fec_distressed_debt_spike_30d,
+  
+  -- Feature 2: Biofuel lobby intensity z-score
+  SAFE_DIVIDE(
+    biofuel_lobby_30d - biofuel_lobby_avg_90d,
+    NULLIF(biofuel_lobby_std_90d, 0)
+  ) AS fec_biofuel_lobby_zscore,
+  
+  -- Feature 3: Argentina exposure flag (any distressed debt activity)
+  argentina_exposed_30d > 0 AS fec_argentina_exposure_flag,
+  
+  -- Feature 4: Raw counts for analysis
+  distressed_debt_30d AS fec_distressed_debt_30d_raw,
+  biofuel_lobby_30d AS fec_biofuel_lobby_30d_raw,
+  argentina_exposed_30d AS fec_argentina_exposed_count,
+  
+  -- Regime classification
+  CASE
+    WHEN distressed_debt_30d > biofuel_lobby_30d * 2 THEN 'distressed_dominant'
+    WHEN biofuel_lobby_30d > distressed_debt_30d * 2 THEN 'biofuel_dominant'
+    ELSE 'balanced'
+  END AS fec_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_rolling
+```
+
+### IMF/Policy Timing Feature
+
+```sql
+-- definitions/03_features/fec_timing_signals.sqlx
+config {
+  type: "table",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  tags: ["features", "fec", "timing", "hidden_drivers"]
+}
+
+WITH imf_meetings AS (
+  -- Known IMF board meeting dates (load from reference table)
+  SELECT date AS imf_date, 'board_meeting' AS event_type
+  FROM ${ref("reference.imf_calendar")}
+  WHERE event_type = 'board_meeting'
+),
+
+epa_announcements AS (
+  -- EPA RVO announcement dates
+  SELECT date AS epa_date, 'rvo_announcement' AS event_type
+  FROM ${ref("reference.epa_calendar")}
+  WHERE event_type LIKE '%RVO%'
+),
+
+fec_with_timing AS (
+  SELECT
+    f.date,
+    f.fec_distressed_debt_spike_30d,
+    f.fec_biofuel_lobby_zscore,
+    
+    -- Days to next IMF meeting (negative = before meeting)
+    DATE_DIFF(
+      (SELECT MIN(imf_date) FROM imf_meetings WHERE imf_date >= f.date),
+      f.date,
+      DAY
+    ) AS fec_timing_to_imf_vote_days,
+    
+    -- Days to next EPA announcement
+    DATE_DIFF(
+      (SELECT MIN(epa_date) FROM epa_announcements WHERE epa_date >= f.date),
+      f.date,
+      DAY
+    ) AS fec_timing_to_epa_days,
+    
+    -- Donation spike + imminent policy = high signal
+    CASE
+      WHEN f.fec_distressed_debt_spike_30d > 1.5 
+           AND DATE_DIFF((SELECT MIN(imf_date) FROM imf_meetings WHERE imf_date >= f.date), f.date, DAY) < 14
+        THEN 'pre_imf_accumulation'
+      WHEN f.fec_biofuel_lobby_zscore > 1.5
+           AND DATE_DIFF((SELECT MIN(epa_date) FROM epa_announcements WHERE epa_date >= f.date), f.date, DAY) < 14
+        THEN 'pre_epa_accumulation'
+      ELSE 'normal'
+    END AS fec_policy_anticipation_regime
+
+  FROM ${ref("fec_policy_signals")} f
+)
+
+SELECT * FROM fec_with_timing
+```
+
+### Occupation Text Feature (Literal "Distressed Debt Investor")
+
+```sql
+-- definitions/03_features/fec_occupation_signals.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  tags: ["features", "fec", "occupation", "hidden_drivers"]
+}
+
+SELECT
+  date,
+  
+  -- Feature 5: Donor occupation contains "distressed"
+  COUNTIF(LOWER(contributor_occupation) LIKE '%distress%') AS fec_donor_occupation_distressed,
+  
+  -- Other high-signal occupations
+  COUNTIF(LOWER(contributor_occupation) LIKE '%hedge fund%') AS fec_donor_occupation_hedge,
+  COUNTIF(LOWER(contributor_occupation) LIKE '%private equity%') AS fec_donor_occupation_pe,
+  COUNTIF(LOWER(contributor_occupation) LIKE '%commodity%') AS fec_donor_occupation_commodity,
+  
+  -- Total relevant donors (denominator for ratios)
+  COUNT(*) AS fec_total_donors,
+  
+  -- Distressed ratio
+  SAFE_DIVIDE(
+    COUNTIF(LOWER(contributor_occupation) LIKE '%distress%'),
+    NULLIF(COUNT(*), 0)
+  ) AS fec_distressed_donor_ratio
+
+FROM ${ref("fec_ag_energy_pacs")}
+GROUP BY date
+```
+
+### FEC Feature Summary
+
+| Feature | Description | Signal |
+|---------|-------------|--------|
+| `fec_distressed_debt_spike_30d` | Z-score of Elliott/Appaloosa/Aurelius PAC activity | Pre-Argentina bailout |
+| `fec_biofuel_lobby_zscore` | Growth Energy, RFA intensity | Pre-EPA RVO |
+| `fec_argentina_exposure_flag` | Any known Argentina debt holders active | Geopol play |
+| `fec_timing_to_imf_vote_days` | Days until IMF vote (negative = before) | Timing signal |
+| `fec_donor_occupation_distressed` | Count of "Distressed Debt Investor" donors | Explicit signal |
+| `fec_policy_anticipation_regime` | Combined: spike + imminent policy | High conviction |
+
+### Validation Assertion
+
+```sql
+-- definitions/reference/assert_fec_coverage.sqlx
+config { type: "assertion", tags: ["fec", "data_quality"] }
+
+-- Fail if FEC features have >30% nulls in Trump regime
+SELECT 1
+FROM ${ref("daily_ml_matrix")} m
+LEFT JOIN ${ref("fec_policy_signals")} f ON m.date = f.date
+WHERE m.regime_name LIKE '%trump%'
+  AND f.fec_distressed_debt_spike_30d IS NULL
+HAVING COUNT(*) / (SELECT COUNT(*) FROM ${ref("daily_ml_matrix")} WHERE regime_name LIKE '%trump%') > 0.30
+```
+
+---
+
+## 12. "Silence" Features - Tweet Gap Detection (NEW)
+
+**Theory**: When key accounts go quiet before announcements, it's a signal.
+
+```sql
+-- definitions/03_features/silence_signals.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  tags: ["features", "silence", "hidden_drivers"]
+}
+
+WITH tweet_counts AS (
+  SELECT
+    date,
+    COUNT(*) AS tweet_count,
+    COUNTIF(source = 'trump_truth_social') AS trump_tweets,
+    COUNTIF(source = 'usda_official') AS usda_tweets,
+    COUNTIF(source = 'epa_official') AS epa_tweets
+  FROM ${ref("staging.social_intelligence")}
+  GROUP BY date
+),
+
+with_lags AS (
+  SELECT
+    date,
+    tweet_count,
+    trump_tweets,
+    
+    -- 7-day lagged count (silence detector)
+    LAG(tweet_count, 7) OVER (ORDER BY date) AS tweet_count_7d_ago,
+    LAG(trump_tweets, 7) OVER (ORDER BY date) AS trump_tweets_7d_ago,
+    
+    -- Rolling average for baseline
+    AVG(tweet_count) OVER w21 AS tweet_count_avg_21d,
+    AVG(trump_tweets) OVER w21 AS trump_tweets_avg_21d
+    
+  FROM tweet_counts
+  WINDOW w21 AS (ORDER BY date ROWS BETWEEN 20 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  
+  -- Silence = low count relative to baseline
+  CASE
+    WHEN tweet_count < tweet_count_avg_21d * 0.3 THEN 1
+    ELSE 0
+  END AS silence_flag_all,
+  
+  CASE
+    WHEN trump_tweets < trump_tweets_avg_21d * 0.3 THEN 1
+    ELSE 0
+  END AS silence_flag_trump,
+  
+  -- Silence severity (how quiet)
+  1 - SAFE_DIVIDE(tweet_count, NULLIF(tweet_count_avg_21d, 0)) AS silence_severity,
+  
+  -- 7-day gap count for policy amplifier
+  tweet_count_7d_ago AS silence_7d_tweet_count,
+  
+  -- Grok's formula: policy_amplifier = fec_z * (1 - silence)
+  -- We'll compute this in daily_ml_matrix join
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_lags
+```
+
+---
+
+## 13. Consolidated Dataset Structure (Grok Accepted)
+
+**Reduced from 12 → 6 datasets** per GS Quant best practices:
+
+| Dataset | Purpose | Contains |
+|---------|---------|----------|
+| `raw` | Source declarations | Databento, FRED, FEC, USDA, CFTC, ScrapeCreators |
+| `staging` | Cleaned, normalized | market_daily, fred_macro_clean, fec_ag_energy_pacs |
+| `features` | Engineered | daily_ml_matrix, fec_policy_signals, silence_signals |
+| `training` | Mac-ready exports | vw_tft_training_export, zl_training_1m |
+| `forecasts` | Predictions | zl_forecasts_daily (Mac writes here) |
+| `api` | Dashboard views | vw_latest_forecast |
+
+**Merged**:
+- `market_data` → `raw`
+- `signals` → `features`
+- `neural` → `features`
+- `regimes` → `reference` (now in `features`)
+- `ops` → `reference`
+
+---
+
+## 14. Model Pipeline Gates (Grok Accepted)
+
+**Sequence with evidence-based gates**:
+
+```
+BASELINE (LightGBM)
+    │
+    ├── Gate: MAE < 5% on val (2023)?
+    │   ├── NO → Debug data, fix gaps
+    │   └── YES ↓
+    │
+HYBRID (LightGBM + BPNN residuals)
+    │
+    ├── Gate: MAE lift > 3% vs baseline?
+    │   ├── NO → Skip hybrid, try TFT directly
+    │   └── YES ↓
+    │
+TFT (Neural baseline)
+    │
+    ├── Gate: MAE lift > 5% in regimes?
+    │   ├── NO → Stick with best single model
+    │   └── YES ↓
+    │
+ENSEMBLE (Stack best performers)
+    │
+    └── Final: Production deployment
+```
+
+**Why 4 max, not infinite**: Each iteration adds overfit risk. Gate at each step.
+
+---
+
+## 15. Evidence-Based Regime Weights (Grok Challenge)
+
+**Current (arbitrary)**:
+```yaml
+trump_anticipation_2024: 5000
+trade_war_2017_2019: 1500
+```
+
+**Updated (VIX-based)**:
+```yaml
+# Weight = avg(VIX in regime) * 100, capped at 3000
+trump_anticipation_2024: 2200  # VIX avg ~22
+trade_war_2017_2019: 1800      # VIX avg ~18
+covid_crisis_2020: 3000        # VIX avg 30+ (capped)
+inflation_2021_2022: 2100      # VIX avg ~21
+normal_2010_2016: 500          # VIX avg ~15
+
+# Shock multipliers (equalized until backtested)
+policy_shock: 0.15
+vol_shock: 0.15
+supply_shock: 0.15
+geopol_shock: 0.15  # NEW: peso deval > 20% + CL vol > 15%
+```
+
+**Backtest requirement**: A/B test with/without regime weights. If MAE lift <2%, use uniform weights.
+
+---
+
+## 16. Updated dataform.json
+
+```json
+{
+  "warehouse": "bigquery",
+  "defaultDatabase": "cbi-v14",
+  "defaultLocation": "us-central1",
+  "defaultSchema": "staging",
+  "assertionSchema": "features.assertions",
+  "vars": {
+    "raw_dataset": "raw",
+    "staging_dataset": "staging",
+    "features_dataset": "features",
+    "training_dataset": "training",
+    "forecasts_dataset": "forecasts",
+    "api_dataset": "api",
+    "start_date": "2010-01-01",
+    "val_date": "2023-01-01",
+    "test_date": "2024-01-01",
+    "collinearity_threshold": 0.85,
+    "palm_source": "fred_ppoilusdm",
+    "fec_enabled": true,
+    "silence_enabled": true,
+    "baseline_mae_gate": 0.05,
+    "hybrid_lift_gate": 0.03,
+    "tft_regime_lift_gate": 0.05
+  }
+}
+```
+
+---
+
+**STATUS**: Revised structure with all corrections + FEC political intelligence + silence detection + Grok refinements. Production-grade, handles edge cases, "drivers behind drivers" framework integrated.
+
+**NEXT STEPS**:
+1. Create `dataform/` directory structure
+2. Ingest FEC from public BQ
+3. Build baseline, gate at MAE <5%
+4. Iterate only if gates pass
 
