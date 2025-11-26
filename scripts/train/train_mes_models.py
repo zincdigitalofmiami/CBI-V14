@@ -15,6 +15,7 @@ Outputs:
 from pathlib import Path
 import logging
 import pickle
+import shutil
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
@@ -26,9 +27,17 @@ from sklearn.ensemble import GradientBoostingRegressor
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Configuration
+TEST_MODE = False  # Set to True for test runs (overwrites _test/ folder, no versioning)
+
 DRIVE = Path('/Volumes/Satechi Hub/Projects/CBI-V14')
 EXPORTS = DRIVE / 'TrainingData/exports'
-MODELS = EXPORTS / 'mes_models'
+
+# Conditional model path: _test/ for test runs, production otherwise
+if TEST_MODE:
+    MODELS = EXPORTS / '_test/mes_models'
+else:
+    MODELS = EXPORTS / 'mes_models'
 
 SURFACES = ['daily_only', 'daily_intra']
 HORIZONS = ['1w','1m']
@@ -76,6 +85,16 @@ def train_models(surface, horizon):
     return out_pred
 
 def main():
+    if TEST_MODE:
+        logger.info("🧪 TEST MODE: Outputs to _test/ folder (will overwrite)")
+        # Clean test folder if in test mode
+        if MODELS.exists():
+            shutil.rmtree(MODELS)
+            logger.info(f"🧹 Cleaned test folder: {MODELS}")
+        MODELS.mkdir(parents=True, exist_ok=True)
+    else:
+        MODELS.mkdir(parents=True, exist_ok=True)
+    
     all_preds = []
     for h in HORIZONS:
         surf_preds = []

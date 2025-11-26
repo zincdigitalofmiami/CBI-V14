@@ -98,3 +98,6 @@ GROUP BY date
 
 **Status:** ✅ **FX SOURCE CLARIFIED - FRED IS PRIMARY SOURCE**
 
+**External Drive Cleanup (Post-Migration Note):**
+- Legacy Databento loaders and CSV/NDJSON workflows on `/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData/raw` (e.g., `submit_databento_csv_jobs.py`, `load_databento_to_bigquery.py`) are deprecated now that `scripts/ingest/download_ALL_databento_historical.py` writes directly to BigQuery.
+- After the new direct-to-BQ pipeline is fully validated, plan a one-time cleanup of obsolete Databento raw files and scripts on the external drive so future agents don’t accidentally resurrect the old flow.

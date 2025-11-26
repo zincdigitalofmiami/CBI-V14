@@ -548,6 +548,16 @@ CREATE OR REPLACE TABLE features.master_features (
   usda_stocks_soybeans_total FLOAT64,
   usda_stocks_soyoil_total FLOAT64,
   
+  -- ========== PALM OIL (FRED PPOILUSDM) ==========
+  palm_price_monthly FLOAT64,
+  palm_staleness_days INT64,
+  palm_1m_return FLOAT64,
+  palm_3m_return FLOAT64,
+  palm_zl_spread_usd_mt FLOAT64,
+  palm_zl_ratio FLOAT64,
+  palm_zl_corr_30d FLOAT64,
+  palm_zl_corr_90d FLOAT64,
+  
   -- ========== WEATHER ==========
   weather_us_midwest_tavg_wgt FLOAT64,
   weather_us_midwest_prcp_wgt FLOAT64,

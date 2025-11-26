@@ -152,7 +152,7 @@ END AS split
 - ZM (Soybean Meal) - not ingested
 - CL (Crude Oil) - not ingested
 - HO (Heating Oil) - not ingested
-- FCPO (Palm Oil) - not ingested
+- Palm Oil (FRED PPOILUSDM) - not yet wired into features
 - FX pairs - not ingested
 
 ### Missing Feature Types:
@@ -211,3 +211,25 @@ Priority order for ZL:
 6. **Seasonality** - Calendar features
 7. **Pivot points** - P, R1-R4, S1-S4
 
+---
+
+## 🌴 Palm Oil Feature Family (Planned – B-Bucket)
+
+**Domain:** Fundamental substitute driver for ZL (veg‑oil complex)  
+**Source:** FRED `PPOILUSDM` (World Bank Global Palm Oil Price, USD/MT, monthly)  
+**Processing:** Monthly → daily forward-fill with staleness tracking (Mac), then stored in `features.master_features_all`
+
+**Planned columns (all FLOAT64 unless noted):**
+
+| Column | Type | Description | Where Computed |
+|--------|------|-------------|----------------|
+| `palm_price_monthly` | FLOAT64 | Global palm oil price (USD/MT, forward-filled from FRED PPOILUSDM) | Python (Mac) → BQ |
+| `palm_staleness_days` | INT64 | Days since last FRED update (0–30+; monthly cycle) | Python (Mac) |
+| `palm_1m_return` | FLOAT64 | 30‑day palm price return (`pct_change(30)`) | Python (Mac) |
+| `palm_3m_return` | FLOAT64 | 90‑day palm price return (`pct_change(90)`) | Python (Mac) |
+| `palm_zl_spread_usd_mt` | FLOAT64 | Palm − ZL spread in $/MT (`palm_price_monthly - zl_usd_mt`) | Python (Mac) |
+| `palm_zl_ratio` | FLOAT64 | Palm / ZL price ratio (`palm_price_monthly / zl_usd_mt`) | Python (Mac) |
+| `palm_zl_corr_30d` | FLOAT64 | 30‑day rolling correlation between palm price and ZL close | Python (Mac) |
+| `palm_zl_corr_90d` | FLOAT64 | 90‑day rolling correlation between palm price and ZL close | Python (Mac) |
+
+Helper implementation lives in `cbi_v14/features/palm.py` and is intended to be called from the main feature assembly pipeline once the palm series is available in BigQuery.

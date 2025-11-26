@@ -16,6 +16,7 @@ Outputs:
 from pathlib import Path
 import logging
 import pickle
+import shutil
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit
@@ -25,11 +26,29 @@ from sklearn.metrics import mean_squared_error
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Configuration
+TEST_MODE = False  # Set to True for test runs (overwrites _test/ folder, no versioning)
+
 DRIVE = Path('/Volumes/Satechi Hub/Projects/CBI-V14')
 EXPORTS = DRIVE / 'TrainingData/exports'
-MODELDIR = EXPORTS / 'mes_models'
+
+# Conditional model path: _test/ for test runs, production otherwise
+if TEST_MODE:
+    MODELDIR = EXPORTS / '_test/mes_models'
+else:
+    MODELDIR = EXPORTS / 'mes_models'
 
 def main():
+    if TEST_MODE:
+        logger.info("🧪 TEST MODE: Outputs to _test/ folder (will overwrite)")
+        # Clean test folder if in test mode
+        if MODELDIR.exists():
+            shutil.rmtree(MODELDIR)
+            logger.info(f"🧹 Cleaned test folder: {MODELDIR}")
+        MODELDIR.mkdir(parents=True, exist_ok=True)
+    else:
+        MODELDIR.mkdir(parents=True, exist_ok=True)
+    
     data_path = EXPORTS / 'mes_15min_training.parquet'
     if not data_path.exists():
         logger.error(f"Missing dataset: {data_path}")
@@ -59,7 +78,6 @@ def main():
 
     # Refit on full data
     model.fit(X, y)
-    MODELDIR.mkdir(parents=True, exist_ok=True)
     with open(MODELDIR / 'mes_15min_gbr.pkl', 'wb') as f:
         pickle.dump(model, f)
 

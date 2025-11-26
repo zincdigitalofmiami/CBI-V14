@@ -8,6 +8,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 # FRESH START MASTER PLAN
 **Date:** November 18, 2025  
+**Last Revised:** November 26, 2025  
 **Status:** Complete Rebuild - Clean Architecture  
 **Purpose:** Single source of truth for new architecture with source prefixing, DataBento live futures, expanded FRED, and a canonical feature table (`master_features_2000_2025.parquet`) that mirrors to BigQuery for Ultimate Signal, Big 8, MAPE, and Sharpe dashboards.
 
@@ -27,9 +28,9 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 - **Source Prefixing:** ALL columns prefixed with source (`databento_`, `fred_`, etc.) - industry best practice
 - **Mac M4:** ALL training + ALL feature engineering (local, deterministic)
-- **BigQuery:** Storage + Scheduling + Dashboard (NOT training)
-- **External Drive:** PRIMARY data storage + Backup
-- **Dual Storage:** Parquet (external drive) + BigQuery (mirror)
+- **BigQuery:** **Source-of-truth storage + Scheduling + Dashboard** (NOT training)
+- **External Drive:** Local cache + backup of exports (never authoritative; everything must be reproducible from BigQuery)
+- **Dual Storage:** BigQuery is canonical; Parquet on external drive are reproducible extracts used for local training
 - **Staging + Quarantine:** No bad data reaches training
 - **Declarative joins:** YAML spec with automated tests
 - **QA gates:** Block between every phase
@@ -40,7 +41,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 > **This section is essential reading for all AI assistants working on CBI-V14. It provides critical architecture context, guardrails, and workflow patterns.**
 
-### Current Architecture (November 17, 2025)
+### Current Architecture (snapshot as of November 17, 2025)
 - Apple M4 Mac handles every training and inference task (TensorFlow Metal + PyTorch MPS + CPU tree libs).
 - BigQuery = storage plus dashboard read layer only; no BigQuery ML, no AutoML jobs.
 - Predictions generated locally, uploaded with `scripts/upload_predictions.py`, then read by the Vercel dashboard.
@@ -54,26 +55,36 @@ All data must come from authenticated APIs, official sources, or validated histo
   - BigQuery SQL: Correlations (CORR() OVER window), moving averages, regimes (existing in `advanced_feature_engineering.sql`)
   - Python: Complex sentiment, NLP, policy extraction, interactions (existing in `feature_calculations.py`)
   - **Both are used** - this is the production pattern
+  - **Rule:** All **sub-hour / microstructure** feature engineering and modeling (1s/1m/5m/15m/30m) runs **only on Mac**; BigQuery stores raw intraday tape and >=1h/daily aggregates but does not compute micro features.
 
 ### Data Sources (Formalized November 2025)
 1. **FRED**: 30+ economic series (interest rates, inflation, employment, GDP) via `collect_fred_comprehensive.py`
 2. **DataBento**: All market data (GLBX.MDP3) — primary authoritative feed for futures, FX, and options (2000→present)
 3. **World Bank (Alternative Macro)**: Optional complementary macro series (growth, development, trade) via `scripts/ingest/collect_worldbank_alternative.py`. Used only where explicitly documented and never as a stealth replacement for FRED series.
+4. **ScrapeCreators (News/Policy Buckets)**: Topic-segmented news feeds for biofuels, tariffs, China demand, logistics, etc., implemented under `scripts/scrapecreators/buckets/` (see `biofuel_policy.py`, `china_demand.py`, `tariffs_trade_policy.py`, etc.). These power the news bucket aggregations in `features.news_bucket_daily` and feed the sentiment layer.
+
+**Execution Docs Index:** See `docs/reference/ACTIVE_EXECUTION_DOCS.md` for the small set of execution-critical docs (data pull plans, schema breakdown, FX clarification, Databento references, weather builder, sentiment buckets) that should be used alongside this MASTER_PLAN.md.
 
 ### Primary Documents
 - `docs/plans/MASTER_PLAN.md` (this document) – Source of truth
 - `docs/plans/TRAINING_PLAN.md` – Training strategy and execution
 - `docs/plans/BIGQUERY_MIGRATION_PLAN.md` – BigQuery migration strategy
 - `docs/PAGE_BUILDOUT_ROADMAP.md` – Dashboard page specifications and buildout plan
+- `EXECUTION_START_20251124.md` (in `Quant Check Plan/`) – Live execution status and baseline data+training runbook
+- `Quant Check Plan/PHASE2_DATA_PULL_PLAN.md` – Phase 2 complete data pull plan (Databento + FRED + supporting feeds; kept in sync with Databento ingestors and BigQuery schema)
+- `COMPLETE_BIGQUERY_DATASET_TABLE_BREAKDOWN_20251124.md` – Canonical BigQuery datasets/tables/columns schema (current as of 24 Nov 2025)
+- `FINAL_COMPLETE_BQ_SCHEMA.sql` – Final BigQuery DDL for all datasets (us-central1 only)
 - `docs/reports/costs/AI_MIGRATION_NIGHTMARE.md` – ⚠️ CRITICAL: AI created ~$250/month mistake. Read before creating any GCP resources.
 
 ### Reference Documents (Technical Specifications)
+- `docs/plans/DATA_SOURCES_REFERENCE.md` – Core data source catalog and update cadence
+- `Quant Check Plan/DATA_SOURCES_REFERENCE.md` – Quad-check data source view (should match the above)
+- `DATABENTO_DATA_INVENTORY.md` – Inventory of Databento datasets collected to date
+- `Quant Check Plan/DATABENTO_DOCUMENTATION_REVIEW.md` – Databento GLBX.MDP3 schema, symbol formats, and API usage
+- `Quant Check Plan/COMPLETE_BIGQUERY_DATASET_TABLE_BREAKDOWN_20251124.md` – Quad-check view of live BigQuery schema (must stay in sync with root breakdown)
 - `docs/reference/MES_GAUGE_MATH.md` – MES trading cockpit gauge formulas and layout
 - `docs/reference/MES_MATH_ARCHITECTURE.md` – MES math architecture (Fibonacci, Monte-Carlo, Gamma, SHAP, Entry Checklist)
 - `docs/reference/STRATEGY_SCENARIO_CARDS.md` – Strategy page scenario cards specification
-- `docs/reference/FIBONACCI_MATH.md` – Fibonacci retracements and extensions (Databento-based)
-- `docs/reference/PIVOT_POINT_MATH.md` – Pivot point mathematics (Databento-based)
-- `docs/reference/SENTIMENT_ARCHITECTURE_REFERENCE.md` – 9-layer sentiment architecture
 - `docs/reference/FIBONACCI_MATH.md` – Fibonacci retracements and extensions (Databento-based)
 - `docs/reference/PIVOT_POINT_MATH.md` – Pivot point mathematics (Databento-based)
 - `docs/reference/SENTIMENT_ARCHITECTURE_REFERENCE.md` – 9-layer sentiment architecture
@@ -112,6 +123,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 11. **Cost Guardrail — Historical Data**: No new historical backfills outside the approved plan. DataBento provides full history (2000→present). All acquisition must be DataBento or approved agency feeds (FRED/EIA/USDA/CFTC/NOAA). Any additional historical pulls must be explicitly approved due to cost.
 12. **PyTorch architecture decisions** - Follow refined architecture: TCN vs LSTM bake-off, 30-60 curated features, single-asset (ZL) first, PyTorch → BigQuery inference path (NOT CoreML primary), focus on MAPE/Sharpe quality not throughput.
 13. **ZL = Soybean Oil Futures** - NOT corn. Primary commodity for single-asset baseline.
+14. **Microstructure Rule** - All sub-hour feature engineering and training (1s/1m/5m/15m/30m intraday, MES microstructure, tape-based FX/vol signals) runs on the Mac only; BigQuery holds raw intraday data and >=1h/daily aggregates but never does micro-feature compute or training.
 
 ### PyTorch Architecture Refinements (November 2025)
 
@@ -167,6 +179,14 @@ All data must come from authenticated APIs, official sources, or validated histo
 - [ ] Dated on or after 12 Nov 2025 unless explicitly flagged as reference.
 - [ ] Uses correct naming architecture and versionless first-run rule.
 - [ ] Data quality + BigQuery verification documented before outputs ship.
+- [ ] When you need implementation detail, prefer these execution references (kept in sync with this plan):
+  - `Quant Check Plan/EXECUTION_START_20251124.md` – current execution status and baseline runbook
+  - `Quant Check Plan/PHASE2_DATA_PULL_PLAN.md` – Phase 2 complete data pull plan (Databento + FRED + supporting feeds)
+  - `Quant Check Plan/DATABENTO_DOCUMENTATION_REVIEW.md` – Databento GLBX.MDP3 coverage, limits, and pricing notes
+  - `Quant Check Plan/DATABENTO_SYMBOL_FORMAT_REFERENCE.md` – confirmed Databento symbology (`{ROOT}.FUT`, options formats)
+  - `Quant Check Plan/FX_DATA_SOURCE_CLARIFICATION.md` – FX: FRED as primary source, Databento FX futures optional
+  - `Quant Check Plan/PHASE1_DATA_DOMAINS_TIPS_AND_GAPS.md` – Phase 1 weather/FX/vol simplifications and feature formulas
+  - `UPDATED_COLLECTION_SCHEDULE.md` – live ingestion schedule (cron-style) for ZL/MES, FRED, weather, EIA, etc.
 
 ---
 
@@ -948,6 +968,9 @@ core_zl_price_sentiment = 0.60 × news_score + 0.25 × x_score + 0.15 × truth_s
 - **Truth Social (15%):** Only if ≥3 posts/day (reduces noise 40%)
   - Volume weight: `min(truth_volume / 8.0, 2.0)` (cap at extreme volume)
 
+**News Bucket Source:**
+- Core ZL price sentiment uses aggregated news buckets from ScrapeCreators collectors in `scripts/scrapecreators/buckets/` (e.g., `biofuel_policy.py`, `china_demand.py`, `tariffs_trade_policy.py`, logistics buckets), routed through `features.news_bucket_daily` and `staging/sentiment_daily.parquet` into the 9-layer sentiment system.
+
 **Verified:** Correlates 0.62 with ZL returns 2024-2025
 
 ### Layer 2: Biofuel Policy & Demand
@@ -966,6 +989,9 @@ biofuel_policy_sentiment = 0.55 × rin_capped + 0.30 × epa_event + 0.15 × crus
 - **Biodiesel Margin Z-Score (15%):** Standardized crush margins
   - Source: `eia_energy_granular.parquet` → `biodiesel_margin` column
 
+**News Bucket Source:**
+- Biofuel policy headlines and articles are collected via ScrapeCreators using `scripts/scrapecreators/buckets/biofuel_policy.py`, then aggregated into `features.news_bucket_daily` and merged into `staging/sentiment_daily.parquet`.
+
 **Verified:** 20-28% of ZL variance driven by biofuel layer
 
 ### Layer 3: Geopolitical Tariffs
@@ -977,6 +1003,9 @@ geopolitical_tariff_sentiment = geopolitical_tariff_score (from policy signals)
 
 **Source:** `policy_trump_signals.parquet` → `geopolitical_tariff_score` column  
 **Verified:** +15% spikes on Phase One collapse (Feb 2025)
+
+**News Bucket Source:**
+- Tariff/trade policy headlines are collected via ScrapeCreators using `scripts/scrapecreators/buckets/tariffs_trade_policy.py`, then aggregated into `features.news_bucket_daily` and merged into `staging/sentiment_daily.parquet`.
 
 ### Layer 4: South America Weather & Supply
 
@@ -992,6 +1021,9 @@ south_america_weather_sentiment = 0.45 × arg_drought + 0.35 × bra_rain + 0.20 
   - Source: `weather_granular_daily.parquet` → `brazil_rain_anomaly`
 - **USDA WASDE Yield Surprise (20%):** From WASDE reports
   - Source: `usda_reports_granular.parquet` → `wasde_yield_surprise`
+
+**Weather Feature Source:**
+- Core US regional weather features and storm-event counts are built by `bigquery-sql/build_weather_history.sql`, which creates `raw_intelligence.weather_segmented`, `raw_intelligence.storm_events`, `features.weather_daily_region`, and `features.storm_events_daily`. These feed both the weather sentiment layer and the Big 8 `weather_supply_risk` signal.
 
 **Verified:** -18% on La Niña droughts, USDA yield cuts 4.3B bu
 
@@ -1520,6 +1552,25 @@ import time
 time.sleep(60)  # Prevent thermal throttling
 ```
 
+### EXECUTION RULE: ONE SYMBOL / ONE HORIZON FAMILY AT A TIME
+
+To keep the system stable and avoid cross-contamination while we finish the rebuild, all data and modeling work must follow this loop:
+
+1. **Pick one symbol and one horizon family only.**
+   - Start with `ZL` daily procurement horizons (1w/1m/3m/6m/12m).
+   - Ignore MES and all other roots until the ZL daily engine is fully clean and trained.
+2. **Ingest and verify raw data for that symbol only.**
+   - Databento → BigQuery for that symbol (e.g., `symbol = 'ZL'` in `market_data.databento_futures_ohlcv_1d`).
+   - Fix date ranges, remove any 1970/garbage rows, and ensure one row per trading day **before** touching features.
+3. **Build features, regimes, and training exports for that symbol only.**
+   - Run staging, joins, and feature assembly restricted to that symbol/horizon family.
+   - Add price-level targets and regime calendar/weights; export one training file per horizon for that symbol.
+4. **Train and validate on Mac for that symbol/horizon family only.**
+   - Train baselines and regime-aware models on Mac (strict walk-forward, no leakage), log MAPE/directional accuracy, and lock the configuration once acceptable.
+5. **Only after ZL daily is stable, repeat the same loop for the next symbol or sub-system (ZS, ZM, CL/HO, then MES).**
+
+Micros, segmented sentiment layers, and intraday MES models are **Phase 3+ add-ons** that wrap around already-stable ZL/MES cores. They must not be introduced until the one-symbol baseline loop above has succeeded for ZL.
+
 ## FUTURE PHASE – MICRO FORECASTERS & FINAL ENSEMBLE (IMPLEMENT AFTER BASELINES)
 
 **Targets (lock now):** Use price levels for all horizons. Example: `target_1w = ZL settle at T+5 trading days (price level)`; analogous definitions for 1m/3m/6m/12m and MES horizons. Keep this consistent with MAPE/directional accuracy.
@@ -1799,6 +1850,9 @@ ORDER BY date DESC;
 ```
 
 **Note:** Big 8 replaces Big 7, but this view maintained for historical compatibility.
+
+**China Demand Source:**
+- The `china.china_demand` component is driven by China-demand news buckets collected via `scripts/scrapecreators/buckets/china_demand.py` and related ScrapeCreators ingest, then transformed into a daily signal in `signals.calculated_signals` before joining into `signals.vw_big8_signals`.
 
 #### 6. `signals.hidden_relationship_signals` (Table)
 **Status:** ✅ Already defined in schema (Table 25)
@@ -2097,6 +2151,6 @@ These cards capture how Chris consumes intelligence. Build them once staging + m
 
 ---
 
-**Last Updated:** November 17, 2025  
+**Last Updated:** November 26, 2025  
 **Status:** Ready for Execution  
 **Next Step:** Delete legacy files, start fresh build

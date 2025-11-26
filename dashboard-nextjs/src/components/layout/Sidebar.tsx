@@ -22,7 +22,7 @@ const navigation = [
 ]
 
 export function Sidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname() || '/'
 
   return (
     <div className="w-64 bg-background-secondary border-r border-border-primary flex flex-col">

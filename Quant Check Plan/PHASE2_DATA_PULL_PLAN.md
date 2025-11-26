@@ -22,12 +22,17 @@
 
 ### 1. DATABENTO (Market Data)
 
-**Script Location:** `/Volumes/Satechi Hub/Projects/CBI-V14/scripts/ingest/download_ALL_databento_historical.py`
+**Script Location:** `scripts/ingest/download_ALL_databento_historical.py`
 
-**What it does:**
-- Submits batch jobs to Databento API
-- Downloads ALL 26 symbols (2010-present)
-- Outputs to external drive (staging)
+**What it does (UPDATED):**
+- Streams historical OHLCV from Databento GLBX.MDP3 for all configured symbols/timeframes
+- Loads data **DIRECTLY into BigQuery** tables:
+  - `market_data.databento_futures_ohlcv_1d` (daily)
+  - `market_data.databento_futures_ohlcv_1h` (hourly)
+  - `market_data.databento_futures_ohlcv_1m` (1-minute)
+  - `market_data.databento_futures_ohlcv_1s` (1-second, MES only)
+- No external-drive staging, no manual CSV downloads
+- **Changed 2025-11-25:** This script is the canonical Databento loader. Do **not** revert to batch jobs + external drive; intraday schemas use scalar `spread_legs STRING` (not arrays) to match `market_data.databento_futures_ohlcv_*` exactly.
 
 **Symbols Covered:**
 | Tier | Symbols | Status |
@@ -49,13 +54,17 @@
 
 **Priority:** ZL engine first (pull ZS, ZM, CL, HO). MES full history pull after ZL stable.
 
-**To Complete:**
-1. Submit options jobs: `python scripts/ingest/submit_granular_microstructure.py` (includes ZL + MES options)
-2. Check job status: `python scripts/ingest/check_databento_jobs.py`
-3. Download completed jobs from https://databento.com/portal/batch/jobs
-4. Load to BigQuery (need loader script)
+**To Complete (Databento core):**
+1. Ensure `DATABENTO_API_KEY` is set (environment or macOS Keychain).
+2. From repo root, run:
+   - `python3 scripts/ingest/download_ALL_databento_historical.py`
+3. Verify BigQuery loads:
+   - `bq query --use_legacy_sql=false "SELECT COUNT(*) FROM market_data.databento_futures_ohlcv_1d WHERE symbol = 'ZL'"` (and other roots)
 
-**Options Data (NEW):**
+**Options Data (still pending separate path):**
+> The options flow (OZL.OPT, OZS.OPT, OZM.OPT, ES.OPT, MES.OPT) still uses the batch/portal workflow until the dedicated options ingestor is updated to write directly to BigQuery.
+
+**Options Data (LEGACY FLOW - TO BE MODERNIZED):**
 - **ZL Options:** OZL.OPT, OZS.OPT, OZM.OPT (for implied vol, GEX, vol surface, crush spread vol)
 - **MES Options:** ES.OPT, MES.OPT (for MES GEX, vol surface, put/call ratios)
 - **Schemas:** ohlcv-1d, ohlcv-1h, trades, quotes, statistics
@@ -221,4 +230,3 @@ python scripts/ingest/collect_fred_comprehensive.py
 | FRED VIX3M | ~3,800 | 2010-2025 | ❌ Need add |
 
 **All data aligned to same date range, pulled fresh from source APIs.**
-

@@ -1,35 +1,52 @@
 #!/usr/bin/env python3
 """
-Train ZL Baselines with Walk-Forward Validation
-================================================
-Trains LightGBM baseline models for all ZL horizons using:
-- Walk-forward validation (time series proper)
-- Sample weights from training_weight column
-- Proper train/validation splits
+PRODUCTION ONLY – ZL Baseline Training (Price-Level Targets)
+============================================================
 
-Horizons: 1w, 1m, 3m, 6m, 12m (price level targets)
+This script trains production ZL baseline models as defined in:
+  docs/plans/ZL_PRODUCTION_SPEC.md
 
-Author: CBI-V14 System
-Date: November 25, 2025
+Key rules:
+- Targets are FUTURE PRICE LEVELS (not returns).
+- Training data comes from canonical ZL training exports in TrainingData/exports,
+  which must be reproducible from BigQuery (features.master_features_all + targets).
+- Walk-forward validation (time-based splits), no shuffling.
+- Models and backtest metadata are written under TrainingData/models/zl_baselines/.
+
+Any experimental work (e.g., return targets, alternative horizons, new algorithms)
+must live in a separate script (e.g., scripts/train/quick_zl_baseline.py) and
+MUST NOT write into the production models directory.
 """
 
 import logging
 import json
 import joblib
+import shutil
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import lightgbm as lgb
+from dataclasses import asdict
+
+from cbi_v14.backtest.specs import DatasetSpec, ModelSpec, BacktestResult, BacktestRun
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Configuration
+TEST_MODE = False  # Set to True for test runs (overwrites _test/ folder, no versioning)
+
 # Paths
 DRIVE = Path("/Volumes/Satechi Hub/Projects/CBI-V14/TrainingData")
 EXPORTS = DRIVE / "exports"
-MODELS = DRIVE / "models/zl_baselines"
+
+# Conditional model path: _test/ for test runs, production otherwise
+if TEST_MODE:
+    MODELS = DRIVE / "models/_test/zl_baselines"
+else:
+    MODELS = DRIVE / "models/zl_baselines"
 
 # Horizons
 HORIZONS = ['1w', '1m', '3m', '6m', '12m']
@@ -215,6 +232,44 @@ def train_horizon(horizon: str) -> dict:
     metadata_path = MODELS / f"lgb_zl_{horizon}_baseline_metadata.json"
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
+
+    # Backtest record (train/val only for now; test to be added when harness is extended)
+    dataset_spec = DatasetSpec(
+        name=f"zl_{horizon}_baseline",
+        bq_table="features.master_features_all",
+        symbol="ZL",
+        horizon=horizon,
+        train_start=str(train_df['date'].min().date()),
+        train_end=str(train_df['date'].max().date()),
+        val_start=str(val_df['date'].min().date()),
+        val_end=str(val_df['date'].max().date()),
+    )
+
+    model_spec = ModelSpec(
+        name=f"lgb_zl_{horizon}_baseline",
+        algorithm="lightgbm_regression",
+        target_col=target_col,
+        feature_cols=feature_cols,
+        params=LGB_PARAMS,
+    )
+
+    backtest_result = BacktestResult(
+        metrics_train=train_metrics,
+        metrics_val=val_metrics,
+        metrics_test=None,
+        top_features=importance.head(20).to_dict('records'),
+    )
+
+    backtest_run = BacktestRun(
+        dataset=dataset_spec,
+        model=model_spec,
+        result=backtest_result,
+        notes="Production ZL baseline run (train/val only).",
+    )
+
+    backtest_path = MODELS / f"lgb_zl_{horizon}_baseline_backtest.json"
+    with open(backtest_path, 'w') as f:
+        json.dump(asdict(backtest_run), f, indent=2)
     
     return {
         'horizon': horizon,
@@ -229,10 +284,18 @@ def main():
     """Train all ZL baselines."""
     logger.info("="*60)
     logger.info("ZL Baseline Training - All Horizons")
+    if TEST_MODE:
+        logger.info("🧪 TEST MODE: Outputs to _test/ folder (will overwrite)")
     logger.info("="*60)
     
-    # Ensure output directory exists
-    MODELS.mkdir(parents=True, exist_ok=True)
+    # Clean test folder if in test mode, otherwise ensure directory exists
+    if TEST_MODE:
+        if MODELS.exists():
+            shutil.rmtree(MODELS)
+            logger.info(f"🧹 Cleaned test folder: {MODELS}")
+        MODELS.mkdir(parents=True, exist_ok=True)
+    else:
+        MODELS.mkdir(parents=True, exist_ok=True)
     
     all_results = []
     
@@ -277,4 +340,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
