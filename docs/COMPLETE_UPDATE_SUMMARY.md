@@ -56,7 +56,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 - ALPHA_VANTAGE_MCP_SETUP.md
 
 ✅ **Updated documents**:
-- Fresh Start Master Plan - replaced Alpha with DataBento
+- MASTER_PLAN.md - replaced Alpha with DataBento
 - Training Master Execution Plan - added DataBento details
 - Removed Alpha Vantage API key references
 
@@ -174,7 +174,7 @@ predictions.* → Dashboard
 ## 🎯 Final Status
 
 **Schema Completeness: 100%**
-- All Fresh Start requirements ✅
+- All MASTER_PLAN requirements ✅
 - All Training Plan requirements ✅
 - All hidden intelligence ✅
 - All news classification ✅

@@ -6,7 +6,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 # Super-Optimized Overlay Views Summary
 **Date:** November 18, 2025  
-**Status:** Documented in Fresh Start Master Plan
+**Status:** Documented in MASTER_PLAN
 
 ## 📊 Overview
 
@@ -88,6 +88,6 @@ The overlay layer provides curated, dashboard-ready views that eliminate complex
 4. Test view queries before dashboard deployment
 
 ---
-**Status:** ✅ Documented in Fresh Start Master Plan  
-**Location:** `docs/plans/FRESH_START_MASTER_PLAN.md` - Section: "SUPER-OPTIMIZED API-FACING OVERLAY LAYER"
+**Status:** ✅ Documented in MASTER_PLAN  
+**Location:** `docs/plans/MASTER_PLAN.md` - Section: "SUPER-OPTIMIZED API-FACING OVERLAY LAYER"
 

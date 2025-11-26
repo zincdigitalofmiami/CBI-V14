@@ -15,7 +15,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 ### Core Plans (docs/plans/) - 27 files
 
 #### ACTIVE - KEEP (6 Plans)
-1. ✅ **FRESH_START_MASTER_PLAN.md** - Overall master plan
+1. ✅ **MASTER_PLAN.md** - Overall master plan
 2. ✅ **TRAINING_MASTER_EXECUTION_PLAN.md** - Training strategy and execution
 3. ✅ **BIGQUERY_CENTRIC_MIGRATION_PLAN.md** - BQ migration strategy
 4. ✅ **TABLE_MAPPING_MATRIX.md** - Reference: BQ table structure
@@ -23,8 +23,8 @@ All data must come from authenticated APIs, official sources, or validated histo
 6. ✅ **ARCHITECTURE_WIREFRAME.md** - System architecture
 
 #### DUPLICATE/SUPERSEDED - ARCHIVE (8 Plans)
-7. 📦 COMPLETE_ALPHA_INTEGRATION_PLAN.md → Superseded by FRESH_START_MASTER_PLAN
-8. 📦 COMPLETE_DATA_INTEGRATION_PLAN.md → Superseded by FRESH_START_MASTER_PLAN
+7. 📦 COMPLETE_ALPHA_INTEGRATION_PLAN.md → Superseded by MASTER_PLAN.md
+8. 📦 COMPLETE_DATA_INTEGRATION_PLAN.md → Superseded by MASTER_PLAN.md
 9. 📦 IMMEDIATE_DATA_LOADING_PLAN.md → Superseded by BIGQUERY_CENTRIC_MIGRATION_PLAN
 10. 📦 TRAINING_SURFACE_FIX_THEN_ALPHA.plan.md → Superseded by TRAINING_MASTER_EXECUTION_PLAN
 11. 📦 REGIME_BASED_TRAINING_STRATEGY.md → Integrated into TRAINING_MASTER_EXECUTION_PLAN
@@ -76,7 +76,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 ### 📁 docs/plans/ (ACTIVE - 6 FILES)
 
 **Core Plans (5)**
-1. `MASTER_PLAN.md` (rename from FRESH_START_MASTER_PLAN.md)
+1. `MASTER_PLAN.md`
 2. `TRAINING_PLAN.md` (rename from TRAINING_MASTER_EXECUTION_PLAN.md)
 3. `BIGQUERY_MIGRATION_PLAN.md` (rename from BIGQUERY_CENTRIC_MIGRATION_PLAN.md)
 4. `ARCHITECTURE.md` (rename from ARCHITECTURE_WIREFRAME.md)
@@ -106,7 +106,7 @@ mkdir -p docs/plans/archive/2025-11-19-consolidation
 Move all superseded/duplicate plans to archive
 
 ### Step 3: Rename Active Plans (5 files)
-- FRESH_START_MASTER_PLAN.md → MASTER_PLAN.md
+- MASTER_PLAN.md (canonical)
 - TRAINING_MASTER_EXECUTION_PLAN.md → TRAINING_PLAN.md
 - BIGQUERY_CENTRIC_MIGRATION_PLAN.md → BIGQUERY_MIGRATION_PLAN.md
 - ARCHITECTURE_WIREFRAME.md → ARCHITECTURE.md

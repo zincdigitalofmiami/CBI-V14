@@ -15,7 +15,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 **Current Situation:** You have a **mixed state** - legacy tables from previous work exist alongside the new architecture that hasn't been deployed yet.
 
 **Why some tables have data:**
-- Legacy tables from previous iterations (before Fresh Start redesign)
+- Legacy tables from previous iterations (before MASTER_PLAN redesign)
 - 654 tables exist across 43 datasets (mostly old/backup datasets)
 - Only 8 of your 11 NEW datasets exist, with partial table coverage
 
@@ -187,13 +187,13 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ### Historical Context
 
-1. **Previous Architecture (Pre-Fresh Start)**
+1. **Previous Architecture (Pre-MASTER_PLAN)**
    - You had tables from earlier iterations
    - Different naming conventions (no prefixes)
    - Multiple backup datasets created during migrations
    - 654 legacy tables across 43 datasets
 
-2. **Fresh Start Redesign (Current)**
+2. **MASTER_PLAN Redesign (Current)**
    - Complete re-architecture with venue-pure approach
    - New naming: prefixed columns, organized datasets
    - 55 NEW tables across 12 datasets

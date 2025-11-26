@@ -6,7 +6,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 **📋 BEST PRACTICES:** See `.cursorrules` and `docs/reference/BEST_PRACTICES_DRAFT.md` for mandatory best practices including: no fake data, always check before creating, always audit after work, us-central1 only, no costly resources without approval, research best practices, research quant finance modeling.
 
-# FRESH START MASTER PLAN
+# MASTER PLAN
 **Date:** November 18, 2025  
 **Last Revised:** November 26, 2025  
 **Status:** Complete Rebuild - Clean Architecture  
@@ -283,7 +283,7 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
 - **Prefix:** `databento_` on ALL columns except `date`, `symbol`
 
 **Does NOT Provide:**
-- Palm oil futures (not on CME - use Barchart/ICE)
+- Palm oil futures (not on CME - use FRED PPOILUSDM)
 - Calculated indicators (compute locally from OHLCV)
 - News/sentiment (use ScrapeCreators)
 
@@ -335,9 +335,10 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
   - **Column Naming:** `usda_wasde_world_soyoil_prod`, `usda_exports_soybeans_net_sales_china`, `usda_cropprog_illinois_soybeans_condition_pct`, etc.
 - **EPA:** RIN prices (if different from EIA)
 - **World Bank:** Pink sheet commodity prices
-- **Palm Oil (Barchart/ICE):** Dedicated palm futures + spot feed.  
-  - **Prefix:** `barchart_palm_` on price/volume/volatility columns.  
-  - **Files:** `raw/barchart/palm_oil/`, staged to `staging/barchart_palm_daily.parquet`.
+- **Palm Oil (FRED PPOILUSDM):** Monthly palm oil price series from FRED, forward-filled to daily.  
+  - **Prefix:** `palm_` on all palm-derived features (e.g., `palm_price_monthly`, `palm_zl_spread_usd_mt`, `palm_zl_ratio`).  
+  - **Source:** FRED series `PPOILUSDM` (monthly, forward-filled to daily in feature engineering).
+  - **Feature Engineering:** See `cbi_v14/features/palm.py` for palm feature calculations.
 - **CFTC:** COT positioning data
 - **Weather (NOAA/INMET/SMN):** Multi-country, multi-region weather data. Each region is a unique dataset.
   - **Strategy:** Granular wide format. One row per date, with separate columns for each key agricultural region.
@@ -409,7 +410,7 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
 │   │   ├── databento_mes_30min.parquet # MES 30min with databento_ prefix
 │   │   ├── databento_mes_1hr.parquet # MES 1hr with databento_ prefix
 │   │   ├── databento_mes_4hr.parquet # MES 4hr with databento_ prefix
-│   │   ├── barchart_palm_daily.parquet    # Palm oil prices with barchart_palm_ prefix
+│   │   ├── palm_daily.parquet    # Palm oil prices from FRED PPOILUSDM with palm_ prefix
 │   │   ├── fred_macro_expanded.parquet    # 55-60 series with fred_ prefix
 │   │   ├── weather_granular_daily.parquet # GRANULAR WIDE FORMAT: one column per region
 │   │   ├── usda_reports_granular.parquet  # GRANULAR WIDE FORMAT: one column per report/field
@@ -452,7 +453,7 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
     │   ├── collect_databento_live.py
     │   ├── collect_fred_expanded.py      # NEW: 55-60 series
     │   ├── collect_databento_mes_intraday.py  # NEW: MES intraday (1min, 5min, 15min, 30min, 1hr, 4hr) + daily+ (1d, 7d, 30d, 3m, 6m, 12m)
-    │   ├── collect_palm_barchart.py      # NEW: dedicated palm feed
+    │   ├── collect_palm_fred.py      # NEW: FRED PPOILUSDM palm feed
     │   ├── collect_volatility_intraday.py # NEW: realized vol snapshots
     │   └── collect_policy_trump.py       # NEW: Trump policy event scraper
     ├── staging/                # raw/ → staging/ (with prefixes)
@@ -558,8 +559,8 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
    - **Columns:** `date`, `eia_biodiesel_prod_padd2`, `eia_rin_price_d4`, etc.
    - Join: `on: ["date"]`
 
-7. **add_palm** (Barchart/ICE Palm)
-   - Columns: `date`, `barchart_palm_close`, `barchart_palm_volume`, `barchart_palm_vol_20d`
+7. **add_palm** (FRED PPOILUSDM Palm)
+   - Columns: `date`, `palm_price_monthly`, `palm_zl_spread_usd_mt`, `palm_zl_ratio`, `palm_zl_corr_30d`, `palm_zl_corr_90d`
    - Join: `on: ["date"]`
 
 8. **add_volatility** (VIX + realized vol)
@@ -622,10 +623,10 @@ See `docs/knowledge/gpt_pulses/GPT_PULSES.md` for full details.
 - Others: 1-hour standard
 - Manifest tracking
 
-### 5. `scripts/ingest/collect_palm_barchart.py` (NEW)
-- Fetch palm futures/spot from Barchart/ICE
-- Output `barchart_palm_` prefixed staging file
-- Keep cadence aligned with DataBento refresh schedule
+### 5. `scripts/ingest/collect_palm_fred.py` (NEW)
+- Fetch palm oil price from FRED PPOILUSDM series
+- Output `palm_` prefixed staging file with monthly data forward-filled to daily
+- Keep cadence aligned with FRED refresh schedule (monthly)
 
 ### 6. `scripts/ingest/collect_volatility_intraday.py` (NEW)
 - Pull VIX + intraday ZL/ES slices for realized vol calc
@@ -1253,7 +1254,7 @@ WHEN NOT MATCHED THEN INSERT ROW;
 Temporary tables can be loaded via `load_table_from_dataframe` or `LOAD DATA`.
 
 ### Naming Enforcement
-- Follow `docs/plans/NAMING_ARCHITECTURE_PLAN.md` Option 3: first artifacts have no `_v2`. Only introduce suffixes after breaking changes. Track releases via plan versioning (`Fresh Start Master Plan v1.1`) instead of renaming tables/files.
+- Follow `docs/plans/NAMING_ARCHITECTURE_PLAN.md` Option 3: first artifacts have no `_v2`. Only introduce suffixes after breaking changes. Track releases via plan versioning (`MASTER_PLAN v1.1`) instead of renaming tables/files.
 
 ---
 
@@ -1261,7 +1262,7 @@ Temporary tables can be loaded via `load_table_from_dataframe` or `LOAD DATA`.
 
 ### Full Backfill (Clean Install)
 1. `scripts/ingest/collect_databento_live.py`
-3. `scripts/ingest/collect_palm_barchart.py`
+3. `scripts/ingest/collect_palm_fred.py`
 4. `scripts/ingest/collect_volatility_intraday.py`
 5. `scripts/ingest/collect_policy_trump.py`
 6. `scripts/ingest/collect_fred_expanded.py` + other government feeds (weather, CFTC, USDA, EIA, etc.)
@@ -1309,7 +1310,7 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 
 ### Scope
 - Historical coverage: 2000-01-01 → present for all daily sources; DataBento from 2010-06-06.
-- Sources: DataBento futures (2000→present), FRED (55-60 series), palm (Barchart), volatility (computed from DataBento), policy/trump (limited to 2020+ due to availability), weather, CFTC, USDA, EIA.
+- Sources: DataBento futures (2000→present), FRED (55-60 series including PPOILUSDM for palm), volatility (computed from DataBento), policy/trump (limited to 2020+ due to availability), weather, CFTC, USDA, EIA.
 
 ### Approach
 1. **DataBento Limits:** Manage API calls efficiently; use batch requests where possible.
@@ -1368,7 +1369,7 @@ Each DAG should be orchestrated with cron or a scheduler (future section) ensuri
 - ✅ CFTC: Prefixed `cftc_`.
 - ✅ USDA: Granular wide format with unique columns for key reports/fields (e.g., `usda_wasde_world_soyoil_prod`).
 - ✅ EIA: Granular wide format with unique columns for key series (e.g., `eia_biodiesel_prod_padd2`).
-- ✅ Palm: Dedicated Barchart/ICE feed with `barchart_palm_*`
+- ✅ Palm: FRED PPOILUSDM series with `palm_*` prefix (see `cbi_v14/features/palm.py`)
 - ✅ Volatility: VIX + realized vol snapshots stored as `vol_*`
 - ✅ Policy/Trump: 15-min Truth Social + policy feed with `policy_trump_*`
 

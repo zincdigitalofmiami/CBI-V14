@@ -1,3 +1,78 @@
+# Cache and temporary files
 cache/
 .cache/
+*.cache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
 cbi_venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js
+node_modules/
+dist/
+build/
+.vite/
+.next/
+.vercel/
+
+# Large data directories
+data/
+archive/
+legacy/
+logs/
+results/
+TrainingData/
+Models/
+Logs/
+Full BQ Data Backup/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.db
+*.sqlite
+*.log
+*.zip
+*.pkl
+*.parquet
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.env
+*.pem
+*.key
+service-account-*.json
+*-key.json
+
+# OS files
+.DS_Store
+*.DS_Store
+.DS_Store?
+
+# Documentation build artifacts and archived docs
+docs/audits/*.tmp
+docs/handoffs/*.tmp
+*.backup.*
+reorganize_*.log
+docs/audits/
+docs/archive/
+
+# Large, mostly-legacy SQL and migration docs (keep FINAL_COMPLETE_BQ_SCHEMA.sql)
+config/bigquery/bigquery-sql/
+sql/schemas/
+docs/migration/

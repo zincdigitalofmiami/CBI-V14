@@ -1,3 +1,14 @@
+---
+⚠️ ARCHIVE – LEGACY PLAN (SUPERSEDED) ⚠️
+
+This document describes an older unified architecture and data‑source strategy.  
+It is superseded by:
+- `docs/plans/MASTER_PLAN.md` (current canonical architecture), and  
+- `docs/plans/ZL_PRODUCTION_SPEC.md` (current ZL baseline specification).
+
+Use this file for historical reference only. Do **not** treat it as an instruction source for new code, schemas, or data pulls.
+---
+
 CBI-V14 Unified Plan
 ====================
 

@@ -81,8 +81,8 @@ All production ZL features must come from the denormalized master matrix (`featu
   - Prefixes: `databento_*` (e.g., `databento_zl_close`, `databento_zl_ret_1d`).
 
 - **B. Fundamentals / Basis / Spreads**  
-  - RINs, biodiesel margins, crush spreads, palm/ZL spreads, HOBO, crack spreads, basis where available.  
-  - Prefixes: `eia_*`, `usda_*`, `palm_*`, etc.
+  - **Drivers in this family:** crush margins and oilshare, RINs and biodiesel/renewable‑diesel margins, palm↔soy substitution (e.g. palm/ZL spread and ratio), HOBO, crack spreads, and basis where available.  
+  - **Column prefixes (data provenance):** `eia_*` (EIA energy/biofuel), `usda_*` (USDA supply/demand), `palm_*` (palm‑derived substitution features built from the currently approved palm price source, e.g. FRED `PPOILUSDM`), and other fundamentals documented in `CALCULATION_INVENTORY.md`.
 
 - **C. Macro & Risk-On/Off**  
   - Rates, curves, indices, FX aggregates (e.g. DXY) where sourced from FRED/other macro feeds.  
@@ -112,6 +112,10 @@ The exact list of columns may expand over time, but **all** must:
 - Be source‑prefixed.
 - Be present in `features.master_features_all`.
 - Be documented in `CALCULATION_INVENTORY.md` (or successor) with calculation method and owner.
+
+**Palm oil horizon rule:**  
+- The palm oil feature family (fields prefixed `palm_`) is **required for all production horizons** (1w, 1m, 3m, 6m, 12m) and must be populated for all training and inference dates used in those models.  
+- Experimental scripts may explore variants without palm, but no model may be promoted to client‑facing production unless its training surface and live feature feed include the full `palm_*` feature set.
 
 ## 5. Train / Validation / Test Windows
 

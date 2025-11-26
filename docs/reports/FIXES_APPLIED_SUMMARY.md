@@ -32,7 +32,7 @@ Each day has owners and scripts specified.
 **Issue**: Incomplete removal of Alpha Vantage references
 **Fixes Applied**:
 - Deleted 7 Alpha Vantage files
-- Removed all references from FRESH_START_MASTER_PLAN.md
+- Removed all references from MASTER_PLAN.md
 - Updated all prefixes from `alpha_` to `databento_`
 - Updated collection scripts to use DataBento
 
