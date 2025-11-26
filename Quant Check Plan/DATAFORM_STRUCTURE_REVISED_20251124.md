@@ -1427,9 +1427,882 @@ geopol_shock: 0.15  # NEW: peso deval > 20% + CL vol > 15%
 
 **STATUS**: Revised structure with all corrections + FEC political intelligence + silence detection + Grok refinements. Production-grade, handles edge cases, "drivers behind drivers" framework integrated.
 
+---
+
+## 17. China Imports (USDA GATS) - Big 8 #2
+
+**Source**: USDA Foreign Agricultural Service (FAS) Global Agricultural Trade System  
+**Correlation**: -0.813 (inverse - less China buying = higher ZL prices)  
+**Why Critical**: Second most important driver after crush margin
+
+### USDA GATS Ingestion
+
+```sql
+-- definitions/01_raw/usda_gats_exports.sqlx
+config {
+  type: "declaration",
+  database: "cbi-v14",
+  schema: "${dataform.projectConfig.vars.raw_dataset}",
+  name: "usda_gats_weekly"
+}
+-- Note: Ingested via Python script from USDA FAS API
+-- scripts/ingest/collect_usda_gats.py
+```
+
+### China Imports Staging
+
+```sql
+-- definitions/02_staging/china_soybean_imports.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["date", "source_country"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["source_country"]
+  },
+  tags: ["staging", "usda", "big_eight"]
+}
+
+SELECT
+  report_date AS date,
+  destination_country,
+  source_country,
+  commodity,
+  volume_mt,
+  value_usd,
+  
+  -- Weekly data → forward fill to daily
+  LAST_VALUE(volume_mt IGNORE NULLS) OVER (
+    PARTITION BY source_country
+    ORDER BY report_date
+    ROWS BETWEEN 7 PRECEDING AND CURRENT ROW
+  ) AS volume_mt_ff,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM ${ref("usda_gats_weekly")}
+WHERE destination_country = 'China'
+  AND commodity IN ('Soybeans', 'Soybean Oil', 'Soybean Meal')
+```
+
+### China Imports Features
+
+```sql
+-- definitions/03_features/china_imports_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["import_regime"]
+  },
+  tags: ["features", "china", "big_eight"]
+}
+
+WITH daily_imports AS (
+  SELECT
+    date,
+    SUM(IF(source_country = 'United States', volume_mt_ff, 0)) AS china_imports_us_mt,
+    SUM(IF(source_country = 'Brazil', volume_mt_ff, 0)) AS china_imports_brazil_mt,
+    SUM(IF(source_country = 'Argentina', volume_mt_ff, 0)) AS china_imports_argentina_mt,
+    SUM(volume_mt_ff) AS china_imports_total_mt
+  FROM ${ref("china_soybean_imports")}
+  WHERE commodity = 'Soybeans'
+  GROUP BY date
+),
+
+with_rolling AS (
+  SELECT
+    date,
+    china_imports_us_mt,
+    china_imports_brazil_mt,
+    china_imports_total_mt,
+    
+    -- US market share
+    SAFE_DIVIDE(china_imports_us_mt, NULLIF(china_imports_total_mt, 0)) AS china_us_market_share,
+    
+    -- Rolling 4-week (monthly proxy)
+    SUM(china_imports_total_mt) OVER w4 AS china_imports_4w_mt,
+    AVG(china_imports_total_mt) OVER w13 AS china_imports_13w_avg,
+    
+    -- YoY change
+    LAG(china_imports_total_mt, 52) OVER (ORDER BY date) AS china_imports_yoy_mt
+    
+  FROM daily_imports
+  WINDOW
+    w4 AS (ORDER BY date ROWS BETWEEN 3 PRECEDING AND CURRENT ROW),
+    w13 AS (ORDER BY date ROWS BETWEEN 12 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  china_imports_us_mt,
+  china_imports_brazil_mt,
+  china_imports_total_mt,
+  china_us_market_share,
+  china_imports_4w_mt,
+  
+  -- Z-score vs 13-week average
+  SAFE_DIVIDE(
+    china_imports_total_mt - china_imports_13w_avg,
+    NULLIF(STDDEV(china_imports_total_mt) OVER (ORDER BY date ROWS BETWEEN 12 PRECEDING AND CURRENT ROW), 0)
+  ) AS china_imports_zscore,
+  
+  -- YoY change %
+  SAFE_DIVIDE(
+    china_imports_total_mt - china_imports_yoy_mt,
+    NULLIF(china_imports_yoy_mt, 0)
+  ) AS china_imports_yoy_pct,
+  
+  -- Regime classification
+  CASE
+    WHEN china_us_market_share > 0.4 THEN 'us_dominant'
+    WHEN china_us_market_share < 0.15 THEN 'us_marginal'  -- Trade war signal
+    ELSE 'balanced'
+  END AS import_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_rolling
+```
+
+---
+
+## 18. Palm Features (FRED PPOILUSDM) - Major Substitute
+
+**Source**: FRED World Bank Global Palm Oil Price (PPOILUSDM)  
+**Correlation**: 0.95 (substitution effect)  
+**Why Critical**: Palm oil is #1 global vegetable oil substitute for soybean oil
+
+### Palm Oil Staging
+
+```sql
+-- definitions/02_staging/palm_oil_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)"
+  },
+  tags: ["staging", "palm", "fred"]
+}
+
+WITH monthly_prices AS (
+  SELECT
+    date,
+    value AS palm_price_monthly_usd_mt
+  FROM ${ref("fred_macro_raw")}
+  WHERE series_id = 'PPOILUSDM'
+),
+
+-- Generate daily dates and forward-fill
+daily_scaffold AS (
+  SELECT date
+  FROM UNNEST(GENERATE_DATE_ARRAY('2010-01-01', CURRENT_DATE())) AS date
+),
+
+filled AS (
+  SELECT
+    d.date,
+    LAST_VALUE(m.palm_price_monthly_usd_mt IGNORE NULLS) OVER (
+      ORDER BY d.date
+      ROWS BETWEEN 30 PRECEDING AND CURRENT ROW  -- Max 30-day forward fill
+    ) AS palm_price_monthly,
+    
+    -- Track staleness
+    DATE_DIFF(d.date, 
+      LAST_VALUE(IF(m.palm_price_monthly_usd_mt IS NOT NULL, m.date, NULL) IGNORE NULLS) OVER (
+        ORDER BY d.date
+        ROWS BETWEEN 30 PRECEDING AND CURRENT ROW
+      ),
+      DAY
+    ) AS palm_staleness_days
+    
+  FROM daily_scaffold d
+  LEFT JOIN monthly_prices m ON d.date = m.date
+)
+
+SELECT
+  date,
+  palm_price_monthly,
+  palm_staleness_days,
+  CURRENT_TIMESTAMP() AS processed_at
+FROM filled
+WHERE palm_price_monthly IS NOT NULL
+```
+
+### Palm Features Engineering
+
+```sql
+-- definitions/03_features/palm_features_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["substitution_regime"]
+  },
+  tags: ["features", "palm", "big_eight"]
+}
+
+WITH palm_with_zl AS (
+  SELECT
+    p.date,
+    p.palm_price_monthly,
+    p.palm_staleness_days,
+    m.close AS zl_close,
+    
+    -- Convert ZL from cents/lb to USD/MT for comparison
+    m.close * 0.01 * 2204.62 AS zl_usd_mt
+    
+  FROM ${ref("palm_oil_daily")} p
+  LEFT JOIN ${ref("market_daily")} m 
+    ON p.date = m.date AND m.symbol = 'ZL'
+),
+
+with_features AS (
+  SELECT
+    date,
+    palm_price_monthly,
+    palm_staleness_days,
+    zl_close,
+    zl_usd_mt,
+    
+    -- Spread and ratio
+    palm_price_monthly - zl_usd_mt AS palm_zl_spread_usd_mt,
+    SAFE_DIVIDE(palm_price_monthly, NULLIF(zl_usd_mt, 0)) AS palm_zl_ratio,
+    
+    -- Returns
+    SAFE_DIVIDE(
+      palm_price_monthly - LAG(palm_price_monthly, 30) OVER (ORDER BY date),
+      NULLIF(LAG(palm_price_monthly, 30) OVER (ORDER BY date), 0)
+    ) AS palm_1m_return,
+    
+    SAFE_DIVIDE(
+      palm_price_monthly - LAG(palm_price_monthly, 90) OVER (ORDER BY date),
+      NULLIF(LAG(palm_price_monthly, 90) OVER (ORDER BY date), 0)
+    ) AS palm_3m_return,
+    
+    -- Rolling correlations
+    CORR(palm_price_monthly, zl_close) OVER w30 AS palm_zl_corr_30d,
+    CORR(palm_price_monthly, zl_close) OVER w90 AS palm_zl_corr_90d
+    
+  FROM palm_with_zl
+  WINDOW
+    w30 AS (ORDER BY date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW),
+    w90 AS (ORDER BY date ROWS BETWEEN 89 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  palm_price_monthly,
+  palm_staleness_days,
+  palm_zl_spread_usd_mt,
+  palm_zl_ratio,
+  palm_1m_return,
+  palm_3m_return,
+  palm_zl_corr_30d,
+  palm_zl_corr_90d,
+  
+  -- Substitution pressure: if palm cheaper, pressure on ZL
+  CASE
+    WHEN palm_zl_ratio < 0.9 THEN 1  -- Palm >10% cheaper = substitution pressure
+    ELSE 0
+  END AS palm_substitution_pressure,
+  
+  -- Regime
+  CASE
+    WHEN palm_zl_ratio < 0.85 THEN 'palm_cheap'      -- Heavy substitution
+    WHEN palm_zl_ratio > 1.15 THEN 'zl_cheap'        -- ZL advantage
+    ELSE 'parity'
+  END AS substitution_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_features
+```
+
+---
+
+## 19. FRED Macro Staging (DXY, Fed, VIX) - Big 8 #3, #4, #8
+
+**Source**: FRED API (55-60 series)  
+**Coverage**: Dollar Index, Fed Funds Rate, VIX, Treasury yields, credit spreads
+
+### FRED Macro Staging
+
+```sql
+-- definitions/02_staging/fred_macro_clean.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["date", "series_id"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["series_id"]
+  },
+  tags: ["staging", "fred", "macro", "big_eight"]
+}
+
+WITH raw_fred AS (
+  SELECT
+    date,
+    series_id,
+    value,
+    -- Forward fill with 5-day limit for daily series, 30-day for monthly
+    LAST_VALUE(value IGNORE NULLS) OVER (
+      PARTITION BY series_id
+      ORDER BY date
+      ROWS BETWEEN 30 PRECEDING AND CURRENT ROW
+    ) AS value_ff
+  FROM ${ref("fred_macro_raw")}
+)
+
+SELECT
+  date,
+  series_id,
+  value,
+  value_ff,
+  CURRENT_TIMESTAMP() AS processed_at
+FROM raw_fred
+```
+
+### FRED Macro Features (Big 8 Drivers)
+
+```sql
+-- definitions/03_features/fred_big_eight_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)"
+  },
+  tags: ["features", "fred", "big_eight", "macro"]
+}
+
+WITH pivoted AS (
+  SELECT
+    date,
+    MAX(IF(series_id = 'DTWEXBGS', value_ff, NULL)) AS dxy_value,         -- Dollar Index
+    MAX(IF(series_id = 'FEDFUNDS', value_ff, NULL)) AS fed_funds_rate,    -- Fed Funds
+    MAX(IF(series_id = 'VIXCLS', value_ff, NULL)) AS vix_level,           -- VIX
+    MAX(IF(series_id = 'DGS10', value_ff, NULL)) AS treasury_10y,         -- 10Y Treasury
+    MAX(IF(series_id = 'DGS2', value_ff, NULL)) AS treasury_2y,           -- 2Y Treasury
+    MAX(IF(series_id = 'BAMLH0A0HYM2', value_ff, NULL)) AS hy_spread      -- High Yield Spread
+  FROM ${ref("fred_macro_clean")}
+  GROUP BY date
+),
+
+with_features AS (
+  SELECT
+    date,
+    dxy_value,
+    fed_funds_rate,
+    vix_level,
+    treasury_10y,
+    treasury_2y,
+    hy_spread,
+    
+    -- Yield curve (2s10s)
+    treasury_10y - treasury_2y AS yield_curve_2s10s,
+    
+    -- Rolling stats for z-scores
+    AVG(dxy_value) OVER w63 AS dxy_avg_63d,
+    STDDEV(dxy_value) OVER w63 AS dxy_std_63d,
+    AVG(vix_level) OVER w63 AS vix_avg_63d,
+    STDDEV(vix_level) OVER w63 AS vix_std_63d,
+    AVG(fed_funds_rate) OVER w63 AS fed_avg_63d,
+    
+    -- VIX term structure proxy (change)
+    vix_level - LAG(vix_level, 5) OVER (ORDER BY date) AS vix_5d_change
+    
+  FROM pivoted
+  WINDOW w63 AS (ORDER BY date ROWS BETWEEN 62 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  
+  -- Big 8 #3: Dollar Index
+  dxy_value AS fred_dxy_value,
+  SAFE_DIVIDE(dxy_value - dxy_avg_63d, NULLIF(dxy_std_63d, 0)) AS fred_dxy_zscore,
+  
+  -- Big 8 #4: Fed Policy
+  fed_funds_rate AS fred_fed_funds_rate,
+  fed_funds_rate - fed_avg_63d AS fred_fed_change_63d,
+  
+  -- Big 8 #8: VIX
+  vix_level AS fred_vix_level,
+  SAFE_DIVIDE(vix_level - vix_avg_63d, NULLIF(vix_std_63d, 0)) AS fred_vix_zscore,
+  vix_5d_change AS fred_vix_5d_change,
+  
+  -- Supporting macro
+  yield_curve_2s10s AS fred_yield_curve_2s10s,
+  hy_spread AS fred_hy_spread,
+  
+  -- VIX regime
+  CASE
+    WHEN vix_level > 30 THEN 'crisis'
+    WHEN vix_level > 20 THEN 'elevated'
+    WHEN vix_level < 15 THEN 'complacent'
+    ELSE 'normal'
+  END AS vix_regime,
+  
+  -- Dollar regime
+  CASE
+    WHEN SAFE_DIVIDE(dxy_value - dxy_avg_63d, NULLIF(dxy_std_63d, 0)) > 1.5 THEN 'strong'
+    WHEN SAFE_DIVIDE(dxy_value - dxy_avg_63d, NULLIF(dxy_std_63d, 0)) < -1.5 THEN 'weak'
+    ELSE 'neutral'
+  END AS dollar_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_features
+```
+
+---
+
+## 20. Weather Data (NOAA GSOD/GFS) - Supply Shocks
+
+**Source**: `bigquery-public-data.noaa_gsod`, NOAA GFS forecasts  
+**Why Important**: Weather drives yield estimates → supply shocks → price volatility  
+**Research**: Weather explains 12-15% of agricultural commodity variance (USDA models)
+
+### Weather Staging (Regional Aggregates)
+
+```sql
+-- definitions/02_staging/weather_regional_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["date", "region"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["region"]
+  },
+  tags: ["staging", "weather", "supply"]
+}
+
+WITH station_data AS (
+  SELECT
+    PARSE_DATE('%Y%m%d', CAST(year * 10000 + mo * 100 + da AS STRING)) AS date,
+    stn,
+    temp,
+    prcp,
+    -- Region classification based on station location
+    CASE
+      WHEN stn LIKE '72%' AND wban BETWEEN '00001' AND '30000' THEN 'US_MIDWEST'
+      WHEN stn LIKE '83%' THEN 'BRAZIL_CENTER'
+      WHEN stn LIKE '87%' THEN 'ARGENTINA_PAMPAS'
+      ELSE 'OTHER'
+    END AS region
+  FROM `bigquery-public-data.noaa_gsod.gsod*`
+  WHERE _TABLE_SUFFIX >= '2010'
+    AND temp < 9999.9  -- Valid temp
+    AND prcp < 99.99   -- Valid precip
+),
+
+regional_agg AS (
+  SELECT
+    date,
+    region,
+    AVG(temp) AS avg_temp_f,
+    AVG(prcp) AS avg_prcp_in,
+    COUNT(DISTINCT stn) AS station_count
+  FROM station_data
+  WHERE region != 'OTHER'
+  GROUP BY date, region
+)
+
+SELECT
+  date,
+  region,
+  avg_temp_f,
+  avg_prcp_in,
+  station_count,
+  CURRENT_TIMESTAMP() AS processed_at
+FROM regional_agg
+WHERE station_count >= 10  -- Minimum coverage
+```
+
+### Weather Features
+
+```sql
+-- definitions/03_features/weather_anomalies_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)"
+  },
+  tags: ["features", "weather", "supply"]
+}
+
+WITH pivoted AS (
+  SELECT
+    date,
+    MAX(IF(region = 'US_MIDWEST', avg_temp_f, NULL)) AS us_midwest_temp,
+    MAX(IF(region = 'US_MIDWEST', avg_prcp_in, NULL)) AS us_midwest_prcp,
+    MAX(IF(region = 'BRAZIL_CENTER', avg_temp_f, NULL)) AS brazil_temp,
+    MAX(IF(region = 'BRAZIL_CENTER', avg_prcp_in, NULL)) AS brazil_prcp,
+    MAX(IF(region = 'ARGENTINA_PAMPAS', avg_temp_f, NULL)) AS argentina_temp,
+    MAX(IF(region = 'ARGENTINA_PAMPAS', avg_prcp_in, NULL)) AS argentina_prcp
+  FROM ${ref("weather_regional_daily")}
+  GROUP BY date
+),
+
+with_normals AS (
+  SELECT
+    date,
+    us_midwest_temp,
+    us_midwest_prcp,
+    brazil_temp,
+    brazil_prcp,
+    argentina_temp,
+    argentina_prcp,
+    
+    -- 30-year normals approximated by 252-day rolling average
+    AVG(us_midwest_temp) OVER w252 AS us_midwest_temp_normal,
+    AVG(us_midwest_prcp) OVER w252 AS us_midwest_prcp_normal,
+    STDDEV(us_midwest_prcp) OVER w252 AS us_midwest_prcp_std,
+    AVG(brazil_prcp) OVER w252 AS brazil_prcp_normal,
+    STDDEV(brazil_prcp) OVER w252 AS brazil_prcp_std,
+    AVG(argentina_prcp) OVER w252 AS argentina_prcp_normal,
+    STDDEV(argentina_prcp) OVER w252 AS argentina_prcp_std
+    
+  FROM pivoted
+  WINDOW w252 AS (ORDER BY date ROWS BETWEEN 251 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  
+  -- US Midwest (primary growing region)
+  us_midwest_temp,
+  us_midwest_prcp,
+  us_midwest_temp - us_midwest_temp_normal AS us_midwest_temp_anomaly,
+  SAFE_DIVIDE(us_midwest_prcp - us_midwest_prcp_normal, NULLIF(us_midwest_prcp_std, 0)) AS us_midwest_prcp_zscore,
+  
+  -- Brazil (major competitor)
+  brazil_prcp,
+  SAFE_DIVIDE(brazil_prcp - brazil_prcp_normal, NULLIF(brazil_prcp_std, 0)) AS brazil_prcp_zscore,
+  
+  -- Argentina (competitor + geopol play)
+  argentina_prcp,
+  SAFE_DIVIDE(argentina_prcp - argentina_prcp_normal, NULLIF(argentina_prcp_std, 0)) AS argentina_prcp_zscore,
+  
+  -- Combined supply stress indicator
+  CASE
+    WHEN SAFE_DIVIDE(us_midwest_prcp - us_midwest_prcp_normal, NULLIF(us_midwest_prcp_std, 0)) < -1.5
+         OR SAFE_DIVIDE(brazil_prcp - brazil_prcp_normal, NULLIF(brazil_prcp_std, 0)) < -1.5
+      THEN 'drought_stress'
+    WHEN SAFE_DIVIDE(us_midwest_prcp - us_midwest_prcp_normal, NULLIF(us_midwest_prcp_std, 0)) > 2.0
+      THEN 'flood_risk'
+    ELSE 'normal'
+  END AS weather_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_normals
+```
+
+---
+
+## 21. CFTC COT (Commitments of Traders) - Positioning/Flow
+
+**Source**: CFTC Weekly COT Reports  
+**Why Important**: Shows institutional positioning, crowding, sentiment  
+**Research**: COT net length explains 8-12% of commodity variance (Büyükşahin & Robe 2014)
+
+### CFTC COT Staging
+
+```sql
+-- definitions/02_staging/cftc_cot_weekly.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.staging_dataset}",
+  uniqueKey: ["report_date", "commodity"],
+  bigquery: {
+    partitionBy: "DATE(report_date)",
+    clusterBy: ["commodity"]
+  },
+  tags: ["staging", "cftc", "positioning"]
+}
+
+-- Note: Raw data ingested via scripts/ingest/collect_cftc_cot.py
+SELECT
+  report_date,
+  commodity,
+  
+  -- Commercial (hedgers)
+  comm_long,
+  comm_short,
+  comm_long - comm_short AS comm_net,
+  
+  -- Non-commercial (speculators / managed money)
+  noncomm_long,
+  noncomm_short,
+  noncomm_long - noncomm_short AS noncomm_net,
+  
+  -- Open interest
+  open_interest,
+  
+  -- Spreading positions
+  noncomm_spread,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM ${ref("cftc_cot_raw")}
+WHERE commodity IN ('SOYBEAN OIL', 'SOYBEANS', 'SOYBEAN MEAL', 'CRUDE OIL')
+```
+
+### CFTC COT Features
+
+```sql
+-- definitions/03_features/cftc_positions_daily.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)"
+  },
+  tags: ["features", "cftc", "positioning", "flow"]
+}
+
+WITH weekly_positions AS (
+  SELECT
+    report_date,
+    MAX(IF(commodity = 'SOYBEAN OIL', noncomm_net, NULL)) AS zl_mm_net,
+    MAX(IF(commodity = 'SOYBEAN OIL', open_interest, NULL)) AS zl_oi,
+    MAX(IF(commodity = 'SOYBEAN OIL', comm_net, NULL)) AS zl_comm_net,
+    MAX(IF(commodity = 'SOYBEANS', noncomm_net, NULL)) AS zs_mm_net,
+    MAX(IF(commodity = 'CRUDE OIL', noncomm_net, NULL)) AS cl_mm_net
+  FROM ${ref("cftc_cot_weekly")}
+  GROUP BY report_date
+),
+
+-- Forward fill to daily
+daily_scaffold AS (
+  SELECT date
+  FROM UNNEST(GENERATE_DATE_ARRAY('2010-01-01', CURRENT_DATE())) AS date
+),
+
+filled AS (
+  SELECT
+    d.date,
+    LAST_VALUE(w.zl_mm_net IGNORE NULLS) OVER (ORDER BY d.date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) AS zl_mm_net,
+    LAST_VALUE(w.zl_oi IGNORE NULLS) OVER (ORDER BY d.date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) AS zl_oi,
+    LAST_VALUE(w.zl_comm_net IGNORE NULLS) OVER (ORDER BY d.date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) AS zl_comm_net,
+    LAST_VALUE(w.zs_mm_net IGNORE NULLS) OVER (ORDER BY d.date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) AS zs_mm_net,
+    LAST_VALUE(w.cl_mm_net IGNORE NULLS) OVER (ORDER BY d.date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) AS cl_mm_net
+  FROM daily_scaffold d
+  LEFT JOIN weekly_positions w ON d.date = w.report_date
+),
+
+with_features AS (
+  SELECT
+    date,
+    zl_mm_net,
+    zl_oi,
+    zl_comm_net,
+    zs_mm_net,
+    cl_mm_net,
+    
+    -- Net as % of OI (crowding indicator)
+    SAFE_DIVIDE(zl_mm_net, NULLIF(zl_oi, 0)) AS zl_mm_net_pct_oi,
+    
+    -- Rolling stats
+    AVG(zl_mm_net) OVER w52 AS zl_mm_net_52w_avg,
+    STDDEV(zl_mm_net) OVER w52 AS zl_mm_net_52w_std,
+    
+    -- Change in positioning
+    zl_mm_net - LAG(zl_mm_net, 4) OVER (ORDER BY date) AS zl_mm_net_4w_change
+    
+  FROM filled
+  WINDOW w52 AS (ORDER BY date ROWS BETWEEN 51 PRECEDING AND CURRENT ROW)
+)
+
+SELECT
+  date,
+  
+  -- ZL positioning
+  zl_mm_net AS cftc_zl_mm_net,
+  zl_oi AS cftc_zl_open_interest,
+  zl_mm_net_pct_oi AS cftc_zl_mm_pct_oi,
+  zl_mm_net_4w_change AS cftc_zl_mm_4w_change,
+  
+  -- Crowding z-score
+  SAFE_DIVIDE(zl_mm_net - zl_mm_net_52w_avg, NULLIF(zl_mm_net_52w_std, 0)) AS cftc_zl_crowding_zscore,
+  
+  -- Commercial hedge pressure
+  zl_comm_net AS cftc_zl_commercial_net,
+  
+  -- Cross-commodity (soy complex alignment)
+  SIGN(zl_mm_net) = SIGN(zs_mm_net) AS cftc_soy_complex_aligned,
+  
+  -- Crowding regime
+  CASE
+    WHEN SAFE_DIVIDE(zl_mm_net - zl_mm_net_52w_avg, NULLIF(zl_mm_net_52w_std, 0)) > 2.0 THEN 'extreme_long'
+    WHEN SAFE_DIVIDE(zl_mm_net - zl_mm_net_52w_avg, NULLIF(zl_mm_net_52w_std, 0)) < -2.0 THEN 'extreme_short'
+    ELSE 'normal'
+  END AS cftc_crowding_regime,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM with_features
+```
+
+---
+
+## 22. Updated daily_ml_matrix (Master Feature Table)
+
+**All Big 8 + Secondary Features Joined**
+
+```sql
+-- definitions/03_features/daily_ml_matrix.sqlx
+config {
+  type: "incremental",
+  schema: "${dataform.projectConfig.vars.features_dataset}",
+  uniqueKey: ["date"],
+  bigquery: {
+    partitionBy: "DATE(date)",
+    clusterBy: ["regime_name"]
+  },
+  tags: ["features", "master", "training_ready"]
+}
+
+SELECT
+  m.date,
+  m.symbol,
+  m.close AS zl_close,
+  
+  -- ═══════════════════════════════════════════════════════════════
+  -- BIG 8 DRIVERS (by correlation rank)
+  -- ═══════════════════════════════════════════════════════════════
+  
+  -- #1: Crush Margin (0.961)
+  c.gross_margin AS crush_margin_gross,
+  c.net_margin AS crush_margin_net,
+  c.margin_regime AS crush_regime,
+  
+  -- #2: China Imports (-0.813)
+  ch.china_imports_total_mt,
+  ch.china_imports_zscore,
+  ch.china_us_market_share,
+  ch.import_regime AS china_regime,
+  
+  -- #3: Dollar Index (-0.658)
+  f.fred_dxy_value,
+  f.fred_dxy_zscore,
+  f.dollar_regime,
+  
+  -- #4: Fed Policy (-0.656)
+  f.fred_fed_funds_rate,
+  f.fred_fed_change_63d,
+  
+  -- #5: Tariffs (0.647)
+  fec.fec_biofuel_lobby_zscore,
+  fec.fec_policy_anticipation_regime,
+  -- Trump sentiment from staging.trump_policy_daily
+  
+  -- #6: Biofuels (-0.601)
+  bio.biodiesel_margin,
+  bio.biodiesel_margin_with_rin,
+  bio.margin_regime AS biofuel_regime,
+  
+  -- #7: Crude Oil (0.584)
+  cl.close AS crude_close,
+  
+  -- #8: VIX (0.398)
+  f.fred_vix_level,
+  f.fred_vix_zscore,
+  f.vix_regime,
+  
+  -- ═══════════════════════════════════════════════════════════════
+  -- SECONDARY FEATURES
+  -- ═══════════════════════════════════════════════════════════════
+  
+  -- Palm substitution
+  p.palm_price_monthly,
+  p.palm_zl_spread_usd_mt,
+  p.palm_zl_ratio,
+  p.palm_substitution_pressure,
+  p.substitution_regime AS palm_regime,
+  
+  -- Weather/supply
+  w.us_midwest_prcp_zscore,
+  w.brazil_prcp_zscore,
+  w.argentina_prcp_zscore,
+  w.weather_regime,
+  
+  -- CFTC positioning
+  cot.cftc_zl_mm_net,
+  cot.cftc_zl_mm_pct_oi,
+  cot.cftc_zl_crowding_zscore,
+  cot.cftc_crowding_regime,
+  
+  -- Cross-asset correlations
+  ca.zl_fcpo_corr_60d,
+  ca.zl_ho_corr_60d,
+  ca.zl_dxy_corr_60d,
+  
+  -- FEC (secondary policy signal)
+  fec.fec_distressed_debt_spike_30d,
+  fec.fec_argentina_exposure_flag,
+  
+  -- Silence (hidden driver proxy)
+  sil.silence_flag_trump,
+  sil.silence_severity,
+  
+  -- ═══════════════════════════════════════════════════════════════
+  -- TARGETS (forward-looking price levels)
+  -- ═══════════════════════════════════════════════════════════════
+  
+  LEAD(m.close, 5) OVER (ORDER BY m.date) AS target_1w,
+  LEAD(m.close, 20) OVER (ORDER BY m.date) AS target_1m,
+  LEAD(m.close, 60) OVER (ORDER BY m.date) AS target_3m,
+  LEAD(m.close, 120) OVER (ORDER BY m.date) AS target_6m,
+  LEAD(m.close, 240) OVER (ORDER BY m.date) AS target_12m,
+  
+  -- ═══════════════════════════════════════════════════════════════
+  -- REGIME WEIGHTING
+  -- ═══════════════════════════════════════════════════════════════
+  
+  r.regime_name,
+  r.regime_weight,
+  
+  CURRENT_TIMESTAMP() AS processed_at
+
+FROM ${ref("market_daily")} m
+LEFT JOIN ${ref("crush_margin_daily")} c ON m.date = c.date
+LEFT JOIN ${ref("china_imports_daily")} ch ON m.date = ch.date
+LEFT JOIN ${ref("fred_big_eight_daily")} f ON m.date = f.date
+LEFT JOIN ${ref("biodiesel_margin_daily")} bio ON m.date = bio.date
+LEFT JOIN ${ref("palm_features_daily")} p ON m.date = p.date
+LEFT JOIN ${ref("weather_anomalies_daily")} w ON m.date = w.date
+LEFT JOIN ${ref("cftc_positions_daily")} cot ON m.date = cot.date
+LEFT JOIN ${ref("cross_asset_correlations")} ca ON m.date = ca.date
+LEFT JOIN ${ref("fec_policy_signals")} fec ON m.date = fec.date
+LEFT JOIN ${ref("silence_signals")} sil ON m.date = sil.date
+LEFT JOIN ${ref("market_daily")} cl ON m.date = cl.date AND cl.symbol = 'CL'
+LEFT JOIN ${ref("regime_calendar")} r ON m.date = r.date
+
+WHERE m.symbol = 'ZL'
+  AND m.date >= '${dataform.projectConfig.vars.start_date}'
+```
+
+---
+
 **NEXT STEPS**:
 1. Create `dataform/` directory structure
-2. Ingest FEC from public BQ
-3. Build baseline, gate at MAE <5%
-4. Iterate only if gates pass
+2. Verify BigQuery source tables exist
+3. Build baseline with Big 8 only, gate at MAE <5%
+4. Add secondary features if gates pass
 
