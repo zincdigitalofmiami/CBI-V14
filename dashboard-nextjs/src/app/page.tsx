@@ -13,8 +13,8 @@ export default function DashboardPage() {
         {/* Header */}
         <Header />
         
-        {/* Dashboard Content */}
-        <main className="flex-1 overflow-auto p-6">
+        {/* Dashboard Content - Full Width Chart */}
+        <main className="flex-1 overflow-hidden">
           <ZLChart />
         </main>
       </div>
