@@ -6,13 +6,16 @@ export const revalidate = 0;
 export async function GET() {
   try {
     // Fetch forecasts for all horizons from existing endpoints
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // Use internal API routes (server-side fetch)
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
     
     const [forecast1w, forecast1m, forecast3m, forecast6m] = await Promise.all([
-      fetch(`${baseUrl}/api/v4/forecast/1w`).catch(() => null),
-      fetch(`${baseUrl}/api/v4/forecast/1m`).catch(() => null),
-      fetch(`${baseUrl}/api/v4/forecast/3m`).catch(() => null),
-      fetch(`${baseUrl}/api/v4/forecast/6m`).catch(() => null),
+      fetch(`${baseUrl}/api/v4/forecast/1w`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${baseUrl}/api/v4/forecast/1m`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${baseUrl}/api/v4/forecast/3m`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${baseUrl}/api/v4/forecast/6m`, { cache: 'no-store' }).catch(() => null),
     ]);
 
     const forecasts = [];
@@ -28,12 +31,13 @@ export async function GET() {
     for (const { res, horizon, days } of horizons) {
       if (res && res.ok) {
         const data = await res.json();
-        if (data.prediction && data.target_date) {
+        // ONLY use real data - require both prediction AND confidence bands
+        if (data.prediction && data.target_date && data.confidence_lower && data.confidence_upper) {
           forecasts.push({
             horizon,
             prediction: data.prediction,
-            confidence_lower: data.confidence_lower || data.prediction * 0.95,
-            confidence_upper: data.confidence_upper || data.prediction * 1.05,
+            confidence_lower: data.confidence_lower,
+            confidence_upper: data.confidence_upper,
             target_date: data.target_date,
             prediction_date: data.prediction_date,
             days_ahead: days,

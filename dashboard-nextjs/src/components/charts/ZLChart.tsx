@@ -64,11 +64,16 @@ export function ZLChart() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Only add forecasts that have REAL confidence bands (no fake data)
   forecasts.forEach((forecast) => {
+    if (!forecast.confidence_lower || !forecast.confidence_upper) {
+      return; // Skip forecasts without real confidence bands
+    }
+
     const targetDate = new Date(forecast.target_date);
     const predictionDate = new Date(forecast.prediction_date);
     
-    // Probability band (shaded area)
+    // Probability band (shaded area) - REAL confidence intervals only
     forecastTraces.push({
       x: [predictionDate.toISOString().split('T')[0], targetDate.toISOString().split('T')[0]],
       y: [forecast.confidence_lower, forecast.confidence_lower],
@@ -94,7 +99,7 @@ export function ZLChart() {
       fillcolor: horizonColors[forecast.horizon as keyof typeof horizonColors] || 'rgba(16, 185, 129, 0.1)',
     });
 
-    // Forecast line (thin, semi-transparent)
+    // Forecast line (thin, semi-transparent) - REAL prediction only
     forecastTraces.push({
       x: [predictionDate.toISOString().split('T')[0], targetDate.toISOString().split('T')[0]],
       y: [forecast.prediction, forecast.prediction],
@@ -107,7 +112,7 @@ export function ZLChart() {
         dash: 'dot',
       },
       opacity: 0.6,
-      hovertemplate: `${forecast.horizon.toUpperCase()}: $%{y:.2f}<extra></extra>`,
+      hovertemplate: `${forecast.horizon.toUpperCase()}: $%{y:.2f} (${forecast.confidence_lower.toFixed(2)} - ${forecast.confidence_upper.toFixed(2)})<extra></extra>`,
     });
   });
 
