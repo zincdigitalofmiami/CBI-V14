@@ -17,11 +17,11 @@ export function ZLChart() {
         const [zlRes, forecastsRes] = await Promise.all([
           fetch('/api/v4/live/zl').catch(err => {
             console.error('ZL API error:', err);
-            return { ok: false, json: () => ({ success: false, data: [] }) };
+            return { ok: false, json: async () => ({ success: false, data: [], error: err.message }) };
           }),
           fetch('/api/v4/forecasts/all').catch(err => {
             console.error('Forecasts API error:', err);
-            return { ok: false, json: () => ({ success: false, forecasts: [] }) };
+            return { ok: false, json: async () => ({ success: false, forecasts: [], error: err.message }) };
           }),
         ]);
         
@@ -130,13 +130,15 @@ export function ZLChart() {
     );
   }
 
-  // Show error if no data
+  // Show error if no data - but show helpful debug info
   if (!zlData || zlData.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-text-secondary mb-2">No ZL data available</p>
+        <div className="text-center space-y-2">
+          <p className="text-text-primary text-lg font-semibold">No ZL data available</p>
           <p className="text-text-secondary text-sm">Check API endpoint: /api/v4/live/zl</p>
+          <p className="text-text-secondary text-xs">Loading: {loading ? 'Yes' : 'No'}</p>
+          <p className="text-text-secondary text-xs">Data length: {zlData?.length || 0}</p>
         </div>
       </div>
     );
