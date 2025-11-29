@@ -43,77 +43,74 @@ export function ZLChart() {
 
   const dates = zlData.map(d => d.date?.value || d.date);
   const closes = zlData.map(d => d.close);
-  const highs = zlData.map(d => d.high);
-  const lows = zlData.map(d => d.low);
 
-  // Build forecast traces
+  // Build forecast traces - lines extending forward from TODAY
   const forecastTraces: any[] = [];
-  const horizonColors = {
-    '1w': 'rgba(16, 185, 129, 0.3)',
-    '1m': 'rgba(34, 211, 153, 0.3)',
-    '3m': 'rgba(110, 231, 183, 0.3)',
-    '6m': 'rgba(167, 243, 208, 0.3)',
-  };
   const horizonLineColors = {
-    '1w': '#10b981',
-    '1m': '#22d3a5',
-    '3m': '#6ee7b7',
-    '6m': '#a7f3d0',
+    '1w': 'rgba(16, 185, 129, 0.4)',
+    '1m': 'rgba(34, 211, 153, 0.4)',
+    '3m': 'rgba(110, 231, 183, 0.4)',
+    '6m': 'rgba(167, 243, 208, 0.4)',
   };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
 
-  // Only add forecasts that have REAL confidence bands (no fake data)
+  // Add forecast lines - extend forward from TODAY to target_date
   forecasts.forEach((forecast) => {
-    if (!forecast.confidence_lower || !forecast.confidence_upper) {
-      return; // Skip forecasts without real confidence bands
+    if (!forecast.prediction || !forecast.target_date) {
+      return; // Skip forecasts without real prediction
     }
 
     const targetDate = new Date(forecast.target_date);
-    const predictionDate = new Date(forecast.prediction_date);
-    
-    // Probability band (shaded area) - REAL confidence intervals only
-    forecastTraces.push({
-      x: [predictionDate.toISOString().split('T')[0], targetDate.toISOString().split('T')[0]],
-      y: [forecast.confidence_lower, forecast.confidence_lower],
-      type: 'scatter',
-      mode: 'lines',
-      name: `${forecast.horizon.toUpperCase()} Lower`,
-      line: { width: 0 },
-      showlegend: false,
-      hoverinfo: 'skip',
-      fill: 'tonexty',
-      fillcolor: horizonColors[forecast.horizon as keyof typeof horizonColors] || 'rgba(16, 185, 129, 0.1)',
-    });
+    const targetDateStr = targetDate.toISOString().split('T')[0];
 
+    // Forecast line extending forward from today
     forecastTraces.push({
-      x: [predictionDate.toISOString().split('T')[0], targetDate.toISOString().split('T')[0]],
-      y: [forecast.confidence_upper, forecast.confidence_upper],
-      type: 'scatter',
-      mode: 'lines',
-      name: `${forecast.horizon.toUpperCase()} Upper`,
-      line: { width: 0 },
-      showlegend: false,
-      hoverinfo: 'skip',
-      fillcolor: horizonColors[forecast.horizon as keyof typeof horizonColors] || 'rgba(16, 185, 129, 0.1)',
-    });
-
-    // Forecast line (thin, semi-transparent) - REAL prediction only
-    forecastTraces.push({
-      x: [predictionDate.toISOString().split('T')[0], targetDate.toISOString().split('T')[0]],
-      y: [forecast.prediction, forecast.prediction],
+      x: [todayStr, targetDateStr],
+      y: [latestPrice, forecast.prediction], // Start from current price, end at forecast
       type: 'scatter',
       mode: 'lines',
       name: `${forecast.horizon.toUpperCase()} Forecast`,
       line: {
-        color: horizonLineColors[forecast.horizon as keyof typeof horizonLineColors] || '#10b981',
-        width: 1.5,
-        dash: 'dot',
+        color: horizonLineColors[forecast.horizon as keyof typeof horizonLineColors] || 'rgba(16, 185, 129, 0.4)',
+        width: 2,
+        dash: 'dash',
       },
-      opacity: 0.6,
-      hovertemplate: `${forecast.horizon.toUpperCase()}: $%{y:.2f} (${forecast.confidence_lower.toFixed(2)} - ${forecast.confidence_upper.toFixed(2)})<extra></extra>`,
+      opacity: 0.7,
+      hovertemplate: `${forecast.horizon.toUpperCase()}: $%{y:.2f}<extra></extra>`,
     });
+
+    // Optional: Add probability bands if they exist
+    if (forecast.confidence_lower && forecast.confidence_upper) {
+      // Lower band
+      forecastTraces.push({
+        x: [todayStr, targetDateStr],
+        y: [latestPrice, forecast.confidence_lower],
+        type: 'scatter',
+        mode: 'lines',
+        name: `${forecast.horizon.toUpperCase()} Lower`,
+        line: { width: 0 },
+        showlegend: false,
+        hoverinfo: 'skip',
+        fill: 'tonexty',
+        fillcolor: horizonLineColors[forecast.horizon as keyof typeof horizonLineColors] || 'rgba(16, 185, 129, 0.1)',
+      });
+
+      // Upper band
+      forecastTraces.push({
+        x: [todayStr, targetDateStr],
+        y: [latestPrice, forecast.confidence_upper],
+        type: 'scatter',
+        mode: 'lines',
+        name: `${forecast.horizon.toUpperCase()} Upper`,
+        line: { width: 0 },
+        showlegend: false,
+        hoverinfo: 'skip',
+        fillcolor: horizonLineColors[forecast.horizon as keyof typeof horizonLineColors] || 'rgba(16, 185, 129, 0.1)',
+      });
+    }
   });
 
   if (loading) {
@@ -138,43 +135,18 @@ export function ZLChart() {
       <div className="flex-1 bg-background-primary">
         <Plot
           data={[
-            // Historical ZL Price (thick, primary)
+            // Forecast traces FIRST (behind price line)
+            ...forecastTraces,
+            // Historical ZL Price (bold line, on top)
             {
               x: dates,
               y: closes,
               type: 'scatter',
               mode: 'lines',
               name: 'ZL Price',
-              line: { color: '#10b981', width: 3, shape: 'spline' },
+              line: { color: '#10b981', width: 4, shape: 'spline' },
               hovertemplate: '$%{y:.2f}<extra></extra>',
             },
-            // High/Low range (subtle)
-            {
-              x: dates,
-              y: highs,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'High',
-              line: { color: '#10b981', width: 0.5, dash: 'dot' },
-              opacity: 0.2,
-              showlegend: false,
-              hoverinfo: 'skip',
-            },
-            {
-              x: dates,
-              y: lows,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'Low',
-              fill: 'tonexty',
-              fillcolor: 'rgba(16, 185, 129, 0.03)',
-              line: { color: '#10b981', width: 0.5, dash: 'dot' },
-              opacity: 0.2,
-              showlegend: false,
-              hoverinfo: 'skip',
-            },
-            // Forecast traces (probability bands + lines)
-            ...forecastTraces,
           ]}
           layout={{
             paper_bgcolor: 'transparent',
