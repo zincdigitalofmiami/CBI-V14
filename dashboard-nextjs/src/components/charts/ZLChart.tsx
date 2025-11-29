@@ -128,6 +128,7 @@ export function ZLChart() {
         <div className="flex items-baseline gap-4">
           <h1 className="text-xl font-bold text-text-primary">ZL Soybean Oil Futures</h1>
           <span className="text-2xl font-semibold text-text-primary">${latestPrice.toFixed(2)}</span>
+          <span className="text-sm font-medium text-bull-500 animate-pulse">● LIVE</span>
         </div>
       </div>
 
@@ -137,15 +138,15 @@ export function ZLChart() {
           data={[
             // Forecast traces FIRST (behind price line)
             ...forecastTraces,
-            // Historical ZL Price (bold line, on top)
+            // LIVE ZL Price (bold line, on top)
             {
               x: dates,
               y: closes,
               type: 'scatter',
               mode: 'lines',
-              name: 'ZL Price',
+              name: 'ZL Price (LIVE)',
               line: { color: '#10b981', width: 4, shape: 'spline' },
-              hovertemplate: '$%{y:.2f}<extra></extra>',
+              hovertemplate: 'LIVE: $%{y:.2f}<extra></extra>',
             },
           ]}
           layout={{

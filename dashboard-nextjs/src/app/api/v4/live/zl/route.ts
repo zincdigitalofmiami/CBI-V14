@@ -11,6 +11,7 @@ export async function GET() {
       throw new Error('DATABENTO_API_KEY not configured');
     }
 
+    // Get LIVE data - last 90 days up to TODAY (most recent available)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 90);
