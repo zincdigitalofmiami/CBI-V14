@@ -15,12 +15,21 @@ export function ZLChart() {
     async function fetchData() {
       try {
         const [zlRes, forecastsRes] = await Promise.all([
-          fetch('/api/v4/live/zl'),
-          fetch('/api/v4/forecasts/all'),
+          fetch('/api/v4/live/zl').catch(err => {
+            console.error('ZL API error:', err);
+            return { ok: false, json: () => ({ success: false, data: [] }) };
+          }),
+          fetch('/api/v4/forecasts/all').catch(err => {
+            console.error('Forecasts API error:', err);
+            return { ok: false, json: () => ({ success: false, forecasts: [] }) };
+          }),
         ]);
         
         const zlJson = await zlRes.json();
         const forecastsJson = await forecastsRes.json();
+        
+        console.log('ZL data:', zlJson);
+        console.log('Forecasts data:', forecastsJson);
         
         setZlData(zlJson.data || []);
         setForecasts(forecastsJson.forecasts || []);
@@ -121,6 +130,33 @@ export function ZLChart() {
     );
   }
 
+  // Show error if no data
+  if (!zlData || zlData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-text-secondary mb-2">No ZL data available</p>
+          <p className="text-text-secondary text-sm">Check API endpoint: /api/v4/live/zl</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure we have valid data arrays
+  const validDates = dates.filter((d, i) => d && closes[i] !== undefined);
+  const validCloses = closes.filter((c, i) => dates[i] && c !== undefined);
+
+  if (validDates.length === 0 || validCloses.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-text-secondary mb-2">Invalid data format</p>
+          <p className="text-text-secondary text-sm">Data: {JSON.stringify(zlData.slice(0, 2))}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full flex flex-col">
       {/* Minimal header */}
@@ -140,8 +176,8 @@ export function ZLChart() {
             ...forecastTraces,
             // LIVE ZL Price (bold line, on top)
             {
-              x: dates,
-              y: closes,
+              x: validDates,
+              y: validCloses,
               type: 'scatter',
               mode: 'lines',
               name: 'ZL Price (LIVE)',
