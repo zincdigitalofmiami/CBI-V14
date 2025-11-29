@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { ZLChart } from '@/components/charts/ZLChart'
 
 export default function DashboardPage() {
   return (
@@ -12,16 +13,9 @@ export default function DashboardPage() {
         {/* Header */}
         <Header />
         
-        {/* Dashboard Content - Being Rebuilt */}
+        {/* Dashboard Content */}
         <main className="flex-1 overflow-auto p-6">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-semibold text-text-primary mb-4">
-              Dashboard Under Construction
-            </h1>
-            <p className="text-text-secondary">
-              Dashboard is being completely rebuilt
-            </p>
-          </div>
+          <ZLChart />
         </main>
       </div>
     </div>

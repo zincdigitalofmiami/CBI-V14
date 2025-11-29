@@ -27,15 +27,15 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 **Fresh Start Says**:
 ```
-Palm Oil (Barchart/ICE): Dedicated palm futures + spot feed
-Prefix: barchart_palm_
-Files: raw/barchart/palm_oil/
-Staging: staging/barchart_palm_daily.parquet
+Palm Oil (ICE + external futures): Dedicated palm futures + spot feed
+Prefix: palm_oil_
+Files: raw/palm_oil/
+Staging: staging/palm_oil_daily.parquet
 ```
 
 **My Architecture**: ❌ **MISSING ENTIRELY**
 - No palm oil table
-- No Barchart/ICE collection
+- No dedicated external palm futures collection
 - Only mentioned "drivers.primary_drivers" with `palm_oil_price` in example
 - No actual source defined
 
@@ -213,7 +213,7 @@ Feeds: Ultimate Signal, Big 8, MAPE, Sharpe dashboards
 **Fresh Start Says**:
 ```
 Hard requirement: ALL columns prefixed
-yahoo_, alpha_, fred_, eia_, usda_, barchart_palm_, vol_, policy_trump_
+yahoo_, alpha_, fred_, eia_, usda_, palm_oil_, vol_, policy_trump_
 Except: date, symbol
 ```
 
@@ -362,5 +362,4 @@ Do you want me to:
 - **Option C**: Review more of Fresh Start first and create a gap analysis document
 
 My recommendation: **Option A** - Do it right, do it once, align 100% with Fresh Start.
-
 

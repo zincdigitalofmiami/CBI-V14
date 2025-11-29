@@ -46,7 +46,7 @@ TrainingData/
 │   │   ├── options/
 │   │   ├── prices/
 │   │   └── sentiment/
-│   ├── barchart/           # Palm oil data (expected)
+│   ├── palm_oil/           # Palm oil data (expected)
 │   ├── cftc/               # CFTC COT data
 │   ├── eia/                # EIA biofuel data
 │   ├── fred/               # FRED economic data (36 parquet files)
@@ -344,7 +344,7 @@ TrainingData/
 
 1. **Column Prefixing**: ❌ **CRITICAL** - No source prefixes in staging files or BigQuery tables
 2. **Alpha Vantage**: ❌ No Alpha Vantage tables exist (expected - Phase 1 work)
-3. **Palm Oil**: ❌ No `barchart_palm_daily.parquet` in staging
+3. **Palm Oil**: ❌ No dedicated palm daily parquet in staging
 4. **Volatility/VIX**: ❌ No `volatility_daily.parquet` in staging
 5. **Policy/Trump**: ❌ No `policy_trump_signals.parquet` in staging
 6. **Weather Format**: ⚠️ Weather likely in long format, not wide format with country prefixes
@@ -423,4 +423,3 @@ TrainingData/
 
 **Report Generated**: November 17, 2025  
 **Next Review**: After prefixing implementation
-

@@ -66,7 +66,7 @@ From forensic audit:
 - `eia_energy_granular.parquet`: 828 rows × 3 cols
 - `alpha_vantage_features.parquet`: 10,719 rows × 736 cols
 - `volatility_daily.parquet`: 9,069 rows × 21 cols
-- `barchart_palm_daily.parquet`: 1,269 rows × 9 cols
+- `palm_oil_daily.parquet`: 1,269 rows × 9 cols
 - `policy_trump_signals.parquet`: 25 rows × 13 cols
 - `es_futures_daily.parquet`: 6,308 rows × 58 cols
 
@@ -108,7 +108,7 @@ From forensic audit:
 6. `eia_energy_granular.parquet` → `raw_intelligence.eia_biofuels`
 7. `alpha_vantage_features.parquet` → `raw_intelligence.alpha_vantage_features` (if table exists)
 8. `volatility_daily.parquet` → `raw_intelligence.volatility_daily`
-9. `barchart_palm_daily.parquet` → `raw_intelligence.palm_oil_daily` (if table exists)
+9. `palm_oil_daily.parquet` → `raw_intelligence.palm_oil_daily` (if table exists)
 10. `policy_trump_signals.parquet` → `raw_intelligence.policy_events`
 11. `es_futures_daily.parquet` → `market_data.futures_ohlcv_1d` (ES symbol)
 
@@ -199,4 +199,3 @@ The BigQuery migration has the correct structure in place, but **zero data has b
 
 **Report Generated**: 2025-11-17  
 **Based On**: Live BigQuery queries + Forensic audit findings
-

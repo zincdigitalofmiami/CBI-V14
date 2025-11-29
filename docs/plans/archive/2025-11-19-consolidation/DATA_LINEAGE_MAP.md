@@ -60,7 +60,6 @@ This document maps the complete data lineage from ingestion through feature engi
 **Upstream Sources**:
 - Yahoo Finance API (`src/ingestion/yahoo_finance_ingestion.py`)
 - CME Group API (`src/ingestion/cme_ingestion.py`)
-- Barchart API (`src/ingestion/barchart_ingestion.py`)
 
 **Transformations**:
 - None (raw data as received)
@@ -78,7 +77,7 @@ This document maps the complete data lineage from ingestion through feature engi
 - `high_price FLOAT64` – High price
 - `low_price FLOAT64` – Low price
 - `volume INT64` – Trading volume
-- `source STRING NOT NULL` – Data source (yahoo, cme, barchart)
+- `source STRING NOT NULL` – Data source (yahoo, cme, other external)
 - `ingest_timestamp TIMESTAMP NOT NULL` – When data was ingested
 - `data_quality_flag STRING` – Quality flags (null, outlier, etc.)
 
@@ -423,4 +422,3 @@ This document maps the complete data lineage from ingestion through feature engi
 - See `NAMING_CONVENTION_SPEC.md` for table naming rules
 - See `DATASET_STRUCTURE_DESIGN.md` for dataset organization
 - See `DEDUPLICATION_RULES.md` for source precedence
-

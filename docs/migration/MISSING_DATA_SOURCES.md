@@ -123,7 +123,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 ### 9. Palm Oil Daily Scraping 🔄 EXECUTING
 **Status:** Script running in background  
-**Script:** `collect_palm_barchart.py`  
+**Script:** Palm daily collection script  
 **Log:** `/tmp/palm_collection.log`
 
 ### 10. World Bank Alternative 🔄 EXECUTING
@@ -162,7 +162,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 3. **Execute Policy/Trump Script** (`collect_policy_trump.py`) - if API key available
 
 ### After Alpha Completes:
-4. **Execute Palm Daily Script** (`collect_palm_barchart.py`)
+4. **Execute Palm Daily Script** (palm daily collection script)
 5. **Expand FRED Series** (add missing 2-7 series)
 6. **Backfill CFTC** (2006-2019)
 
@@ -173,4 +173,3 @@ All data must come from authenticated APIs, official sources, or validated histo
 ---
 
 **Last Updated:** November 17, 2025
-

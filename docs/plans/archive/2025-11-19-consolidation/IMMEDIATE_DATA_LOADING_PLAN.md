@@ -19,7 +19,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 **41 Raw Data Folders:**
 - alpha_vantage/ (historical data collected)
 - cftc/ (COT data)
-- barchart/ (palm oil)
+- palm_oil/ (palm oil)
 - brazil_weather/ (INMET data)
 - databento_mes/, databento_zl/ (futures data)
 - fred/ (economic data)
@@ -146,7 +146,7 @@ python3 scripts/features/build_master_features_from_sources.py \
 - collect_noaa_comprehensive.py
 - collect_usda_comprehensive.py
 - collect_yahoo_finance_comprehensive.py
-- collect_palm_barchart.py
+- palm daily collection script
 - collect_policy_trump.py
 - collect_un_comtrade.py
 - collect_worldbank_pinksheet.py
@@ -188,4 +188,3 @@ python3 scripts/features/build_master_features_from_sources.py \
 ---
 
 **I'M ON IT - Building data loading scripts NOW**
-

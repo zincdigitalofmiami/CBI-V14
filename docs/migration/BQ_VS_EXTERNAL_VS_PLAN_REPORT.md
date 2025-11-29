@@ -94,7 +94,7 @@ The script expects:
 - `yahoo_historical_all_symbols.parquet` ❌ (doesn't exist)
 - `weather_granular_daily.parquet` ❌ (doesn't exist)
 - `volatility_daily.parquet` ❌ (doesn't exist)
-- `barchart_palm_daily.parquet` ❌ (doesn't exist)
+- `palm_oil_daily.parquet` ❌ (doesn't exist)
 
 Actual files:
 - `yahoo_historical_prefixed.parquet` ✅

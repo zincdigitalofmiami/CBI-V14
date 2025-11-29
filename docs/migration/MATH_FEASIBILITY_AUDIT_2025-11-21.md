@@ -202,7 +202,7 @@ Before finalizing training specs, validate that every calculation we've planned 
 | **Weather** | US Midwest GDDs, Brazil rainfall | ✅ NOAA + INMET (`raw_intelligence.weather_segmented`) | ✅ Already collected | ✅ VERIFIED |
 | **CFTC Positioning** | COT reports | ✅ CFTC API (`raw_intelligence.cftc_positioning`) | ✅ Already collected | ✅ VERIFIED |
 | **Crush spread** | ZL, ZS, ZM prices | ✅ Databento (all 3 symbols) | ✅ Formula: `ZL + ZM - ZS` | ✅ VERIFIED |
-| **Palm oil prices** | FCPO or proxy | ✅ Barchart API (`raw_intelligence.palm_oil_daily`) | ✅ Already collected | ✅ VERIFIED |
+| **Palm oil prices** | FCPO or proxy | ✅ External palm futures feed (`raw_intelligence.palm_oil_daily`) | ✅ Already collected | ✅ VERIFIED |
 | **Policy events** | Trump tariffs, biofuel mandates | ✅ Manual collection (`raw_intelligence.policy_events`) | ✅ Already collected | ✅ VERIFIED |
 
 **Feasibility:** ✅ **100% FEASIBLE**

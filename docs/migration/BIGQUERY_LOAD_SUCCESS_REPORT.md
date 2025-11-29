@@ -50,7 +50,7 @@ Successfully loaded **52,794 rows** of real data into BigQuery across 11 tables 
 ### Tables Created
 1. `market_data.yahoo_historical_prefixed` - 55 columns with yahoo_ prefix
 2. `market_data.es_futures_daily` - 58 columns with es_ prefix
-3. `raw_intelligence.palm_oil_daily` - 9 columns with barchart_palm_ prefix
+3. `raw_intelligence.palm_oil_daily` - 9 columns capturing palm oil vendor data
 4. `features.regime_calendar` - regime definitions and training weights
 
 ### Tables Fixed
@@ -98,7 +98,7 @@ All staging file row counts match BigQuery table row counts exactly:
 All source prefixes preserved:
 - `yahoo_*`, `es_*`, `fred_*`, `weather_*`
 - `cftc_*`, `usda_*`, `eia_*`, `vol_*`
-- `barchart_palm_*`, `policy_trump_*`
+- Palm-related columns, `policy_trump_*`
 
 ### Clustering Applied
 Tables clustered by:
@@ -158,4 +158,3 @@ The system is ready for:
 3. Dashboard integration
 
 **No fake data. No placeholders. 100% real, verified sources.**
-

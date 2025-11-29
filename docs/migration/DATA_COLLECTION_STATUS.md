@@ -33,9 +33,9 @@ All data must come from authenticated APIs, official sources, or validated histo
 
 4. **Palm Oil Historical** ✅
    - Status: Historical data copied and transformed
-   - Files: `raw/barchart/palm_oil_historical.parquet`
+   - Files: `raw/palm_oil_historical.parquet`
    - Rows: 1,340
-   - Format: `barchart_palm_*` prefixed columns
+   - Format: Palm-related prefixed columns
    - Note: Daily scraping script needs to be created
 
 ### Supporting Data (Phase 2)
@@ -120,13 +120,13 @@ All data must come from authenticated APIs, official sources, or validated histo
 - **Status:** Ready for execution (requires ScrapeCreators API key)
 
 ### Palm Oil Daily Scraping ✅
-- **Status:** Script created (`scripts/ingest/collect_palm_barchart.py`)
+- **Status:** Script created (palm daily collection script)
 - **Features:**
-  - Barchart scraping (FCPO futures) - primary source
+  - Palm futures scraping (FCPO) - primary source
   - Yahoo Finance fallback (CPO=F, FCPO=F)
   - 20-day realized volatility calculation
   - Merges with historical data automatically
-- **Historical:** `raw/barchart/palm_oil_historical.parquet` (1,340 rows)
+- **Historical:** `raw/palm_oil_historical.parquet` (1,340 rows)
 - **Status:** Ready for daily execution
 
 ---
@@ -148,7 +148,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 | USDA FAS | ⚠️ Manual | - | - | Scraping fails, needs API |
 | Volatility/VIX | ✅ Script Ready | - | - | `collect_volatility_intraday.py` created |
 | Policy/Trump | ✅ Script Ready | - | - | `collect_policy_trump.py` created (needs API key) |
-| Palm Daily | ✅ Script Ready | 1,340 | 2020-2025 | `collect_palm_barchart.py` created |
+| Palm Daily | ✅ Script Ready | 1,340 | 2020-2025 | Palm daily collection script created |
 
 ---
 
@@ -158,7 +158,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 2. **Execute newly created scripts:**
    - `collect_volatility_intraday.py` - Run to collect VIX + realized vol
    - `collect_policy_trump.py` - Run to collect Truth Social + policy feeds (requires ScrapeCreators API key)
-   - `collect_palm_barchart.py` - Run daily for palm futures updates
+   - Palm daily collection script - Run daily for palm futures updates
 3. **Wire through staging → join spec → backfill:**
    - Update `scripts/staging/create_staging_files.py` to process volatility, policy, palm data
    - Add join steps to `registry/join_spec.yaml` for new sources
@@ -175,4 +175,3 @@ All data must come from authenticated APIs, official sources, or validated histo
 ---
 
 **Last Updated:** November 17, 2025
-

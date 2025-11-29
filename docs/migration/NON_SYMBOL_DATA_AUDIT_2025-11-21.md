@@ -359,7 +359,7 @@ CLUSTER BY horizon, shap_group;
 | **3. SA Weather Anomaly** | Brazil/Argentina drought z-scores | INMET, NOAA, SMN | Daily (5 AM ET) | ✅ IMPLEMENTED |
 | **4. Crush Margin Proxy** | ZL + ZM - ZS spread | Databento futures | Intraday (1 min) | ✅ IMPLEMENTED |
 | **5. Spec Positioning** | CFTC net managed money | CFTC COT reports | Weekly (Friday) | ✅ IMPLEMENTED |
-| **6. Palm Substitution Risk** | MPOB stockpiles, export taxes | Barchart, MPOB | Daily | ✅ IMPLEMENTED |
+| **6. Palm Substitution Risk** | MPOB stockpiles, export taxes | Palm futures markets, MPOB | Daily | ✅ IMPLEMENTED |
 | **7. Energy Spillover** | HOBO spread, diesel margins | Databento (HO, RB, CL) | Intraday (1 min) | ✅ IMPLEMENTED |
 | **8. VIX Stress** | VIX z-score vs 30-day baseline | FRED, Yahoo VIX | Daily | ✅ IMPLEMENTED |
 
@@ -482,4 +482,3 @@ OPTIONS (description='Big 8 signals for dashboard overlays + SHAP force lines');
 **Next:** After unanimous approval, proceed to update canonical plans or write training SQL
 
 **Last Updated:** November 21, 2025
-

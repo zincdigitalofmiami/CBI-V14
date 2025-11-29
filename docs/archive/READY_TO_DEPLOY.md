@@ -57,7 +57,7 @@ All data must come from authenticated APIs, official sources, or validated histo
 ### CME-Native Substitution (Revolutionary)
 
 **Instead of External Palm** ❌:
-- Scraping Barchart/ICE for palm prices
+- Scraping external sites/ICE for palm prices
 - Unreliable data quality
 - External vendor dependency
 
@@ -232,7 +232,6 @@ bq query --project_id=cbi-v14 --location=us-central1 --use_legacy_sql=false < VE
 **My recommendation**: Deploy schema first (it's ready), then create scripts.
 
 Ready when you are! 🚀
-
 
 
 

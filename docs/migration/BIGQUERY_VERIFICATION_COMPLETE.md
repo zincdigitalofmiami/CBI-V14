@@ -89,7 +89,7 @@ All date ranges preserved correctly:
 - ✅ `usda_*` - USDA reports
 - ✅ `eia_*` - EIA biofuels
 - ✅ `vol_*` - Volatility metrics
-- ✅ `barchart_palm_*` - Palm oil data
+- ✅ Palm-related columns - Palm oil data
 - ✅ `policy_trump_*` - Policy events
 - ✅ `training_*` - Training weights
 - ✅ `regime` - Regime classification
@@ -195,7 +195,6 @@ BigQuery is properly set up with:
 4. API consumption
 
 **No fake data. No placeholders. 100% verified real sources.**
-
 
 
 

@@ -161,7 +161,7 @@ These jobs are defined in setup scripts but **not active** in current crontab:
 
 2. **4:00 PM (Weekdays)** - **2-3 jobs competing:**
    - `production_web_scraper.py` (afternoon)
-   - Cloud Scheduler: `scrape-barchart-daily` (if configured)
+   - Cloud Scheduler: palm daily scraper (if configured)
    - Cloud Scheduler: `scrape-comprehensive-afternoon` (if configured)
    - **Risk:** BigQuery write contention
 
@@ -623,7 +623,6 @@ If optimizations cause issues:
 
 **Report Generated:** 2025-11-05  
 **Next Review:** 2025-12-05 (after 1 month of optimization)
-
 
 
 
