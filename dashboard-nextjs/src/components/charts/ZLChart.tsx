@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
@@ -7,7 +7,6 @@ const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 export function ZLChart() {
   const [zlData, setZlData] = useState<any[]>([]);
-  const [shapData, setShapData] = useState<any[]>([]);
   const [latestPrice, setLatestPrice] = useState(0);
   const [priceChange, setPriceChange] = useState(0);
   const [priceChangePct, setPriceChangePct] = useState(0);
@@ -16,24 +15,16 @@ export function ZLChart() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [zlRes, shapRes] = await Promise.all([
-          fetch('/api/v4/live/zl'),
-          fetch('/api/v4/shap/zl')
-        ]);
-        
-        const zlJson = await zlRes.json();
-        const shapJson = await shapRes.json();
-        
-        const zl = zlJson.data || [];
-        const shap = shapJson.data || [];
+        const res = await fetch('/api/v4/live/zl');
+        const json = await res.json();
+        const zl = json.data || [];
 
         setZlData(zl);
-        setShapData(shap);
 
         if (zl.length > 0) {
           const latest = zl[zl.length - 1].close;
           setLatestPrice(latest);
-          
+
           if (zl.length > 1) {
             const prev = zl[zl.length - 2].close;
             const change = latest - prev;
@@ -42,7 +33,7 @@ export function ZLChart() {
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching ZL data:', error);
       } finally {
         setLoading(false);
       }
@@ -53,23 +44,10 @@ export function ZLChart() {
     return () => clearInterval(interval);
   }, []);
 
-  const dates = zlData.map(d => d.date?.value || d.date);
-  const closes = zlData.map(d => d.close);
-  const highs = zlData.map(d => d.high);
-  const lows = zlData.map(d => d.low);
-
-  const shapByDate = new Map();
-  shapData.forEach(s => {
-    if (!shapByDate.has(s.date)) {
-      shapByDate.set(s.date, {});
-    }
-    shapByDate.get(s.date)[s.feature_name] = s.shap_value_cents;
-  });
-
-  const rins = dates.map(d => shapByDate.get(d)?.RINs_momentum || 0);
-  const tariff = dates.map(d => shapByDate.get(d)?.Tariff_risk || 0);
-  const drought = dates.map(d => shapByDate.get(d)?.Drought_zscore || 0);
-  const crush = dates.map(d => shapByDate.get(d)?.Crush_margin || 0);
+  const dates = zlData.map((d) => d.date?.value || d.date);
+  const closes = zlData.map((d) => d.close);
+  const highs = zlData.map((d) => d.high);
+  const lows = zlData.map((d) => d.low);
 
   if (loading) {
     return (
@@ -102,8 +80,7 @@ export function ZLChart() {
                 mode: 'lines',
                 name: 'ZL Price',
                 line: { color: '#10b981', width: 2, shape: 'spline' },
-                yaxis: 'y',
-                hovertemplate: '$%{y:.2f}<extra></extra>'
+                hovertemplate: '$%{y:.2f}<extra></extra>',
               },
               {
                 x: dates,
@@ -113,9 +90,8 @@ export function ZLChart() {
                 name: 'High',
                 line: { color: '#10b981', width: 0.5, dash: 'dot' },
                 opacity: 0.3,
-                yaxis: 'y',
                 showlegend: false,
-                hoverinfo: 'skip'
+                hoverinfo: 'skip',
               },
               {
                 x: dates,
@@ -127,56 +103,15 @@ export function ZLChart() {
                 fillcolor: 'rgba(16, 185, 129, 0.05)',
                 line: { color: '#10b981', width: 0.5, dash: 'dot' },
                 opacity: 0.3,
-                yaxis: 'y',
                 showlegend: false,
-                hoverinfo: 'skip'
+                hoverinfo: 'skip',
               },
-              {
-                x: dates,
-                y: rins,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'RINs Momentum',
-                line: { color: '#34d399', width: 1.5, dash: 'dash' },
-                yaxis: 'y2',
-                hovertemplate: '%{y:+.2f}¢<extra></extra>'
-              },
-              {
-                x: dates,
-                y: tariff,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Tariff Risk',
-                line: { color: '#6ee7b7', width: 1.5, dash: 'dash' },
-                yaxis: 'y2',
-                hovertemplate: '%{y:+.2f}¢<extra></extra>'
-              },
-              {
-                x: dates,
-                y: drought,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Drought Z-Score',
-                line: { color: '#a7f3d0', width: 1.5, dash: 'dash' },
-                yaxis: 'y2',
-                hovertemplate: '%{y:+.2f}¢<extra></extra>'
-              },
-              {
-                x: dates,
-                y: crush,
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Crush Margin',
-                line: { color: '#d1fae5', width: 1.5, dash: 'dash' },
-                yaxis: 'y2',
-                hovertemplate: '%{y:+.2f}¢<extra></extra>'
-              }
             ]}
             layout={{
               paper_bgcolor: 'transparent',
               plot_bgcolor: 'transparent',
               font: { family: 'system-ui', size: 11, color: '#9ca3af' },
-              margin: { t: 20, r: 80, b: 50, l: 60 },
+              margin: { t: 20, r: 40, b: 50, l: 60 },
               hovermode: 'x unified',
               showlegend: true,
               legend: {
@@ -185,7 +120,7 @@ export function ZLChart() {
                 y: 1.02,
                 xanchor: 'right',
                 x: 1,
-                font: { size: 10, color: '#9ca3af' }
+                font: { size: 10, color: '#9ca3af' },
               },
               xaxis: {
                 gridcolor: '#374151',
@@ -194,7 +129,7 @@ export function ZLChart() {
                 linecolor: '#374151',
                 linewidth: 0.5,
                 tickfont: { size: 10, color: '#9ca3af' },
-                zeroline: false
+                zeroline: false,
               },
               yaxis: {
                 title: { text: 'ZL Price (¢/lb)', font: { size: 11, color: '#9ca3af' } },
@@ -205,29 +140,15 @@ export function ZLChart() {
                 linewidth: 0.5,
                 tickfont: { size: 10, color: '#9ca3af' },
                 zeroline: false,
-                side: 'left'
+                side: 'left',
               },
-              yaxis2: {
-                title: { text: 'SHAP Impact (¢/lb)', font: { size: 11, color: '#9ca3af' } },
-                gridcolor: 'transparent',
-                showline: true,
-                linecolor: '#374151',
-                linewidth: 0.5,
-                tickfont: { size: 10, color: '#9ca3af' },
-                zeroline: true,
-                zerolinecolor: '#374151',
-                zerolinewidth: 1,
-                overlaying: 'y',
-                side: 'right',
-                range: [-15, 20]
-              },
-              dragmode: 'pan'
+              dragmode: 'pan',
             }}
             config={{
               responsive: true,
               displayModeBar: true,
               modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
-              displaylogo: false
+              displaylogo: false,
             }}
             style={{ width: '100%', height: '100%' }}
             useResizeHandler={true}
@@ -237,4 +158,5 @@ export function ZLChart() {
     </div>
   );
 }
+
 
