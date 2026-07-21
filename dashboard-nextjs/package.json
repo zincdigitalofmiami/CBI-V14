@@ -28,7 +28,7 @@
     "@types/react-dom": "^18.2.18",
     "@visx/visx": "^3.7.0",
     "autoprefixer": "^10.4.16",
-    "axios": "^1.6.2",
+    "axios": "^1.18.0",
     "browserslist": "^4.28.0",
     "caniuse-lite": "^1.0.30001757",
     "class-variance-authority": "^0.7.0",
